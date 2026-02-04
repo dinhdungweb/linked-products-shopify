@@ -1,0 +1,155 @@
+{%- comment -%}
+  Snippet: linked-product-option
+  Renders an option based on style (swatch, variant_image, block)
+  
+  Parameters:
+  - product_obj: product object
+  - value: option value to display
+  - selected: boolean
+  - style: 'swatch', 'variant_image', 'block'
+{%- endcomment -%}
+
+{%- assign url = product_obj.url -%}
+{%- assign image = custom_image | default: product_obj.featured_image -%}
+{%- assign is_unavailable = false -%}
+{%- if product_obj.available == false -%}
+  {%- assign is_unavailable = true -%}
+{%- endif -%}
+
+{%- assign final_image_url = "" -%}
+{%- if custom_image != blank -%}
+  {%- assign final_image_url = custom_image -%}
+{%- elsif product_obj.featured_image != blank -%}
+  {%- assign final_image_url = product_obj.featured_image | image_url: width: 150 -%}
+{%- endif -%}
+
+{%- comment -%}Color mapping - Ưu tiên custom_color, sau đó mới đến mapping tên màu{%- endcomment -%}
+{%- assign has_color = false -%}
+{%- assign css_color = "" -%}
+
+{%- if custom_color != blank -%}
+  {%- assign has_color = true -%}
+  {%- assign css_color = custom_color -%}
+{%- else -%}
+  {%- assign color_value = value | downcase | strip -%}
+  {%- case color_value -%}
+    {%- when 'red' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#dc2626" -%}
+    {%- when 'blue' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#2563eb" -%}
+    {%- when 'green' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#16a34a" -%}
+    {%- when 'yellow' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#eab308" -%}
+    {%- when 'orange' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#ea580c" -%}
+    {%- when 'purple' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#9333ea" -%}
+    {%- when 'pink' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#ec4899" -%}
+    {%- when 'black' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#171717" -%}
+    {%- when 'white' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#ffffff" -%}
+    {%- when 'gray', 'grey' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#6b7280" -%}
+    {%- when 'brown' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#92400e" -%}
+    {%- when 'beige' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#d4b896" -%}
+    {%- when 'navy' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#1e3a5f" -%}
+    {%- when 'teal' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#0d9488" -%}
+    {%- when 'cyan' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#06b6d4" -%}
+    {%- when 'gold' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#d4af37" -%}
+    {%- when 'silver' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#c0c0c0" -%}
+    {%- when 'cream' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#fffdd0" -%}
+    {%- when 'coral' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#ff7f50" -%}
+    {%- when 'olive' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#808000" -%}
+    {%- when 'maroon' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#800000" -%}
+    {%- when 'mint' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#98fb98" -%}
+    {%- when 'lavender' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#e6e6fa" -%}
+    {%- when 'rose' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#ff007f" -%}
+    {%- when 'khaki' -%}
+      {%- assign has_color = true -%}
+      {%- assign css_color = "#c3b091" -%}
+  {%- endcase -%}
+{%- endif -%}
+
+{%- case style -%}
+
+  {%- when 'swatch' -%}
+    <a href="{{ url }}" 
+       class="linked-option linked-option--swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+       title="{{ value }}{% if is_unavailable %} (Sold out){% endif %}"
+       aria-label="{{ value }}">
+      {%- if has_color -%}
+        <span class="swatch-bg swatch-bg--color" style="background-color: {{ css_color }};"></span>
+      {%- elsif final_image_url != blank -%}
+        <span class="swatch-bg" style="background-image: url({{ final_image_url }});"></span>
+      {%- else -%}
+        <span class="swatch-bg swatch-bg--text">{{ value | slice: 0 }}</span>
+      {%- endif -%}
+      {%- if selected -%}<span class="swatch-check">✓</span>{%- endif -%}
+    </a>
+
+  {%- when 'variant_image' -%}
+    <a href="{{ url }}" 
+       class="linked-option linked-option--image {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+       title="{{ value }}{% if is_unavailable %} (Sold out){% endif %}">
+      {%- if final_image_url != blank -%}
+        <img src="{{ final_image_url }}" 
+             alt="{{ value }}" 
+             width="60" height="60" 
+             loading="lazy">
+      {%- else -%}
+        <span class="no-image">{{ value | slice: 0, 2 }}</span>
+      {%- endif -%}
+    </a>
+
+  {%- else -%}
+    <a href="{{ url }}" 
+       class="linked-option linked-option--block {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+       title="{% if is_unavailable %}{{ value }} (Sold out){% else %}{{ value }}{% endif %}">
+      {%- if has_color -%}
+        <span class="color-dot" style="background-color: {{ css_color }};"></span>
+      {%- endif -%}
+      {{ value }}
+    </a>
+
+{%- endcase -%}

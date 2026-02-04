@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
+// enough when changing adapters.
+// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+// Product Group - Nhóm các sản phẩm liên kết
+model ProductGroup {
+  id                String    @id @default(cuid())
+  shop              String    // Shop domain
+  name              String    // Tên nhóm (để dễ quản lý)
+  optionName        String    @default("Color") // Tên option hiển thị (Color, Size, etc.)
+  selectorStyle     String    @default("block") // swatch, variant_image, block
+  syncStatus        String    @default("pending") // pending, synced, error
+  inventoryBehavior String    @default("show") // hide, show
+  products          ProductGroupItem[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([shop])
+}
+
+// Product Group Item - Sản phẩm trong nhóm
+model ProductGroupItem {
+  id             String    @id @default(cuid())
+  groupId        String
+  productId      String    // Shopify Product GID
+  productHandle  String?   // Product handle để sử dụng trong Liquid
+  optionValue    String?   // Giá trị option (Red, Blue, etc.)
+  customImageUrl String?   // Hình ảnh tùy chỉnh cho swatch
+  customColor    String?   // Màu sắc tùy chỉnh (HEX)
+  position       Int       @default(0)
+  group          ProductGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+
+  @@unique([groupId, productId])
+  @@index([groupId])
+}
+
+// Shop - Track subscription plan
+model Shop {
+  id            String    @id @default(cuid())
+  shop          String    @unique
+  plan          String    @default("free") // free, basic, pro
+  chargeId      String?   // Shopify subscription charge ID
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}

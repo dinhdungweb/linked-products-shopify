@@ -1,0 +1,246 @@
+/* Linked Products Picker Styles */
+.linked-products-picker {
+  margin: 1.5rem 0;
+
+  /* Default values for CSS variables */
+  --lp-swatch-size: 50px;
+  --lp-items-gap: 8px;
+  --lp-border-radius: 8px;
+  --lp-border-color: #e5e5e5;
+  --lp-selected-border-color: #000000;
+  --lp-border-width: 2px;
+  --lp-block-padding-x: 12px;
+  --lp-block-padding-y: 8px;
+  --lp-block-font-size: inherit;
+  --lp-block-bg: #ffffff;
+  --lp-block-text: #000000;
+  --lp-selected-bg: #000000;
+  --lp-selected-text: #ffffff;
+}
+
+.variant-picker__option {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.variant-picker__option-info {
+  margin-bottom: 0.75rem;
+}
+
+.h-stack {
+  display: flex;
+  align-items: center;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.text-subdued {
+  color: rgba(0, 0, 0, 0.6);
+  font-weight: 500;
+  font-size: var(--lp-block-font-size, 14px) !important;
+}
+
+.selected-value {
+  font-weight: 600;
+  font-size: var(--lp-block-font-size, 14px) !important;
+}
+
+.variant-picker__option-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lp-items-gap, 0.5rem);
+}
+
+.variant-picker__option-values.wrap {
+  flex-wrap: wrap;
+}
+
+/* ============================================
+   Linked Option Styles (new)
+   ============================================ */
+
+/* Base linked option */
+.linked-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--lp-block-text);
+  border: var(--lp-border-width) solid var(--lp-border-color);
+  border-radius: var(--lp-border-radius);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  background: var(--lp-block-bg);
+  overflow: hidden;
+}
+
+.linked-option:hover {
+  border-color: var(--lp-selected-border-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Disable hover effects */
+.no-hover-effect .linked-option:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.linked-option.is-selected {
+  border-color: var(--lp-selected-border-color);
+  background: var(--lp-selected-bg);
+  color: var(--lp-selected-text);
+  pointer-events: none;
+}
+
+/* Swatch style - circular with image */
+.linked-option--swatch {
+  width: var(--lp-swatch-size);
+  height: var(--lp-swatch-size);
+  padding: 0;
+  border-radius: 50%;
+  position: relative;
+}
+
+.linked-option--swatch .swatch-bg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+}
+
+.linked-option--swatch .swatch-bg--color {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.linked-option--swatch .swatch-bg--color+.swatch-check {
+  color: white;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.linked-option--swatch .swatch-bg--text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  font-weight: bold;
+  font-size: 1rem;
+  color: #666;
+}
+
+.linked-option--swatch .swatch-check {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  font-size: 1rem;
+}
+
+/* Image/Thumbnail style */
+.linked-option--image {
+  padding: 0;
+  width: var(--lp-swatch-size);
+  height: var(--lp-swatch-size);
+}
+
+.linked-option--image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.linked-option--image .no-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #f5f5f5;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #888;
+}
+
+/* Block/Text style */
+.linked-option--block {
+  min-height: 40px;
+  padding: var(--lp-block-padding-y, 8px) var(--lp-block-padding-x, 12px) !important;
+  font-size: var(--lp-block-font-size, 14px) !important;
+  font-weight: 500;
+  gap: 8px;
+}
+
+.linked-option--block.is-selected {
+  background: var(--lp-selected-bg);
+  color: var(--lp-selected-text);
+}
+
+/* Color dot for block style */
+.linked-option--block .color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Unavailable/Sold out state */
+.linked-option.is-unavailable {
+  opacity: 0.6;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Diagonal line for swatch and image styles */
+.linked-option--swatch.is-unavailable::after,
+.linked-option--image.is-unavailable::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top left, transparent calc(50% - 1px), #666, transparent calc(50% + 1px));
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Cross for swatch check when unavailable */
+.linked-option.is-unavailable .swatch-check {
+  display: none !important;
+}
+
+/* Strikethrough for block style */
+.linked-option--block.is-unavailable {
+  text-decoration: line-through;
+  background-color: #f9f9f9;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 480px) {
+  .linked-option--swatch {
+    width: calc(var(--lp-swatch-size) * 0.85);
+    height: calc(var(--lp-swatch-size) * 0.85);
+  }
+
+  .linked-option--image {
+    width: calc(var(--lp-swatch-size) * 0.85);
+    height: calc(var(--lp-swatch-size) * 0.85);
+  }
+
+  .linked-option--block {
+    min-height: 36px;
+    padding: calc(var(--lp-block-padding-y) * 0.8) calc(var(--lp-block-padding-x) * 0.8);
+    font-size: 0.8125rem;
+  }
+}
