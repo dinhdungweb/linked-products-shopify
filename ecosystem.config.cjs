@@ -6,7 +6,7 @@ module.exports = {
             args: "run start",
             env: {
                 NODE_ENV: "production",
-                // PORT: 3000 // Uncomment if you want to force a specific port here, otherwise it takes from .env
+                PORT: 3000,
             },
             watch: false,
             autorestart: true,
