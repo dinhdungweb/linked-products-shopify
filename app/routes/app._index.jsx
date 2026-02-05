@@ -27,11 +27,12 @@ import { XIcon, SearchIcon, ViewIcon, DeleteIcon } from "@shopify/polaris-icons"
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
 
+import { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_PRO } from "../shopify.server";
+import prisma from "../db.server";
+import { getUsageInfo, confirmSubscription } from "../billing.server";
+
 // Loader - Get product groups list
 export async function loader({ request }) {
-  const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_PRO } = await import("../shopify.server");
-  const { default: prisma } = await import("../db.server");
-  const { getUsageInfo, confirmSubscription } = await import("../billing.server");
 
   const { admin, session, billing } = await authenticate.admin(request);
   const shop = session.shop;
