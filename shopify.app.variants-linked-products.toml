@@ -1,12 +1,23 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "71a63724f27bf05487986ad2cb386b11"
 name = "Variants Linked Products"
+client_id = "2dc3da0c1804b6a547c472b2d3b6a6ca"
 application_url = "https://linked-products.bluepeaks.top"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_metaobject_definitions,read_metaobjects,read_products,write_metaobject_definitions,write_metaobjects,write_products"
+
+[auth]
+redirect_urls = [
+  "https://linked-products.bluepeaks.top/auth/callback",
+  "https://linked-products.bluepeaks.top/auth/shopify/callback",
+  "https://linked-products.bluepeaks.top/api/auth/callback"
+]
 
 [webhooks]
 api_version = "2024-04"
@@ -30,15 +41,3 @@ api_version = "2024-04"
   [[webhooks.subscriptions]]
   compliance_topics = [ "shop/redact" ]
   uri = "/webhooks/shop/redact"
-
-
-[access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,read_products,write_metaobject_definitions,read_metaobject_definitions,write_metaobjects,read_metaobjects"
-
-[auth]
-redirect_urls = [
-  "https://linked-products.bluepeaks.top/auth/callback",
-  "https://linked-products.bluepeaks.top/auth/shopify/callback",
-  "https://linked-products.bluepeaks.top/api/auth/callback"
-]
