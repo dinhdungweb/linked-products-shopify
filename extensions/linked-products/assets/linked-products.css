@@ -134,6 +134,7 @@
   height: 100px;
   background: #f4f4f4;
   overflow: hidden;
+  position: relative;
 }
 
 .linked-option--slide .slide-media img {
@@ -175,6 +176,7 @@
   width: 60px;
   height: 70px;
   overflow: hidden;
+  position: relative;
 }
 
 .linked-option--polaroid img {
@@ -222,6 +224,7 @@
   border-radius: 50%;
   overflow: hidden;
   border: 1px solid #ddd;
+  position: relative;
 }
 
 .linked-option--card .card-media.is-color {
@@ -326,14 +329,17 @@
 
 /* Diagonal line for swatch and image styles */
 .linked-option--swatch.is-unavailable::after,
-.linked-option--image.is-unavailable::after {
+.linked-option--image.is-unavailable::after,
+.linked-option--card.is-unavailable .card-media::after,
+.linked-option--slide.is-unavailable .slide-media::after,
+.linked-option--polaroid.is-unavailable .polaroid-inner::after {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to top left, transparent calc(50% - 1px), #666, transparent calc(50% + 1px));
+  background: linear-gradient(to top left, transparent calc(50% - 1px), #999, transparent calc(50% + 1px));
   pointer-events: none;
   z-index: 10;
 }
@@ -343,8 +349,10 @@
   display: none !important;
 }
 
-/* Strikethrough for block style */
-.linked-option--block.is-unavailable {
+/* Strikethrough for text styles */
+.linked-option--block.is-unavailable,
+.linked-option--button.is-unavailable,
+.linked-option--pill-swatch.is-unavailable .pill-label {
   text-decoration: line-through;
   background-color: #f9f9f9;
 }
