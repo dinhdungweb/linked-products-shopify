@@ -153,7 +153,7 @@ const renderPreview = (styleId) => {
         <InlineStack gap="200" wrap={false}>
             {PREVIEW_COLORS.slice(0, 6).map((color, i) => (
                 <div key={i} style={{
-                    width: '32px', height: '32px', borderRadius: styleId === 'square_color_swatch' ? '4px' : '50%', flexShrink: 0,
+                    width: '32px', height: '32px', borderRadius: '4px', flexShrink: 0,
                     background: color, border: '2px solid #fff', outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd', outlineOffset: '2px'
                 }} />
             ))}
@@ -200,7 +200,7 @@ const renderPreview = (styleId) => {
         <InlineStack gap="200" wrap={false}>
             {['Beige', 'Purple', 'Orange', 'Green', 'Yellow', 'Black'].map((name, i) => (
                 <div key={i} style={{ padding: '8px', border: i === 1 ? '1px solid #000' : '1px solid #ccc', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                    <div style={{ width: styleId === 'image_swatch_card' ? '40px' : '32px', height: styleId === 'image_swatch_card' ? '40px' : '32px', borderRadius: '50%', overflow: 'hidden', backgroundColor: PREVIEW_COLORS[i], border: '1px solid #ddd' }}>
+                    <div style={{ width: styleId === 'image_swatch_card' ? '40px' : '32px', height: styleId === 'image_swatch_card' ? '40px' : '32px', borderRadius: '4px', overflow: 'hidden', backgroundColor: PREVIEW_COLORS[i], border: '1px solid #ddd' }}>
                         {styleId === 'image_swatch_card' && <img src={PREVIEW_IMAGES[i]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                     </div>
                     <div style={{ fontSize: '10px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{name}</div>
@@ -303,7 +303,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                     <div key={i} style={{
                         width: isCard ? '16px' : '32px', 
                         height: isCard ? '16px' : '32px', 
-                        borderRadius: styleId.includes('square') ? '2px' : '50%', 
+                        borderRadius: '4px', 
                         flexShrink: 0,
                         ...getSwatchStyle(p),
                         border: '1px solid #ddd',
@@ -328,7 +328,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         alignItems: 'center',
                         gap: '8px'
                     }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: p.customColor || '#ccc' }} />
+                        <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: p.customColor || '#ccc' }} />
                         <span style={{ fontSize: isCard ? '10px' : '12px' }}>{p.optionValue}</span>
                     </div>
                 ))}
@@ -375,7 +375,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         <div style={{ 
                             width: isCard ? '30px' : '40px', 
                             height: isCard ? '30px' : '40px', 
-                            borderRadius: styleId.includes('color') ? '50%' : '4px', 
+                            borderRadius: '4px', 
                             backgroundColor: p.customColor || '#f4f4f4',
                             overflow: 'hidden',
                             border: '1px solid #eee'
@@ -772,7 +772,7 @@ const ColorPickerPopover = ({ color, onChange }) => {
                         minWidth: '34px',
                         background: '#f4f4f4',
                         border: '1px solid #dcdcdc',
-                        borderRadius: '50%',
+                        borderRadius: '4px',
                         cursor: 'pointer',
                         overflow: 'hidden',
                         flexShrink: 0
@@ -781,7 +781,7 @@ const ColorPickerPopover = ({ color, onChange }) => {
                     <div style={{ 
                         width: '100%', 
                         height: '100%', 
-                        borderRadius: '50%', 
+                        borderRadius: '4px', 
                         background: color || '#000000',
                         border: '1px solid rgba(0,0,0,0.1)'
                     }} />
@@ -826,7 +826,7 @@ const ImagePickerPopover = ({ imageUrl, onChange, productImages = [] }) => {
                         minWidth: '34px',
                         background: '#f4f4f4',
                         border: '1px solid #dcdcdc',
-                        borderRadius: '50%',
+                        borderRadius: '4px',
                         cursor: 'pointer',
                         overflow: 'hidden',
                         display: 'flex',
@@ -838,7 +838,7 @@ const ImagePickerPopover = ({ imageUrl, onChange, productImages = [] }) => {
                     <div style={{ 
                         width: '100%', 
                         height: '100%', 
-                        borderRadius: '50%', 
+                        borderRadius: '4px', 
                         overflow: 'hidden',
                         display: 'flex',
                         alignItems: 'center',
