@@ -319,6 +319,16 @@ export default function GroupDetail() {
     // UI State for Preview
     const [previewOnProductCard, setPreviewOnProductCard] = useState(true);
 
+    // Local state for inputs to avoid focus loss on every keystroke
+    const [localGroupName, setLocalGroupName] = useState(group.name || "");
+    const [localOptionName, setLocalOptionName] = useState(group.optionName || "Color");
+
+    // Sync local state when group data changes (e.g. after a save or from another action)
+    useEffect(() => {
+        setLocalGroupName(group.name || "");
+        setLocalOptionName(group.optionName || "Color");
+    }, [group.name, group.optionName]);
+
     const isLoading = navigation.state !== "idle";
 
     const handleOpenResourcePicker = useCallback(async () => {
@@ -351,6 +361,13 @@ export default function GroupDetail() {
         formData.append("customImageUrl", field === "customImageUrl" ? value : (item.customImageUrl || ""));
         formData.append("customColor", field === "customColor" ? value : (item.customColor || ""));
         
+        submit(formData, { method: "POST" });
+    };
+
+    const handleFieldBlur = (field, value) => {
+        const formData = new FormData();
+        formData.append("action", "updateGroupSettings");
+        formData.append(field, value);
         submit(formData, { method: "POST" });
     };
 
@@ -866,30 +883,22 @@ export default function GroupDetail() {
                             <BlockStack gap="400">
                                 <TextField
                                     label="Product group name (optional)"
-                                    value={group.name}
-                                    onChange={(v) => {
-                                        const fd = new FormData();
-                                        fd.append("action", "updateGroupSettings");
-                                        fd.append("groupName", v);
-                                        submit(fd, { method: "POST" });
-                                    }}
+                                    value={localGroupName}
+                                    onChange={setLocalGroupName}
+                                    onBlur={() => handleFieldBlur("groupName", localGroupName)}
                                     helpText="For internal use only"
                                     autoComplete="off"
                                     maxLength={255}
-                                    suffix={<Text tone="subdued">{group.name?.length || 0}/255</Text>}
+                                    suffix={<Text tone="subdued">{localGroupName.length}/255</Text>}
                                 />
                                 <TextField
                                     label="Option name"
-                                    value={group.optionName || "Color"}
-                                    onChange={(v) => {
-                                        const fd = new FormData();
-                                        fd.append("action", "updateGroupSettings");
-                                        fd.append("optionName", v);
-                                        submit(fd, { method: "POST" });
-                                    }}
+                                    value={localOptionName}
+                                    onChange={setLocalOptionName}
+                                    onBlur={() => handleFieldBlur("optionName", localOptionName)}
                                     autoComplete="off"
                                     maxLength={255}
-                                    suffix={<Text tone="subdued">{(group.optionName || "Color").length}/255</Text>}
+                                    suffix={<Text tone="subdued">{localOptionName.length}/255</Text>}
                                 />
                             </BlockStack>
                         </Card>
