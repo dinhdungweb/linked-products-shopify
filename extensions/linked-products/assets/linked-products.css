@@ -96,13 +96,21 @@
   pointer-events: none;
 }
 
-/* Swatch style - circular with image */
+/* Swatch style - circular or square */
 .linked-option--swatch {
   width: var(--lp-swatch-size);
   height: var(--lp-swatch-size);
   padding: 0;
   border-radius: 50%;
   position: relative;
+}
+
+.linked-option--swatch.is-square {
+  border-radius: 4px;
+}
+
+.linked-option--swatch.is-square .swatch-bg {
+  border-radius: 2px;
 }
 
 .linked-option--swatch .swatch-bg {
@@ -112,6 +120,123 @@
   border-radius: 50%;
   background-size: cover;
   background-position: center;
+}
+
+/* Slide Style (Card) */
+.linked-option--slide {
+  flex-direction: column;
+  width: 100px;
+  background: #fff;
+}
+
+.linked-option--slide .slide-media {
+  width: 100%;
+  height: 100px;
+  background: #f4f4f4;
+  overflow: hidden;
+}
+
+.linked-option--slide .slide-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.linked-option--slide .slide-info {
+  padding: 8px;
+  text-align: center;
+  width: 100%;
+}
+
+.linked-option--slide .slide-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linked-option--slide .slide-price {
+  display: block;
+  font-size: 10px;
+  color: #666;
+}
+
+/* Polaroid Style */
+.linked-option--polaroid {
+  padding: 6px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border-radius: 2px;
+}
+
+.linked-option--polaroid .polaroid-inner {
+  width: 60px;
+  height: 70px;
+  overflow: hidden;
+}
+
+.linked-option--polaroid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Pill Swatch Style */
+.linked-option--pill-swatch {
+  padding: 6px 12px !important;
+  border-radius: 30px;
+  gap: 8px;
+}
+
+.linked-option--pill-swatch .pill-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Button & Pill Button Styles */
+.linked-option--button {
+  padding: 8px 16px !important;
+  min-width: 60px;
+  font-weight: 500;
+}
+
+.linked-option--button.is-pill {
+  border-radius: 30px;
+}
+
+/* Card Style (Image/Color) */
+.linked-option--card {
+  flex-direction: column;
+  padding: 8px !important;
+  gap: 8px;
+  background: #fff;
+}
+
+.linked-option--card .card-media {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid #ddd;
+}
+
+.linked-option--card .card-media.is-color {
+  background-size: cover;
+}
+
+.linked-option--card .card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.linked-option--card .card-label {
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .linked-option--swatch .swatch-bg--color {

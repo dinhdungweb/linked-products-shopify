@@ -48,7 +48,7 @@
           </div>
         {%- endif -%}
 
-        {%- if active_selector_style == 'dropdown' -%}
+        {%- if active_selector_style contains 'dropdown' -%}
           {%- comment -%}Dropdown style{%- endcomment -%}
           <div class="variant-picker__dropdown">
             <select class="linked-products-dropdown" onchange="if(this.value) window.location.href = this.value;">
