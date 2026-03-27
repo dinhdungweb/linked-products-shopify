@@ -1137,36 +1137,21 @@ export default function GroupDetail() {
                                     value={localInventoryBehavior}
                                     onChange={setLocalInventoryBehavior}
                                 />
-                                <Divider />
-                                <Box>
-                                    <BlockStack gap="200">
-                                        <InlineStack align="space-between">
-                                            <Text variant="bodyMd">Product page</Text>
-                                            <Button variant="plain" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button>
-                                        </InlineStack>
-                                        <Badge tone="info" size="small">{STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Badge>
-                                    </BlockStack>
-                                </Box>
-                                <Box>
-                                    <BlockStack gap="200">
-                                        <InlineStack align="space-between">
-                                            <Text variant="bodyMd">Product Card</Text>
-                                            <Button variant="plain" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button>
-                                        </InlineStack>
-                                        <Badge tone="info" size="small">{localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Badge>
-                                    </BlockStack>
-                                </Box>
                             </BlockStack>
                         </Card>
 
                         {/* Preview Product Page */}
                         <Card>
                             <BlockStack gap="300">
-                                <Text variant="headingSm">Preview on product page</Text>
+                                <InlineStack align="space-between" blockAlign="center">
+                                    <Text variant="headingSm">Preview on product page</Text>
+                                    <Button variant="plain" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button>
+                                </InlineStack>
+                                <Badge tone="info" size="small">{STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Badge>
                                 <Divider />
                                 <BlockStack gap="200">
                                     <Text variant="bodySm" tone="subdued" fontWeight="semibold">{localOptionName || "Color"}:</Text>
-{renderSidebarPreview(localSelectorStyle, false, localProducts)}
+                                    {renderSidebarPreview(localSelectorStyle, false, localProducts)}
                                     <Box paddingBlockStart="400" />
                                 </BlockStack>
                             </BlockStack>
@@ -1177,18 +1162,22 @@ export default function GroupDetail() {
                             <BlockStack gap="300">
                                 <InlineStack align="space-between" blockAlign="center">
                                     <Text variant="headingSm">Preview on product card</Text>
-                                    <div style={{ transform: 'scale(1.2)' }}>
-                                        <Checkbox
-                                            label="Same as product page"
-                                            labelHidden
-                                            checked={localCardSelectorStyle === "same"}
-                                            onChange={(v) => setLocalCardSelectorStyle(v ? "same" : "swatch")}
-                                        />
-                                    </div>
+                                    <InlineStack gap="200" blockAlign="center">
+                                         <Button variant="plain" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button>
+                                         <div style={{ transform: 'scale(1.2)' }}>
+                                            <Checkbox
+                                                label=""
+                                                labelHidden
+                                                checked={localCardSelectorStyle === "same"}
+                                                onChange={(v) => setLocalCardSelectorStyle(v ? "same" : "swatch")}
+                                            />
+                                        </div>
+                                    </InlineStack>
                                 </InlineStack>
+                                <Badge tone="info" size="small">{localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Badge>
                                 <Divider />
                                 <LivePreview 
-                                    style={previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localCardSelectorStyle} 
+                                    style={previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localSelectorStyle} 
                                     optionName={localOptionName} 
                                     products={localProducts}
                                     inventoryBehavior={localInventoryBehavior}
