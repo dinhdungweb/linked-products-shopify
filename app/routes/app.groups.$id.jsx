@@ -11,19 +11,28 @@ import {
     InlineStack,
     Badge,
     Banner,
-    IndexTable,
     Thumbnail,
     Modal,
     TextField,
-    EmptyState,
     Box,
     Divider,
     Select,
     Tooltip,
     ProgressBar,
+    Icon,
+    Checkbox,
+    Grid,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
-import { EditIcon, DeleteIcon } from "@shopify/polaris-icons";
+import { 
+    DeleteIcon, 
+    ChevronLeftIcon, 
+    MagicIcon, 
+    PlusCircleIcon, 
+    OrderIcon,
+    ViewIcon,
+    DragHandleIcon,
+} from "@shopify/polaris-icons";
 
 // Loader - Get group info and product list
 export async function loader({ request, params }) {
@@ -34,33 +43,6 @@ export async function loader({ request, params }) {
     const { admin, session, billing } = await authenticate.admin(request);
     const shop = session.shop;
     const { id: groupId } = params;
-
-    // Robust & Fast Sync: Check Shopify Billing API status directly
-    try {
-        const billingCheck = await billing.check({
-            isTest: true,
-            plans: [MONTHLY_PLAN_BASIC, MONTHLY_PLAN_PRO],
-        });
-
-        // Get current plan from DB for comparison
-        const shopRecord = await prisma.shop.findUnique({ where: { shop: shop } });
-        const currentKnownPlan = shopRecord?.plan || 'free';
-
-        if (billingCheck.hasActivePayment) {
-            const activeSub = billingCheck.appSubscriptions[0];
-            const planKey = activeSub.name.includes("Pro") ? "pro" : "basic";
-
-            if (planKey !== currentKnownPlan) {
-                console.log(`[Group Loader] Plan sync initiated: ${currentKnownPlan} -> ${planKey}`);
-                await confirmSubscription(admin, shop, planKey, activeSub);
-            }
-        } else if (currentKnownPlan !== 'free') {
-            console.log(`[Group Loader] Syncing back to free plan.`);
-            await confirmSubscription(admin, shop, 'free', null);
-        }
-    } catch (error) {
-        console.warn("[Group Loader] Billing sync skipped:", error.message);
-    }
 
     const group = await prisma.productGroup.findUnique({
         where: { id: groupId, shop: session.shop },
@@ -75,11 +57,9 @@ export async function loader({ request, params }) {
         throw new Response("Group not found", { status: 404 });
     }
 
-    // Get product info from Shopify
     let productDetails = [];
     if (group.products.length > 0) {
         const productIds = group.products.map((p) => p.productId);
-
         const response = await admin.graphql(`
       query GetProducts($ids: [ID!]!) {
         nodes(ids: $ids) {
@@ -87,24 +67,10 @@ export async function loader({ request, params }) {
             id
             title
             handle
-            featuredImage {
-              url
-            }
+            featuredImage { url }
             status
-            images(first: 10) {
-              nodes {
-                url
-              }
-            }
-            variants(first: 5) {
-              nodes {
-                id
-                title
-                image {
-                  url
-                }
-              }
-            }
+            images(first: 10) { nodes { url } }
+            variants(first: 5) { nodes { id title image { url } } }
           }
         }
       }
@@ -113,16 +79,9 @@ export async function loader({ request, params }) {
         const result = await response.json();
         const shopifyProducts = result.data?.nodes || [];
 
-        // Merge DB and Shopify info
         productDetails = group.products.map((item) => {
             const shopifyProduct = shopifyProducts.find((p) => p?.id === item.productId);
-
-            // Find fallback image from variants if featuredImage is missing
-            let fallbackImage = null;
-            if (shopifyProduct?.variants?.nodes) {
-                const variantWithImage = shopifyProduct.variants.nodes.find(v => v.image?.url);
-                fallbackImage = variantWithImage?.image?.url;
-            }
+            let fallbackImage = shopifyProduct?.variants?.nodes?.find(v => v.image?.url)?.image?.url;
 
             return {
                 ...item,
@@ -134,8 +93,6 @@ export async function loader({ request, params }) {
                     ...(shopifyProduct?.images?.nodes?.map(n => n.url) || []),
                     ...(shopifyProduct?.variants?.nodes?.map(v => v.image?.url).filter(Boolean) || [])
                 ])),
-                // Store variant info for suggestions if needed
-                variants: shopifyProduct?.variants?.nodes || []
             };
         });
     }
@@ -154,7 +111,6 @@ export async function action({ request, params }) {
     const formData = await request.formData();
     const actionType = formData.get("action");
 
-    // Helper function to sync metafields
     async function syncGroupMetafields(gId) {
         const group = await prisma.productGroup.findUnique({
             where: { id: gId },
@@ -165,7 +121,6 @@ export async function action({ request, params }) {
             return { success: false, error: "At least 2 products are required to sync" };
         }
 
-        const metafields = [];
         const metafieldValue = group.products.map(p => ({
             handle: p.productHandle,
             title: p.optionValue || "",
@@ -173,294 +128,123 @@ export async function action({ request, params }) {
             color: p.customColor || ""
         }));
 
+        const metafields = [];
         for (const product of group.products) {
-            // 1. linked_list metafield
-            metafields.push({
-                ownerId: product.productId,
-                namespace: "linked_products",
-                key: "linked_list",
-                value: JSON.stringify(metafieldValue),
-                type: "json",
-            });
-            // 2. option_value metafield
-            metafields.push({
-                ownerId: product.productId,
-                namespace: "linked_products",
-                key: "option_value",
-                value: product.optionValue || "",
-                type: "single_line_text_field",
-            });
-            // 3. inventory_behavior metafield
-            metafields.push({
-                ownerId: product.productId,
-                namespace: "linked_products",
-                key: "inventory_behavior",
-                value: group.inventoryBehavior || "show",
-                type: "single_line_text_field",
-            });
-            // 4. option_name metafield (dynamic per group)
-            metafields.push({
-                ownerId: product.productId,
-                namespace: "linked_products",
-                key: "option_name",
-                value: group.optionName || "Color",
-                type: "single_line_text_field",
-            });
-            // 5. selector_style metafield (dynamic per group)
-            metafields.push({
-                ownerId: product.productId,
-                namespace: "linked_products",
-                key: "selector_style",
-                value: group.selectorStyle || "block",
-                type: "single_line_text_field",
-            });
+            const base = { ownerId: product.productId, namespace: "linked_products" };
+            metafields.push({ ...base, key: "linked_list", value: JSON.stringify(metafieldValue), type: "json" });
+            metafields.push({ ...base, key: "option_value", value: product.optionValue || "", type: "single_line_text_field" });
+            metafields.push({ ...base, key: "inventory_behavior", value: group.inventoryBehavior || "show", type: "single_line_text_field" });
+            metafields.push({ ...base, key: "option_name", value: group.optionName || "Color", type: "single_line_text_field" });
+            metafields.push({ ...base, key: "selector_style", value: group.selectorStyle || "block", type: "single_line_text_field" });
         }
 
-        // Batching: Shopify limits metafieldsSet to 25 items per call
         const BATCH_SIZE = 25;
-        const batches = [];
         for (let i = 0; i < metafields.length; i += BATCH_SIZE) {
-            batches.push(metafields.slice(i, i + BATCH_SIZE));
-        }
-
-        // Sequential processing: More stable than Promise.all for metafieldsSet
-        for (const batch of batches) {
+            const batch = metafields.slice(i, i + BATCH_SIZE);
             const metafieldMutation = await admin.graphql(`
                 mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
                     metafieldsSet(metafields: $metafields) {
-                        metafields { id }
-                        userErrors { field message }
+                        userErrors { message }
                     }
                 }
-            `, {
-                variables: { metafields: batch },
-            });
-
+            `, { variables: { metafields: batch } });
             const result = await metafieldMutation.json();
-            if (result.data?.metafieldsSet?.userErrors?.length > 0) {
-                throw new Error(result.data.metafieldsSet.userErrors[0].message);
-            }
+            if (result.data?.metafieldsSet?.userErrors?.length > 0) throw new Error(result.data.metafieldsSet.userErrors[0].message);
         }
 
-        await prisma.productGroup.update({
-            where: { id: gId },
-            data: { syncStatus: "synced" },
-        });
-
+        await prisma.productGroup.update({ where: { id: gId }, data: { syncStatus: "synced" } });
         return { success: true };
     }
 
-    // Add products to group + AUTO SYNC
     if (actionType === "addProducts") {
         const productsJson = formData.get("products");
-
-        if (!productsJson) {
-            return json({ error: "No products selected" }, { status: 400 });
-        }
-
+        if (!productsJson) return json({ error: "No products selected" }, { status: 400 });
         const products = JSON.parse(productsJson);
-
-        // Kiểm tra sản phẩm đã thuộc nhóm khác chưa
-        const productIds = products.map((p) => p.id);
-        const existingInOtherGroups = await prisma.productGroupItem.findMany({
-            where: {
-                productId: { in: productIds },
-                groupId: { not: groupId },
-            },
-            include: {
-                group: { select: { name: true } },
-            },
-        });
-
-        if (existingInOtherGroups.length > 0) {
-            const conflictMessages = existingInOtherGroups.map((item) => {
-                const product = products.find((p) => p.id === item.productId);
-                return `"${product?.title || item.productId}" already belongs to group "${item.group.name}"`;
-            });
-            return json({
-                error: `Some products already belong to other groups:\n${conflictMessages.join('\n')}`,
-            }, { status: 400 });
-        }
-
-        // Get current highest position
-        const maxPosition = await prisma.productGroupItem.aggregate({
-            where: { groupId },
-            _max: { position: true },
-        });
-
-        // Check link limit
-        const canAdd = await canAddLinks(session.shop, products.length);
-        if (!canAdd) {
-            return json({
-                success: false,
-                message: "You have reached your plan's link limit. Please upgrade to add more products.",
-                limitReached: true
-            });
-        }
-
+        const maxPosition = await prisma.productGroupItem.aggregate({ where: { groupId }, _max: { position: true } });
         let position = (maxPosition._max.position || 0);
-        let addedCount = 0;
 
         for (const product of products) {
-            const existing = await prisma.productGroupItem.findUnique({
-                where: { groupId_productId: { groupId, productId: product.id } },
+            position++;
+            await prisma.productGroupItem.create({
+                data: {
+                    groupId,
+                    productId: product.id,
+                    productHandle: product.handle,
+                    optionValue: product.title,
+                    position,
+                },
             });
-
-            if (!existing) {
-                position++;
-                await prisma.productGroupItem.create({
-                    data: {
-                        groupId,
-                        productId: product.id,
-                        productHandle: product.handle,
-                        optionValue: product.title,
-                        position,
-                    },
-                });
-                addedCount++;
-            }
         }
-
-        // Auto-sync after adding
-        try {
-            const syncResult = await syncGroupMetafields(groupId);
-            if (syncResult.success) {
-                return json({ success: true, message: `Added ${addedCount} products and synced successfully!` });
-            } else {
-                return json({ success: true, message: `Added ${addedCount} products. ${syncResult.error}` });
-            }
-        } catch (error) {
-            await prisma.productGroup.update({
-                where: { id: groupId },
-                data: { syncStatus: "error" },
-            });
-            return json({ success: true, message: `Added ${addedCount} products but sync error: ${error.message}` });
-        }
+        await syncGroupMetafields(groupId);
+        return json({ success: true, message: "Products added and synced!" });
     }
 
-    // Remove product from group + AUTO SYNC
     if (actionType === "removeProduct") {
         const productId = formData.get("productId");
-
-        await prisma.productGroupItem.delete({
-            where: { groupId_productId: { groupId, productId } },
-        });
-
-        // Auto-sync after removal
-        try {
-            const syncResult = await syncGroupMetafields(groupId);
-            if (syncResult.success) {
-                return json({ success: true, message: "Product removed and synced successfully!" });
-            } else {
-                return json({ success: true, message: `Product removed. ${syncResult.error}` });
-            }
-        } catch (error) {
-            await prisma.productGroup.update({
-                where: { id: groupId },
-                data: { syncStatus: "error" },
-            });
-            return json({ success: true, message: `Product removed but sync error: ${error.message}` });
-        }
+        await prisma.productGroupItem.delete({ where: { groupId_productId: { groupId, productId } } });
+        await syncGroupMetafields(groupId);
+        return json({ success: true, message: "Product removed!" });
     }
 
-    // Update option value + AUTO SYNC
     if (actionType === "updateProductItem") {
         const productId = formData.get("productId");
-        const optionValue = formData.get("optionValue");
-        const customImageUrl = formData.get("customImageUrl");
-        const customColor = formData.get("customColor");
-
         await prisma.productGroupItem.update({
             where: { groupId_productId: { groupId, productId } },
             data: {
-                optionValue,
-                customImageUrl: customImageUrl || null,
-                customColor: customColor || null,
+                optionValue: formData.get("optionValue"),
+                customImageUrl: formData.get("customImageUrl") || null,
+                customColor: formData.get("customColor") || null,
             },
         });
-
-        // Auto-sync after update
-        try {
-            const syncResult = await syncGroupMetafields(groupId);
-            if (syncResult.success) {
-                return json({ success: true, message: "Updated and synced successfully!" });
-            } else {
-                return json({ success: true, message: `Updated. ${syncResult.error}` });
-            }
-        } catch (error) {
-            await prisma.productGroup.update({
-                where: { id: groupId },
-                data: { syncStatus: "error" },
-            });
-            return json({ success: true, message: `Updated but sync error: ${error.message}` });
-        }
+        await syncGroupMetafields(groupId);
+        return json({ success: true });
     }
 
-    // SYNC - Sync metafields to Shopify (unified with syncGroupMetafields)
-    if (actionType === "sync") {
-        try {
-            const syncResult = await syncGroupMetafields(groupId);
-            if (syncResult.success) {
-                return json({ success: true, message: "Synced successfully!" });
-            } else {
-                return json({ error: syncResult.error }, { status: 400 });
-            }
-        } catch (error) {
-            await prisma.productGroup.update({
-                where: { id: groupId },
-                data: { syncStatus: "error" },
-            });
-            return json({ error: error.message || "Sync error" }, { status: 500 });
-        }
-    }
-
-    // Update Inventory Behavior
-    if (actionType === "updateInventoryBehavior") {
-        const behavior = formData.get("behavior");
-        await prisma.productGroup.update({
-            where: { id: groupId },
-            data: { inventoryBehavior: behavior },
-        });
-
-        // Auto-sync after general setting update
-        try {
-            await syncGroupMetafields(groupId);
-            return json({ success: true, message: "Inventory settings updated and synced!" });
-        } catch (error) {
-            return json({ success: true, message: `Settings saved but sync failed: ${error.message}` });
-        }
-    }
-
-    // Update Group Settings (Option Name, Selector Style)
     if (actionType === "updateGroupSettings") {
         const optionName = formData.get("optionName");
         const selectorStyle = formData.get("selectorStyle");
         const groupName = formData.get("groupName");
+        const status = formData.get("status");
 
         const updateData = {};
         if (optionName !== null) updateData.optionName = optionName;
         if (selectorStyle !== null) updateData.selectorStyle = selectorStyle;
         if (groupName !== null) updateData.name = groupName;
+        if (status !== null) updateData.status = status;
 
-        await prisma.productGroup.update({
+        await prisma.productGroup.update({ where: { id: groupId }, data: updateData });
+        await syncGroupMetafields(groupId);
+        return json({ success: true });
+    }
+
+    if (actionType === "autoFill") {
+        const group = await prisma.productGroup.findUnique({
             where: { id: groupId },
-            data: updateData,
+            include: { products: true }
         });
-
-        // Auto-sync after setting update
-        try {
-            await syncGroupMetafields(groupId);
-            return json({ success: true, message: "Group settings updated and synced!" });
-        } catch (error) {
-            return json({ success: true, message: `Settings saved but sync failed: ${error.message}` });
+        
+        for (const item of group.products) {
+            if (!item.optionValue) {
+                await prisma.productGroupItem.update({
+                    where: { id: item.id },
+                    data: { optionValue: item.productHandle.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") }
+                });
+            }
         }
+        await syncGroupMetafields(groupId);
+        return json({ success: true, message: "Option values auto-filled!" });
+    }
+
+    if (actionType === "sync") {
+        await syncGroupMetafields(groupId);
+        return json({ success: true, message: "Synced successfully!" });
     }
 
     return json({ error: "Invalid action" }, { status: 400 });
 }
 
 export default function GroupDetail() {
-    const { group } = useLoaderData();
+    const { group, shop } = useLoaderData();
     const actionData = useActionData();
     const submit = useSubmit();
     const navigation = useNavigation();
@@ -471,480 +255,474 @@ export default function GroupDetail() {
     const [editOptionValue, setEditOptionValue] = useState("");
     const [editCustomImageUrl, setEditCustomImageUrl] = useState("");
     const [editCustomColor, setEditCustomColor] = useState("");
+    
+    // UI State for Preview
+    const [previewOnProductCard, setPreviewOnProductCard] = useState(true);
 
-    const [actionBannerVisible, setActionBannerVisible] = useState(true);
+    const isLoading = navigation.state !== "idle";
 
-    // Reset banner visibility when actionData changes
-    useEffect(() => {
-        if (actionData) {
-            setActionBannerVisible(true);
-        }
-    }, [actionData]);
-
-    const isLoading = navigation.state === "submitting" || navigation.state === "loading";
-    const isSyncing = navigation.state !== "idle" && (
-        navigation.formData?.get("action") === "sync" ||
-        navigation.formData?.get("action") === "addProducts" ||
-        navigation.formData?.get("action") === "updateInventoryBehavior" ||
-        navigation.formData?.get("action") === "updateGroupSettings"
-    );
-
-    // Open Resource Picker to select products
     const handleOpenResourcePicker = useCallback(async () => {
         try {
-            const selection = await shopify.resourcePicker({
-                type: "product",
-                multiple: true,
-                action: "select",
-                filter: {
-                    variants: false,
-                },
-            });
-
+            const selection = await shopify.resourcePicker({ type: "product", multiple: true, action: "select" });
             if (selection && selection.length > 0) {
-                const products = selection.map((product) => ({
-                    id: product.id,
-                    title: product.title,
-                    handle: product.handle,
-                }));
-
                 const formData = new FormData();
                 formData.append("action", "addProducts");
-                formData.append("products", JSON.stringify(products));
+                formData.append("products", JSON.stringify(selection.map(p => ({ id: p.id, handle: p.handle, title: p.title }))));
                 submit(formData, { method: "POST" });
             }
-        } catch (error) {
-            console.error("Resource picker error:", error);
-        }
+        } catch (error) { console.error("Picker error:", error); }
     }, [shopify, submit]);
 
-    const handleRemoveProduct = useCallback((productId) => {
+    const handleRemoveProduct = (productId) => {
         if (!confirm("Remove this product from group?")) return;
-
         const formData = new FormData();
         formData.append("action", "removeProduct");
         formData.append("productId", productId);
         submit(formData, { method: "POST" });
-    }, [submit]);
+    };
 
-    const handleEditProduct = useCallback((product) => {
-        setEditingProduct(product);
-        setEditOptionValue(product.optionValue || "");
-        setEditCustomImageUrl(product.customImageUrl || "");
-        setEditCustomColor(product.customColor || "");
-        setShowEditModal(true);
-    }, []);
-
-    const handleSaveProduct = useCallback(() => {
-        if (!editingProduct) return;
-
+    const handleUpdateField = (productId, field, value) => {
         const formData = new FormData();
         formData.append("action", "updateProductItem");
-        formData.append("productId", editingProduct.productId);
-        formData.append("optionValue", editOptionValue);
-        formData.append("customImageUrl", editCustomImageUrl);
-        formData.append("customColor", editCustomColor);
+        formData.append("productId", productId);
+        
+        const item = group.products.find(p => p.productId === productId);
+        formData.append("optionValue", field === "optionValue" ? value : (item.optionValue || ""));
+        formData.append("customImageUrl", field === "customImageUrl" ? value : (item.customImageUrl || ""));
+        formData.append("customColor", field === "customColor" ? value : (item.customColor || ""));
+        
         submit(formData, { method: "POST" });
+    };
 
-        setShowEditModal(false);
-        setEditingProduct(null);
-    }, [editingProduct, editOptionValue, editCustomImageUrl, editCustomColor, submit]);
+    const handleGroupStatusChange = (value) => {
+        const formData = new FormData();
+        formData.append("action", "updateGroupSettings");
+        formData.append("status", value);
+        submit(formData, { method: "POST" });
+    };
 
-    const handleSync = useCallback(() => {
+    const handleAutoFill = () => {
+        const formData = new FormData();
+        formData.append("action", "autoFill");
+        submit(formData, { method: "POST" });
+    };
+
+    const handleSync = () => {
         const formData = new FormData();
         formData.append("action", "sync");
         submit(formData, { method: "POST" });
-    }, [submit]);
-
-    const handleInventoryChange = useCallback((value) => {
-        const formData = new FormData();
-        formData.append("action", "updateInventoryBehavior");
-        formData.append("behavior", value);
-        submit(formData, { method: "POST" });
-    }, [submit]);
-
-    const handleOptionNameChange = useCallback((value) => {
-        const formData = new FormData();
-        formData.append("action", "updateGroupSettings");
-        formData.append("optionName", value);
-        submit(formData, { method: "POST" });
-    }, [submit]);
-
-    const handleSelectorStyleChange = useCallback((value) => {
-        const formData = new FormData();
-        formData.append("action", "updateGroupSettings");
-        formData.append("selectorStyle", value);
-        submit(formData, { method: "POST" });
-    }, [submit]);
-
-    const getSyncBadge = () => {
-        switch (group.syncStatus) {
-            case "synced":
-                return <Badge tone="success">Synced</Badge>;
-            case "error":
-                return <Badge tone="critical">Error</Badge>;
-            default:
-                return <Badge tone="warning">Pending sync</Badge>;
-        }
     };
 
     return (
-        <Page
-            backAction={{ url: "/app" }}
-            title={group.name}
-            titleMetadata={getSyncBadge()}
-            primaryAction={{
-                content: "Add Products",
-                onAction: handleOpenResourcePicker,
-                disabled: isLoading,
-            }}
-            secondaryActions={[
-                {
-                    content: "Sync Metafields",
-                    onAction: handleSync,
-                    loading: isLoading && navigation.formData?.get("action") === "sync",
-                    disabled: isLoading || group.products.length < 2,
-                    primary: group.syncStatus === "pending"
-                }
-            ]}
-        >
-            <TitleBar title={group.name} />
-
-            <Layout>
-                <Layout.Section>
-                    <BlockStack gap="400">
-                        {actionData?.success && actionBannerVisible && (
-                            <Banner tone="success" onDismiss={() => setActionBannerVisible(false)}>
-                                <p>{actionData.message}</p>
-                            </Banner>
-                        )}
-
-                        {actionData?.error && actionBannerVisible && (
-                            <Banner tone="critical" onDismiss={() => setActionBannerVisible(false)}>
-                                <p style={{ whiteSpace: "pre-line" }}>{actionData.error}</p>
-                            </Banner>
-                        )}
-
-                        {group.syncStatus === "pending" && group.products.length >= 2 && !isLoading && (
-                            <Banner tone="info">
-                                <BlockStack gap="200">
-                                    <p>You have unsynced changes. Click "Sync Metafields" to update your store.</p>
-                                    <div style={{ maxWidth: '200px' }}>
-                                        <Button size="slim" onClick={handleSync}>Sync Now</Button>
-                                    </div>
-                                </BlockStack>
-                            </Banner>
-                        )}
-
-                        {isSyncing && (
-                            <Box paddingBlockEnd="400">
-                                <BlockStack gap="100">
-                                    <Text variant="bodySm" tone="subdued">Syncing with Shopify... Please wait.</Text>
-                                    <ProgressBar size="small" animated progress={45} />
-                                </BlockStack>
-                            </Box>
-                        )}
-
-                        <Card>
-                            <BlockStack gap="400">
-                                <Text variant="headingMd">Group Settings</Text>
-                                <InlineStack gap="400" blockAlign="end">
-                                    <div style={{ flex: 1 }}>
-                                        <Select
-                                            label="Option Name"
-                                            options={[
-                                                { label: 'Color', value: 'Color' },
-                                                { label: 'Size', value: 'Size' },
-                                                { label: 'Material', value: 'Material' },
-                                                { label: 'Style', value: 'Style' },
-                                                { label: 'Pattern', value: 'Pattern' },
-                                                { label: 'Type', value: 'Type' },
-                                                { label: 'Flavor', value: 'Flavor' },
-                                                { label: 'Model', value: 'Model' },
-                                            ]}
-                                            value={group.optionName || "Color"}
-                                            onChange={handleOptionNameChange}
-                                            helpText="Display name for this option group"
-                                        />
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <Select
-                                            label="Selector Style"
-                                            options={[
-                                                { label: 'Text Block', value: 'block' },
-                                                { label: 'Color Swatch', value: 'swatch' },
-                                                { label: 'Product Image', value: 'variant_image' },
-                                                { label: 'Dropdown', value: 'dropdown' },
-                                            ]}
-                                            value={group.selectorStyle || "block"}
-                                            onChange={handleSelectorStyleChange}
-                                            helpText="How the options appear on storefront"
-                                        />
-                                    </div>
-                                </InlineStack>
-                            </BlockStack>
-                        </Card>
-
-                        <Card>
-                            <BlockStack gap="400">
-                                <Text variant="headingMd">Inventory Settings</Text>
-                                <InlineStack gap="400" blockAlign="center">
-                                    <div style={{ flex: 1 }}>
-                                        <Text as="p" tone="subdued">
-                                            Choose how to handle products that are currently out of stock.
-                                        </Text>
-                                    </div>
-                                    <Select
-                                        label="Out of stock behavior"
-                                        labelHidden
-                                        options={[
-                                            { label: 'Show with indicator', value: 'show' },
-                                            { label: 'Hide from list', value: 'hide' },
-                                        ]}
-                                        value={group.inventoryBehavior || "show"}
-                                        onChange={handleInventoryChange}
-                                    />
-                                </InlineStack>
-                            </BlockStack>
-                        </Card>
-
-                        <Card padding="0">
-                            {group.products.length === 0 ? (
-                                <Box padding="600">
-                                    <EmptyState
-                                        heading="No products yet"
-                                        action={{ content: "Add Products", onAction: handleOpenResourcePicker }}
-                                        image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-                                    >
-                                        <p>Add at least 2 products to create links.</p>
-                                    </EmptyState>
-                                </Box>
-                            ) : (
-                                <IndexTable
-                                    resourceName={{ singular: "product", plural: "products" }}
-                                    itemCount={group.products.length}
-                                    headings={[
-                                        { title: "Product" },
-                                        { title: "Option Value" },
-                                        { title: "Swatch" },
-                                        { title: "Actions", alignment: "end" },
-                                    ]}
-                                    selectable={false}
-                                >
-                                    {group.products.map((item, index) => (
-                                        <IndexTable.Row id={item.productId} key={item.productId} position={index}>
-                                            <IndexTable.Cell>
-                                                <div style={{ maxWidth: '350px' }}>
-                                                    <InlineStack gap="300" blockAlign="center" wrap={false}>
-                                                        <div style={{ flexShrink: 0 }}>
-                                                            <Thumbnail
-                                                                source={item.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"}
-                                                                alt={item.title}
-                                                                size="small"
-                                                            />
-                                                        </div>
-                                                        <div style={{ minWidth: 0, flex: 1 }}>
-                                                            <Text variant="bodyMd" fontWeight="semibold" truncate>
-                                                                {item.title}
-                                                            </Text>
-                                                        </div>
-                                                    </InlineStack>
-                                                </div>
-                                            </IndexTable.Cell>
-                                            <IndexTable.Cell>
-                                                <div style={{ maxWidth: '180px', overflow: 'hidden' }}>
-                                                    <Button
-                                                        variant="plain"
-                                                        onClick={() => handleEditProduct(item)}
-                                                        textAlign="start"
-                                                    >
-                                                        <span style={{
-                                                            display: 'block',
-                                                            maxWidth: '180px',
-                                                            whiteSpace: 'nowrap',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis'
-                                                        }}>
-                                                            {item.optionValue || "Not set"}
-                                                        </span>
-                                                    </Button>
-                                                </div>
-                                            </IndexTable.Cell>
-                                            <IndexTable.Cell>
-                                                <Tooltip content={item.customColor ? "Custom Color" : item.customImageUrl ? "Custom Image" : "Product Image"}>
-                                                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                        {item.customColor ? (
-                                                            <div style={{
-                                                                width: '28px',
-                                                                height: '28px',
-                                                                borderRadius: '50%',
-                                                                backgroundColor: item.customColor,
-                                                                border: '2px solid #fff',
-                                                                boxShadow: '0 0 0 1px rgba(0,0,0,0.1)'
-                                                            }} />
-                                                        ) : (
-                                                            <div style={{
-                                                                borderRadius: '4px',
-                                                                overflow: 'hidden',
-                                                                border: '1px solid #eee',
-                                                                lineHeight: 0
-                                                            }}>
-                                                                <Thumbnail
-                                                                    source={item.customImageUrl || item.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"}
-                                                                    size="extraSmall"
-                                                                    alt=""
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </Tooltip>
-                                            </IndexTable.Cell>
-                                            <IndexTable.Cell>
-                                                <InlineStack gap="100" align="end">
-                                                    <Tooltip content="Edit">
-                                                        <Button
-                                                            icon={EditIcon}
-                                                            onClick={() => handleEditProduct(item)}
-                                                            accessibilityLabel="Edit product"
-                                                        />
-                                                    </Tooltip>
-                                                    <Tooltip content="Remove">
-                                                        <Button
-                                                            icon={DeleteIcon}
-                                                            tone="critical"
-                                                            onClick={() => handleRemoveProduct(item.productId)}
-                                                            loading={isLoading && navigation.formData?.get("action") === "removeProduct" && navigation.formData?.get("productId") === item.productId}
-                                                            accessibilityLabel="Remove product"
-                                                        />
-                                                    </Tooltip>
-                                                </InlineStack>
-                                            </IndexTable.Cell>
-                                        </IndexTable.Row>
-                                    ))}
-                                </IndexTable>
-                            )}
-                        </Card>
-
-                        {group.products.length > 0 && group.products.length < 2 && (
-                            <Banner tone="warning">
-                                <p>At least 2 products are required for links to display on storefront</p>
-                            </Banner>
-                        )}
-                    </BlockStack>
-                </Layout.Section>
-            </Layout>
-
-            {/* Modal to edit Option Value */}
+        <Page fullWidth>
+            {/* Swatch Edit Modal */}
             <Modal
                 open={showEditModal}
                 onClose={() => setShowEditModal(false)}
                 title="Edit Product Appearance"
-                primaryAction={{
-                    content: "Save",
-                    onAction: handleSaveProduct,
-                    loading: isLoading && navigation.formData?.get("action") === "updateProductItem",
+                primaryAction={{ 
+                    content: "Save", 
+                    onAction: () => {
+                        handleUpdateField(editingProduct.productId, "optionValue", editOptionValue);
+                        handleUpdateField(editingProduct.productId, "customImageUrl", editCustomImageUrl);
+                        handleUpdateField(editingProduct.productId, "customColor", editCustomColor);
+                        setShowEditModal(false);
+                    },
+                    loading: isLoading
                 }}
-                secondaryActions={[{ content: "Cancel", onAction: () => setShowEditModal(false) }]}
             >
                 <Modal.Section>
                     <BlockStack gap="400">
-                        <InlineStack gap="400" blockAlign="center" wrap={false}>
-                            <div style={{ flexShrink: 0 }}>
-                                <Thumbnail
-                                    source={editingProduct?.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"}
-                                    alt={editingProduct?.title}
-                                    size="small"
-                                />
-                            </div>
-                            <Text fontWeight="semibold" variant="bodyMd">{editingProduct?.title}</Text>
-                        </InlineStack>
-                        <TextField
-                            label="Option Value (Display label)"
-                            value={editOptionValue}
-                            onChange={setEditOptionValue}
-                            placeholder="e.g. Red, Blue, Large..."
-                            autoComplete="off"
+                        <TextField 
+                            label="Option Value" 
+                            value={editOptionValue} 
+                            onChange={setEditOptionValue} 
+                            autoComplete="off" 
+                            placeholder="e.g. Red, Blue, etc."
+                        />
+                        <TextField 
+                            label="Custom Color (HEX)" 
+                            value={editCustomColor} 
+                            onChange={setEditCustomColor} 
+                            autoComplete="off" 
+                            placeholder="#000000" 
                         />
                         <Divider />
-                        <BlockStack gap="200">
-                            <Text variant="headingSm">Swatch Customization</Text>
+                        <Text variant="headingSm">Select Image from Product</Text>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                            {editingProduct?.allImages?.map((url, i) => (
+                                <Box 
+                                    key={i} 
+                                    onClick={() => setEditCustomImageUrl(url)}
+                                    borderColor={editCustomImageUrl === url ? "border-info" : "border"} 
+                                    borderWidth={editCustomImageUrl === url ? "050" : "025"}
+                                    borderRadius="200"
+                                    overflow="hidden"
+                                    cursor="pointer"
+                                    height="60px"
+                                >
+                                    <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                </Box>
+                            ))}
+                        </div>
+                        <TextField 
+                            label="Custom Image URL" 
+                            value={editCustomImageUrl} 
+                            onChange={setEditCustomImageUrl} 
+                            autoComplete="off" 
+                            placeholder="https://..." 
+                        />
+                    </BlockStack>
+                </Modal.Section>
+            </Modal>
+            <Box paddingBlockEnd="400">
+                <BlockStack gap="200">
+                    <InlineStack gap="200" align="start" blockAlign="center">
+                        <Button icon={ChevronLeftIcon} variant="tertiary" url="/app/groups" />
+                        <Text variant="headingLg">{group.id ? "Edit product group" : "New product group"}</Text>
+                    </InlineStack>
+                    <Box paddingInlineStart="1000">
+                        <Text variant="bodyMd" tone="subdued">Combine multiple products into a single option</Text>
+                    </Box>
+                </BlockStack>
+            </Box>
 
-                            <Text tone="subdued" variant="bodySm">Select an image from this product:</Text>
-                            <div style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(7, 1fr)',
-                                gap: '8px',
-                                maxHeight: '250px',
-                                overflowY: 'auto',
-                                padding: '4px'
-                            }}>
-                                {editingProduct?.allImages?.map((url, idx) => (
-                                    <div
-                                        key={idx}
-                                        onClick={() => setEditCustomImageUrl(url)}
-                                        style={{
-                                            cursor: 'pointer',
-                                            border: editCustomImageUrl === url ? '3px solid #008060' : '1px solid #ddd',
-                                            borderRadius: '6px',
-                                            overflow: 'hidden',
-                                            backgroundColor: '#f9f9f9',
-                                            position: 'relative',
-                                            paddingBottom: '100%', // Create square ratio effectively
-                                            minWidth: 0
-                                        }}
-                                    >
-                                        <img
-                                            src={url}
-                                            alt=""
-                                            style={{
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'cover'
-                                            }}
+            <Layout>
+                {/* Main Column */}
+                <Layout.Section>
+                    <BlockStack gap="400">
+                        {actionData?.message && <Banner tone="success"><p>{actionData.message}</p></Banner>}
+                        
+                        {/* Group Info Card */}
+                        <Card>
+                            <BlockStack gap="400">
+                                <TextField
+                                    label="Product group name (optional)"
+                                    value={group.name}
+                                    onChange={(v) => {
+                                        const fd = new FormData();
+                                        fd.append("action", "updateGroupSettings");
+                                        fd.append("groupName", v);
+                                        submit(fd, { method: "POST" });
+                                    }}
+                                    helpText="For internal use only"
+                                    autoComplete="off"
+                                    maxLength={255}
+                                    suffix={<Text tone="subdued">{group.name?.length || 0}/255</Text>}
+                                />
+                                <TextField
+                                    label="Option name"
+                                    value={group.optionName || "Color"}
+                                    onChange={(v) => {
+                                        const fd = new FormData();
+                                        fd.append("action", "updateGroupSettings");
+                                        fd.append("optionName", v);
+                                        submit(fd, { method: "POST" });
+                                    }}
+                                    autoComplete="off"
+                                    maxLength={255}
+                                    suffix={<Text tone="subdued">{(group.optionName || "Color").length}/255</Text>}
+                                />
+                            </BlockStack>
+                        </Card>
+
+                        {/* Products Card */}
+                        <Card padding="0">
+                            <Box padding="400">
+                                <InlineStack align="space-between" blockAlign="center">
+                                    <Text variant="headingMd">Products</Text>
+                                    <InlineStack gap="200">
+                                        <Button icon={MagicIcon} onClick={handleAutoFill} variant="tertiary" disabled={group.products.length === 0}>Auto-fill</Button>
+                                        <Button icon={PlusCircleIcon} onClick={handleOpenResourcePicker}>Add products</Button>
+                                        <Button icon={OrderIcon} variant="tertiary" />
+                                    </InlineStack>
+                                </InlineStack>
+                            </Box>
+                            <Divider />
+                            
+                            {group.products.length === 0 ? (
+                                <Box padding="1000">
+                                    <BlockStack gap="200" align="center">
+                                        <Text variant="bodyMd" tone="subdued">No products added yet.</Text>
+                                        <Button onClick={handleOpenResourcePicker}>Add products</Button>
+                                    </BlockStack>
+                                </Box>
+                            ) : (
+                                <BlockStack>
+                                    {group.products.map((product, idx) => (
+                                        <div key={product.productId}>
+                                            <Box padding="400">
+                                                <Grid>
+                                                    <Grid.Cell columnSpan={{ xs: 1, sm: 1, md: 1, lg: 1 }}>
+                                                        <Box paddingBlockStart="400">
+                                                            <Icon source={DragHandleIcon} tone="subdued" />
+                                                        </Box>
+                                                    </Grid.Cell>
+                                                    <Grid.Cell columnSpan={{ xs: 2, sm: 2, md: 2, lg: 2 }}>
+                                                        <Thumbnail
+                                                            source={product.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"}
+                                                            size="medium"
+                                                            alt=""
+                                                        />
+                                                    </Grid.Cell>
+                                                    <Grid.Cell columnSpan={{ xs: 7, sm: 7, md: 7, lg: 7 }}>
+                                                        <BlockStack gap="200">
+                                                            <InlineStack gap="200" blockAlign="center">
+                                                                <Badge tone={product.status === "ACTIVE" ? "success" : "info"}>
+                                                                    {product.status === "ACTIVE" ? "Active" : "Draft"}
+                                                                </Badge>
+                                                                <Text fontWeight="semibold" variant="bodyMd">{product.title}</Text>
+                                                            </InlineStack>
+                                                            <InlineStack gap="200" blockAlign="center">
+                                                                <div style={{ width: '180px' }}>
+                                                                    <TextField
+                                                                        label="Option value"
+                                                                        labelHidden
+                                                                        placeholder="Option value"
+                                                                        value={product.optionValue}
+                                                                        onChange={(v) => handleUpdateField(product.productId, "optionValue", v)}
+                                                                        autoComplete="off"
+                                                                    />
+                                                                </div>
+                                                                <div style={{ width: '150px' }}>
+                                                                    <Select
+                                                                        label="Style"
+                                                                        labelHidden
+                                                                        options={[
+                                                                            { label: 'One color', value: 'one' },
+                                                                            { label: 'Two colors', value: 'two' },
+                                                                        ]}
+                                                                        value="one"
+                                                                    />
+                                                                </div>
+                                                                {/* Swatch Preview Box */}
+                                                                <Box 
+                                                                    width="34px" 
+                                                                    height="34px" 
+                                                                    background="bg-surface-secondary" 
+                                                                    borderColor="border" 
+                                                                    borderWidth="025" 
+                                                                    borderRadius="100"
+                                                                    cursor="pointer"
+                                                                    onClick={() => {
+                                                                        setEditingProduct(product);
+                                                                        setEditOptionValue(product.optionValue || "");
+                                                                        setEditCustomImageUrl(product.customImageUrl || "");
+                                                                        setEditCustomColor(product.customColor || "");
+                                                                        setShowEditModal(true);
+                                                                    }}
+                                                                >
+                                                                    <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                        {product.customColor ? (
+                                                                            <div style={{ width: '100%', height: '100%', background: product.customColor }} />
+                                                                        ) : product.customImageUrl ? (
+                                                                            <img src={product.customImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                        ) : product.image ? (
+                                                                             <img src={product.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+                                                                        ) : (
+                                                                            <div style={{ width: '100%', height: '100%', border: '1px dashed #ccc', borderRadius: '50%' }} />
+                                                                        )}
+                                                                        {!product.customColor && !product.customImageUrl && (
+                                                                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}>
+                                                                                <Text variant="bodyXs" tone="subdued">+</Text>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </Box>
+                                                            </InlineStack>
+                                                        </BlockStack>
+                                                    </Grid.Cell>
+                                                    <Grid.Cell columnSpan={{ xs: 2, sm: 2, md: 2, lg: 2 }}>
+                                                        <InlineStack gap="200" align="end">
+                                                            <Tooltip content="Preview product">
+                                                                <Button icon={ViewIcon} variant="tertiary" url={`https://${shop}/products/${product.handle}`} target="_blank" />
+                                                            </Tooltip>
+                                                            <Tooltip content="Remove">
+                                                                <Button icon={DeleteIcon} tone="critical" onClick={() => handleRemoveProduct(product.productId)} />
+                                                            </Tooltip>
+                                                        </InlineStack>
+                                                    </Grid.Cell>
+                                                </Grid>
+                                            </Box>
+                                            {idx < group.products.length - 1 && <Divider />}
+                                        </div>
+                                    ))}
+                                </BlockStack>
+                            )}
+                        </Card>
+                    </BlockStack>
+                </Layout.Section>
+
+                {/* Sidebar Column */}
+                <Layout.Section variant="oneThird">
+                    <BlockStack gap="400">
+                        {/* Group Status */}
+                        <Card>
+                            <BlockStack gap="200">
+                                <Text variant="headingSm">Group status</Text>
+                                <Select
+                                    label="Status"
+                                    labelHidden
+                                    options={[
+                                        { label: 'Active', value: 'active' },
+                                        { label: 'Draft', value: 'draft' },
+                                    ]}
+                                    value={group.status || "draft"}
+                                    onChange={handleGroupStatusChange}
+                                />
+                            </BlockStack>
+                        </Card>
+
+                        {/* Preview Product Page */}
+                        <Card>
+                            <BlockStack gap="300">
+                                <Text variant="headingSm">Preview on product page</Text>
+                                <Select
+                                    label="Selector style"
+                                    labelHidden
+                                    options={[
+                                        { label: 'Color swatch card', value: 'swatch_card' },
+                                        { label: 'Text block', value: 'block' },
+                                    ]}
+                                    value="swatch_card"
+                                />
+                                <Divider />
+                                <BlockStack gap="200">
+                                    <Text variant="bodySm" tone="subdued" fontWeight="semibold">{group.optionName || "Color"}:</Text>
+                                    <InlineStack gap="300">
+                                        <Box 
+                                            width="52px" 
+                                            height="52px" 
+                                            borderRadius="100" 
+                                            background="bg-surface-secondary" 
+                                            borderColor="border-critical" 
+                                            borderWidth="050" 
+                                            padding="100"
+                                        >
+                                            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <div style={{ width: '80%', height: '3px', background: '#ccc', transform: 'rotate(-45deg)' }} />
+                                            </div>
+                                        </Box>
+                                        <Box width="52px" height="52px" borderRadius="100" background="bg-surface-secondary" borderColor="border" borderWidth="050" />
+                                        <Box 
+                                            width="52px" 
+                                            height="52px" 
+                                            borderRadius="100" 
+                                            background="bg-fill-info" 
+                                            borderColor="border" 
+                                            borderWidth="050"
+                                            display="flex"
+                                            alignItems="center"
+                                            justifyContent="center"
+                                        >
+                                            <div style={{ position: 'absolute', bottom: '-25px', width: 'max-content' }}>
+                                                <Badge size="small">3p Fulfill</Badge>
+                                            </div>
+                                        </Box>
+                                    </InlineStack>
+                                    <Box paddingBlockStart="400" />
+                                </BlockStack>
+                            </BlockStack>
+                        </Card>
+
+                        {/* Preview Product Card */}
+                        <Card>
+                            <BlockStack gap="300">
+                                <InlineStack align="space-between" blockAlign="center">
+                                    <Text variant="headingSm">Preview on product card</Text>
+                                    <div style={{ transform: 'scale(1.2)' }}>
+                                        <Checkbox
+                                            label=""
+                                            labelHidden
+                                            checked={previewOnProductCard}
+                                            onChange={setPreviewOnProductCard}
                                         />
                                     </div>
-                                ))}
-                                {editingProduct?.allImages?.length === 0 && (
-                                    <div style={{ gridColumn: 'span 7', textAlign: 'center', padding: '20px' }}>
-                                        <Text tone="subdued">No images found for this product.</Text>
-                                    </div>
-                                )}
-                            </div>
-
-                            <TextField
-                                label="Custom Image URL"
-                                value={editCustomImageUrl}
-                                onChange={setEditCustomImageUrl}
-                                placeholder="https://example.com/image.jpg"
-                                helpText="You can also paste an external image URL here"
-                                autoComplete="off"
-                            />
-                        </BlockStack>
-                        <InlineStack gap="400" blockAlign="center">
-                            <div style={{ flex: 1 }}>
-                                <TextField
-                                    label="Custom Color (HEX)"
-                                    value={editCustomColor}
-                                    onChange={setEditCustomColor}
-                                    placeholder="#000000"
-                                    helpText="Example: #FF0000 for Red"
-                                    autoComplete="off"
+                                </InlineStack>
+                                <Select
+                                    label="Style"
+                                    labelHidden
+                                    options={[
+                                        { label: 'Color swatch', value: 'swatch' },
+                                        { label: 'Pill', value: 'pill' },
+                                    ]}
+                                    value="swatch"
                                 />
-                            </div>
-                            {editCustomColor && (
-                                <div style={{
-                                    width: '40px',
-                                    height: '40px',
-                                    borderRadius: '4px',
-                                    backgroundColor: editCustomColor,
-                                    border: '1px solid #ddd',
-                                    marginTop: '10px'
-                                }} />
-                            )}
-                        </InlineStack>
+                                <Divider />
+                                <InlineStack gap="200" blockAlign="center">
+                                    <Box 
+                                        width="18px" 
+                                        height="18px" 
+                                        borderRadius="100" 
+                                        background="bg-surface-secondary" 
+                                        borderColor="border-critical" 
+                                        borderWidth="025" 
+                                        display="flex"
+                                        alignItems="center"
+                                        justifyContent="center"
+                                    >
+                                         <div style={{ width: '80%', height: '1px', background: '#ccc', transform: 'rotate(-45deg)' }} />
+                                    </Box>
+                                    <Box width="18px" height="18px" borderRadius="100" background="bg-fill-warning" />
+                                    <Box width="18px" height="18px" borderRadius="100" background="bg-fill-info" />
+                                </InlineStack>
+                            </BlockStack>
+                        </Card>
+                    </BlockStack>
+                </Layout.Section>
+            </Layout>
+
+            {/* Sticky Footer Action Bar */}
+            <Box 
+                 padding="400" 
+                 background="bg-surface" 
+                 borderColor="border" 
+                 borderWidth="025" 
+                 position="sticky" 
+                 insetBlockEnd="0" 
+                 zIndex="10"
+                 marginBlockStart="800"
+            >
+                <InlineStack align="end">
+                    <Button variant="primary" size="large" onClick={handleSync} loading={isLoading}>Save</Button>
+                </InlineStack>
+            </Box>
+
+            {/* Swatch Edit Modal */}
+            <Modal
+                open={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                title="Edit Product Appearance"
+                primaryAction={{ content: "Save", onAction: () => {
+                    handleUpdateField(editingProduct.productId, "optionValue", editOptionValue);
+                    handleUpdateField(editingProduct.productId, "customImageUrl", editCustomImageUrl);
+                    handleUpdateField(editingProduct.productId, "customColor", editCustomColor);
+                    setShowEditModal(false);
+                }}}
+            >
+                <Modal.Section>
+                    <BlockStack gap="400">
+                        <TextField label="Option Value" value={editOptionValue} onChange={setEditOptionValue} autoComplete="off" />
+                        <TextField label="Custom Color (HEX)" value={editCustomColor} onChange={setEditCustomColor} autoComplete="off" placeholder="#000000" />
+                        <Divider />
+                        <Text variant="headingSm">Select Image from Product</Text>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                            {editingProduct?.allImages?.map((url, i) => (
+                                <Box 
+                                    key={i} 
+                                    onClick={() => setEditCustomImageUrl(url)}
+                                    borderColor={editCustomImageUrl === url ? "border-info" : "border"} 
+                                    borderWidth={editCustomImageUrl === url ? "050" : "025"}
+                                    borderRadius="200"
+                                    overflow="hidden"
+                                    cursor="pointer"
+                                    height="60px"
+                                >
+                                    <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                </Box>
+                            ))}
+                        </div>
+                        <TextField label="Custom Image URL" value={editCustomImageUrl} onChange={setEditCustomImageUrl} autoComplete="off" placeholder="https://..." />
                     </BlockStack>
                 </Modal.Section>
             </Modal>

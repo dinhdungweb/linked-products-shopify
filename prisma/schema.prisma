@@ -42,6 +42,7 @@ model ProductGroup {
   selectorStyle     String    @default("block") // swatch, variant_image, block
   syncStatus        String    @default("pending") // pending, synced, error
   inventoryBehavior String    @default("show") // hide, show
+  status            String    @default("active") // active, draft
   products          ProductGroupItem[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
