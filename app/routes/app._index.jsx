@@ -684,10 +684,12 @@ export default function Index() {
                 {/* FAQ Section */}
                 <Card>
                   <BlockStack gap="400">
-                    <InlineStack gap="200" align="start" blockAlign="center" wrap={false}>
-                      <Icon source={QuestionCircleIcon} />
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
+                      <div style={{ margin: 0, display: 'flex' }}>
+                        <Icon source={QuestionCircleIcon} />
+                      </div>
                       <Text variant="headingMd">Need help? FAQ</Text>
-                    </InlineStack>
+                    </div>
                     <BlockStack gap="200">
                        {/* FAQ 1 */}
                        <div style={{ cursor: 'pointer' }} onClick={() => toggleFaq(0)}>
