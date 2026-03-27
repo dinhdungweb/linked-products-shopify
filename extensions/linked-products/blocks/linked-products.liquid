@@ -11,29 +11,51 @@
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
   {%- assign app_settings = shop.metafields.linked_products.settings.value -%}
   
+  {%- comment -%}Fallback values for global settings{%- endcomment -%}
+  {%- assign lp_swatch_size = app_settings.swatchSize | default: 50 -%}
+  {%- assign lp_items_gap = app_settings.itemsGap | default: 8 -%}
+  {%- assign lp_border_radius = app_settings.borderRadius | default: 8 -%}
+  {%- assign lp_border_color = app_settings.borderColor | default: '#e5e5e5' -%}
+  {%- assign lp_selected_border_color = app_settings.selectedBorderColor | default: '#000000' -%}
+  {%- assign lp_border_width = app_settings.borderWidth | default: 2 -%}
+  {%- assign lp_block_padding_x = app_settings.blockPaddingX | default: 12 -%}
+  {%- assign lp_block_padding_y = app_settings.blockPaddingY | default: 8 -%}
+  {%- assign lp_block_font_size = app_settings.blockFontSize | default: 14 -%}
+  {%- assign lp_block_bg = app_settings.blockBgColor | default: '#ffffff' -%}
+  {%- assign lp_block_text = app_settings.blockTextColor | default: '#000000' -%}
+  {%- assign lp_selected_bg = app_settings.selectedBgColor | default: '#000000' -%}
+  {%- assign lp_selected_text = app_settings.selectedTextColor | default: '#ffffff' -%}
+  {%- assign lp_show_option_name = true -%}
+  {%- if app_settings.showOptionName == false -%}
+    {%- assign lp_show_option_name = false -%}
+  {%- endif -%}
+
+  {{ 'linked-products.css' | asset_url | stylesheet_tag }}
+
+  {%- comment -%}Dynamic settings: prefer metafield from admin, fallback to global app settings{%- endcomment -%}
   {%- assign meta_selector_style = product.metafields.linked_products.selector_style.value -%}
   {%- assign meta_option_name = product.metafields.linked_products.option_name.value -%}
   {%- assign active_selector_style = meta_selector_style | default: 'block' -%}
   {%- assign active_option_name = meta_option_name | default: 'Color' -%}
   
   <div class="linked-products-picker" style="
-    --lp-swatch-size: {{ app_settings.swatchSize | default: 50 }}px;
-    --lp-items-gap: {{ app_settings.itemsGap | default: 8 }}px;
-    --lp-border-radius: {{ app_settings.borderRadius | default: 8 }}px;
-    --lp-border-color: {{ app_settings.borderColor | default: '#e5e5e5' }};
-    --lp-selected-border-color: {{ app_settings.selectedBorderColor | default: '#000000' }};
-    --lp-border-width: {{ app_settings.borderWidth | default: 2 }}px;
-    --lp-block-padding-x: {{ app_settings.blockPaddingX | default: 12 }}px;
-    --lp-block-padding-y: {{ app_settings.blockPaddingY | default: 8 }}px;
-    --lp-block-font-size: {{ app_settings.blockFontSize | default: 14 }}px;
-    --lp-block-bg: {{ app_settings.blockBgColor | default: '#ffffff' }};
-    --lp-block-text: {{ app_settings.blockTextColor | default: '#000000' }};
-    --lp-selected-bg: {{ app_settings.selectedBgColor | default: '#000000' }};
-    --lp-selected-text: {{ app_settings.selectedTextColor | default: '#ffffff' }};
+    --lp-swatch-size: {{ lp_swatch_size }}px;
+    --lp-items-gap: {{ lp_items_gap }}px;
+    --lp-border-radius: {{ lp_border_radius }}px;
+    --lp-border-color: {{ lp_border_color }};
+    --lp-selected-border-color: {{ lp_selected_border_color }};
+    --lp-border-width: {{ lp_border_width }}px;
+    --lp-block-padding-x: {{ lp_block_padding_x }}px;
+    --lp-block-padding-y: {{ lp_block_padding_y }}px;
+    --lp-block-font-size: {{ lp_block_font_size }}px;
+    --lp-block-bg: {{ lp_block_bg }};
+    --lp-block-text: {{ lp_block_text }};
+    --lp-selected-bg: {{ lp_selected_bg }};
+    --lp-selected-text: {{ lp_selected_text }};
   ">
     <div class="variant-picker">
       <fieldset class="variant-picker__option">
-        {%- if app_settings.showOptionName != false and active_option_name != blank -%}
+        {%- if lp_show_option_name and active_option_name != blank -%}
           <div class="variant-picker__option-info">
             <div class="h-stack gap-2">
               {%- assign select_label = app_settings.selectOptionLabel | default: 'Select {option}' | replace: '{option}', active_option_name -%}
