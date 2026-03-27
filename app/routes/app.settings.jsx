@@ -1,5 +1,31 @@
+import { useState, useEffect, useCallback } from "react";
 import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import {
+  Page,
+  Layout,
+  Card,
+  Text,
+  BlockStack,
+  InlineStack,
+  Box,
+  TextField,
+  Checkbox,
+  Badge,
+  Button,
+  Tabs,
+  Grid,
+  Icon,
+  Banner,
+} from "@shopify/polaris";
+import {
+  SettingsIcon,
+  CheckCircleIcon,
+  ExternalIcon,
+  LanguageIcon,
+  AlertCircleIcon,
+} from "@shopify/polaris-icons";
+import { TitleBar } from "@shopify/app-bridge-react";
 import prisma from "../db.server";
 import { authenticate } from "../shopify.server";
 
@@ -100,6 +126,7 @@ export default function SettingsPage() {
   const isLoading = navigation.state !== "idle";
 
   const [selectedTab, setSelectedTab] = useState(0);
+  const [showBanner, setShowBanner] = useState(false);
 
   // Settings State
   const [settings, setSettings] = useState(initialSettings);
@@ -114,6 +141,8 @@ export default function SettingsPage() {
       formData.append(key, settings[key]);
     });
     submit(formData, { method: "post" });
+    setShowBanner(true);
+    setTimeout(() => setShowBanner(false), 3000);
   };
 
   useEffect(() => {
@@ -495,6 +524,13 @@ export default function SettingsPage() {
 
         <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab}>
           <Box paddingBlockStart="500" paddingBlockEnd="800">
+             {showBanner && (
+               <Box paddingBlockEnd="400">
+                 <Banner tone="success" onDismiss={() => setShowBanner(false)}>
+                   Settings saved successfully!
+                 </Banner>
+               </Box>
+             )}
              {selectedTab === 0 && renderSettingsTab()}
              {selectedTab === 1 && renderVisualStylesTab()}
              {selectedTab === 2 && renderThemeSetupTab()}
