@@ -35,6 +35,106 @@ import {
     ChevronDownIcon,
 } from "@shopify/polaris-icons";
 
+
+const STYLE_OPTIONS = [
+    { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch', category: 'Image Swatch' },
+    { id: 'slide_swatch', label: 'Slide swatch (Mobile only)', type: 'Image Swatch', category: 'Image Swatch' },
+    { id: 'polaroid_swatch', label: 'Polaroid swatch', type: 'Image Swatch', category: 'Image Swatch' },
+    { id: 'image_swatch_card', label: 'Image swatch card', type: 'Image Swatch', category: 'Image Swatch' },
+    { id: 'color_swatch', label: 'Color swatch', type: 'Color swatch', category: 'Color swatch' },
+    { id: 'square_color_swatch', label: 'Square color swatch', type: 'Color swatch', category: 'Color swatch' },
+    { id: 'pill_swatch', label: 'Color swatch in pill button', type: 'Color swatch', category: 'Color swatch' },
+    { id: 'color_swatch_card', label: 'Color swatch card', type: 'Color swatch', category: 'Color swatch' },
+    { id: 'button', label: 'Button', type: 'Button', category: 'Button & Label' },
+    { id: 'pill_button', label: 'Pill button', type: 'Button', category: 'Button & Label' },
+    { id: 'dropdown', label: 'Dropdown', type: 'Dropdown', category: 'Dropdown' },
+    { id: 'image_dropdown', label: 'Image swatch in dropdown', type: 'Dropdown', category: 'Dropdown' },
+];
+
+const PREVIEW_IMAGES = [
+    "https://picsum.photos/id/1027/400/500",
+    "https://picsum.photos/id/1011/400/500",
+    "https://picsum.photos/id/1059/400/500",
+    "https://picsum.photos/id/1074/400/500",
+    "https://picsum.photos/id/1084/400/500",
+    "https://picsum.photos/id/1069/400/500",
+];
+
+const PREVIEW_COLORS = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
+
+const renderSidebarPreview = (styleId, isCard = false, products = []) => {
+    const previewProducts = products.length > 0 ? products.slice(0, 6) : [
+        { optionValue: 'Beige', image: PREVIEW_IMAGES[0], customColor: PREVIEW_COLORS[0] },
+        { optionValue: 'Purple', image: PREVIEW_IMAGES[1], customColor: PREVIEW_COLORS[1] },
+        { optionValue: 'Orange', image: PREVIEW_IMAGES[2], customColor: PREVIEW_COLORS[2] },
+    ];
+
+    if (styleId === 'image_swatch') {
+        return (
+            <InlineStack gap="200" wrap={false}>
+                {previewProducts.map((p, i) => (
+                    <div key={i} style={{ 
+                        width: isCard ? '24px' : '48px', 
+                        height: isCard ? '24px' : '48px', 
+                        flexShrink: 0, 
+                        border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
+                        borderRadius: '4px',
+                        backgroundColor: '#fff',
+                        overflow: 'hidden' 
+                    }}>
+                        <img src={p.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                ))}
+            </InlineStack>
+        );
+    }
+
+    if (styleId === 'color_swatch' || styleId === 'square_color_swatch') {
+        return (
+            <InlineStack gap="150" wrap={false}>
+                {previewProducts.map((p, i) => (
+                    <div key={i} style={{
+                        width: isCard ? '16px' : '32px', 
+                        height: isCard ? '16px' : '32px', 
+                        borderRadius: styleId.includes('square') ? '2px' : '50%', 
+                        flexShrink: 0,
+                        background: p.customColor || '#f5f5dc', 
+                        border: '1px solid #ddd',
+                        outline: i === 0 ? '2px solid #000' : 'none',
+                        outlineOffset: '2px'
+                    }} />
+                ))}
+            </InlineStack>
+        );
+    }
+
+    return (
+        <InlineStack gap="150" wrap={false}>
+            {previewProducts.map((p, i) => (
+                <div key={i} style={{ padding: '4px 8px', border: i === 0 ? '2px solid #000' : '1px solid #ddd', borderRadius: '4px', fontSize: '10px', backgroundColor: i === 0 ? '#000' : '#fff', color: i === 0 ? '#fff' : '#333' }}>{p.optionValue}</div>
+            ))}
+        </InlineStack>
+    );
+};
+
+const LivePreview = ({ style, optionName, products, inventoryBehavior }) => {
+    let displayedProducts = products;
+    if (inventoryBehavior === 'hide') {
+        displayedProducts = products.filter(p => !p.variants || p.variants.some(v => v.inventory_quantity > 0));
+    }
+    
+    return (
+        <Box padding="400" background="bg-surface-secondary" borderRadius="200" borderWidth="025" borderColor="border">
+            <BlockStack gap="200">
+                <Text variant="bodySm" fontWeight="bold" tone="subdued">{optionName}:</Text>
+                <div style={{ padding: '8px 0' }}>
+                    {renderSidebarPreview(style, false, displayedProducts)}
+                </div>
+            </BlockStack>
+        </Box>
+    );
+};
+
 // Loader - Get group info and product list
 export async function loader({ request, params }) {
     const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_PRO } = await import("../shopify.server");
@@ -897,104 +997,5 @@ export default function GroupDetail() {
         </Page>
     );
 }
-const STYLE_OPTIONS = [
-    { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch', category: 'Image Swatch' },
-    { id: 'slide_swatch', label: 'Slide swatch (Mobile only)', type: 'Image Swatch', category: 'Image Swatch' },
-    { id: 'polaroid_swatch', label: 'Polaroid swatch', type: 'Image Swatch', category: 'Image Swatch' },
-    { id: 'image_swatch_card', label: 'Image swatch card', type: 'Image Swatch', category: 'Image Swatch' },
-    { id: 'color_swatch', label: 'Color swatch', type: 'Color swatch', category: 'Color swatch' },
-    { id: 'square_color_swatch', label: 'Square color swatch', type: 'Color swatch', category: 'Color swatch' },
-    { id: 'pill_swatch', label: 'Color swatch in pill button', type: 'Color swatch', category: 'Color swatch' },
-    { id: 'color_swatch_card', label: 'Color swatch card', type: 'Color swatch', category: 'Color swatch' },
-    { id: 'button', label: 'Button', type: 'Button', category: 'Button & Label' },
-    { id: 'pill_button', label: 'Pill button', type: 'Button', category: 'Button & Label' },
-    { id: 'dropdown', label: 'Dropdown', type: 'Dropdown', category: 'Dropdown' },
-    { id: 'image_dropdown', label: 'Image swatch in dropdown', type: 'Dropdown', category: 'Dropdown' },
-];
 
-const PREVIEW_IMAGES = [
-    "https://picsum.photos/id/1027/400/500",
-    "https://picsum.photos/id/1011/400/500",
-    "https://picsum.photos/id/1059/400/500",
-    "https://picsum.photos/id/1074/400/500",
-    "https://picsum.photos/id/1084/400/500",
-    "https://picsum.photos/id/1069/400/500",
-];
-
-const PREVIEW_COLORS = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
-
-const renderSidebarPreview = (styleId, isCard = false, products = []) => {
-    const previewProducts = products.length > 0 ? products.slice(0, 6) : [
-        { optionValue: 'Beige', image: PREVIEW_IMAGES[0], customColor: PREVIEW_COLORS[0] },
-        { optionValue: 'Purple', image: PREVIEW_IMAGES[1], customColor: PREVIEW_COLORS[1] },
-        { optionValue: 'Orange', image: PREVIEW_IMAGES[2], customColor: PREVIEW_COLORS[2] },
-    ];
-
-    if (styleId === 'image_swatch') {
-        return (
-            <InlineStack gap="200" wrap={false}>
-                {previewProducts.map((p, i) => (
-                    <div key={i} style={{ 
-                        width: isCard ? '24px' : '48px', 
-                        height: isCard ? '24px' : '48px', 
-                        flexShrink: 0, 
-                        border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
-                        borderRadius: '4px',
-                        backgroundColor: '#fff',
-                        overflow: 'hidden' 
-                    }}>
-                        <img src={p.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                ))}
-            </InlineStack>
-        );
-    }
-
-    if (styleId === 'color_swatch' || styleId === 'square_color_swatch') {
-        return (
-            <InlineStack gap="150" wrap={false}>
-                {previewProducts.map((p, i) => (
-                    <div key={i} style={{
-                        width: isCard ? '16px' : '32px', 
-                        height: isCard ? '16px' : '32px', 
-                        borderRadius: styleId.includes('square') ? '2px' : '50%', 
-                        flexShrink: 0,
-                        background: p.customColor || '#f5f5dc', 
-                        border: '1px solid #ddd',
-                        outline: i === 0 ? '2px solid #000' : 'none',
-                        outlineOffset: '2px'
-                    }} />
-                ))}
-            </InlineStack>
-        );
-    }
-
-    // Default basic rendering for others in preview
-    return (
-        <InlineStack gap="150" wrap={false}>
-            {previewProducts.map((p, i) => (
-                <div key={i} style={{ padding: '4px 8px', border: i === 0 ? '2px solid #000' : '1px solid #ddd', borderRadius: '4px', fontSize: '10px', backgroundColor: i === 0 ? '#000' : '#fff', color: i === 0 ? '#fff' : '#333' }}>{p.optionValue}</div>
-            ))}
-        </InlineStack>
-    );
-};
-
-const LivePreview = ({ style, optionName, products, inventoryBehavior }) => {
-    // Filter products based on inventory behavior if needed
-    let displayedProducts = products;
-    if (inventoryBehavior === 'hide') {
-        displayedProducts = products.filter(p => !p.variants || p.variants.some(v => v.inventory_quantity > 0));
-    }
-    
-    return (
-        <Box padding="400" background="bg-surface-secondary" borderRadius="200" borderWidth="025" borderColor="border">
-            <BlockStack gap="200">
-                <Text variant="bodySm" fontWeight="bold" tone="subdued">{optionName}:</Text>
-                <div style={{ padding: '8px 0' }}>
-                    {renderSidebarPreview(style, false, displayedProducts)}
-                </div>
-            </BlockStack>
-        </Box>
-    );
-};
 
