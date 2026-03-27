@@ -1162,11 +1162,7 @@ export default function GroupDetail() {
                         {/* Preview Product Page */}
                         <Card>
                             <BlockStack gap="300">
-                                <InlineStack align="space-between" blockAlign="center">
-                                    <Text variant="headingSm">Preview on product page</Text>
-                                    <Button variant="tertiary" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button>
-                                </InlineStack>
-                                <Text variant="bodySm" tone="subdued">Style: {STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Text>
+                                <Text variant="headingSm">Preview on product page</Text>
                                 <Divider />
                                 <BlockStack gap="200">
                                     <Text variant="bodySm" tone="subdued" fontWeight="semibold">{localOptionName || "Color"}:</Text>
@@ -1181,22 +1177,18 @@ export default function GroupDetail() {
                             <BlockStack gap="300">
                                 <InlineStack align="space-between" blockAlign="center">
                                     <Text variant="headingSm">Preview on product card</Text>
-                                    <InlineStack gap="200" blockAlign="center">
-                                         <Button variant="tertiary" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button>
-                                         <div style={{ transform: 'scale(1.2)' }}>
-                                            <Checkbox
-                                                label=""
-                                                labelHidden
-                                                checked={localCardSelectorStyle === "same"}
-                                                onChange={(v) => setLocalCardSelectorStyle(v ? "same" : "swatch")}
-                                            />
-                                        </div>
-                                    </InlineStack>
+                                    <div style={{ transform: 'scale(1.2)' }}>
+                                        <Checkbox
+                                            label="Same as product page"
+                                            labelHidden
+                                            checked={localCardSelectorStyle === "same"}
+                                            onChange={(v) => setLocalCardSelectorStyle(v ? "same" : "swatch")}
+                                        />
+                                    </div>
                                 </InlineStack>
-                                <Text variant="bodySm" tone="subdued">Style: {localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Text>
                                 <Divider />
                                 <LivePreview 
-                                    style={previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localSelectorStyle} 
+                                    style={previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localCardSelectorStyle} 
                                     optionName={localOptionName} 
                                     products={localProducts}
                                     inventoryBehavior={localInventoryBehavior}
