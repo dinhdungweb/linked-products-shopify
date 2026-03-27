@@ -44,6 +44,20 @@ export async function loader({ request, params }) {
     const shop = session.shop;
     const { id: groupId } = params;
 
+    if (groupId === "new") {
+        return json({
+            group: {
+                id: null,
+                name: "",
+                optionName: "Color",
+                selectorStyle: "block",
+                status: "active",
+                products: [],
+            },
+            shop: session.shop,
+        });
+    }
+
     const group = await prisma.productGroup.findUnique({
         where: { id: groupId, shop: session.shop },
         include: {
@@ -160,14 +174,29 @@ export async function action({ request, params }) {
         const productsJson = formData.get("products");
         if (!productsJson) return json({ error: "No products selected" }, { status: 400 });
         const products = JSON.parse(productsJson);
-        const maxPosition = await prisma.productGroupItem.aggregate({ where: { groupId }, _max: { position: true } });
+        
+        let targetGroupId = groupId;
+        if (groupId === "new") {
+            const newGroup = await prisma.productGroup.create({
+                data: {
+                    shop: session.shop,
+                    name: "Untitled Group",
+                    optionName: "Color",
+                    selectorStyle: "block",
+                    status: "active",
+                }
+            });
+            targetGroupId = newGroup.id;
+        }
+
+        const maxPosition = await prisma.productGroupItem.aggregate({ where: { groupId: targetGroupId }, _max: { position: true } });
         let position = (maxPosition._max.position || 0);
 
         for (const product of products) {
             position++;
             await prisma.productGroupItem.create({
                 data: {
-                    groupId,
+                    groupId: targetGroupId,
                     productId: product.id,
                     productHandle: product.handle,
                     optionValue: product.title,
@@ -175,7 +204,13 @@ export async function action({ request, params }) {
                 },
             });
         }
-        await syncGroupMetafields(groupId);
+        await syncGroupMetafields(targetGroupId);
+        
+        if (groupId === "new") {
+            const { redirect } = await import("@remix-run/node");
+            return redirect(`/app/groups/${targetGroupId}`);
+        }
+        
         return json({ success: true, message: "Products added and synced!" });
     }
 
@@ -205,6 +240,13 @@ export async function action({ request, params }) {
         const selectorStyle = formData.get("selectorStyle");
         const groupName = formData.get("groupName");
         const status = formData.get("status");
+
+        if (groupId === "new") {
+             // We don't save settings for "new" until at least some products are added or it's explicitly saved
+             // But for now, let's allow creating an empty group if needed, or just return success
+             // The "Save" button at the bottom will handle the final sync/creation
+             return json({ success: true });
+        }
 
         const updateData = {};
         if (optionName !== null) updateData.optionName = optionName;
@@ -687,45 +729,6 @@ export default function GroupDetail() {
                     <Button variant="primary" size="large" onClick={handleSync} loading={isLoading}>Save</Button>
                 </InlineStack>
             </Box>
-
-            {/* Swatch Edit Modal */}
-            <Modal
-                open={showEditModal}
-                onClose={() => setShowEditModal(false)}
-                title="Edit Product Appearance"
-                primaryAction={{ content: "Save", onAction: () => {
-                    handleUpdateField(editingProduct.productId, "optionValue", editOptionValue);
-                    handleUpdateField(editingProduct.productId, "customImageUrl", editCustomImageUrl);
-                    handleUpdateField(editingProduct.productId, "customColor", editCustomColor);
-                    setShowEditModal(false);
-                }}}
-            >
-                <Modal.Section>
-                    <BlockStack gap="400">
-                        <TextField label="Option Value" value={editOptionValue} onChange={setEditOptionValue} autoComplete="off" />
-                        <TextField label="Custom Color (HEX)" value={editCustomColor} onChange={setEditCustomColor} autoComplete="off" placeholder="#000000" />
-                        <Divider />
-                        <Text variant="headingSm">Select Image from Product</Text>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-                            {editingProduct?.allImages?.map((url, i) => (
-                                <Box 
-                                    key={i} 
-                                    onClick={() => setEditCustomImageUrl(url)}
-                                    borderColor={editCustomImageUrl === url ? "border-info" : "border"} 
-                                    borderWidth={editCustomImageUrl === url ? "050" : "025"}
-                                    borderRadius="200"
-                                    overflow="hidden"
-                                    cursor="pointer"
-                                    height="60px"
-                                >
-                                    <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                </Box>
-                            ))}
-                        </div>
-                        <TextField label="Custom Image URL" value={editCustomImageUrl} onChange={setEditCustomImageUrl} autoComplete="off" placeholder="https://..." />
-                    </BlockStack>
-                </Modal.Section>
-            </Modal>
         </Page>
     );
 }
