@@ -40,7 +40,9 @@ import {
   QuestionCircleIcon,
   PlusCircleIcon,
   AutomationIcon,
-  InfoIcon
+  InfoIcon,
+  PlusIcon,
+  MinusIcon
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
@@ -682,7 +684,7 @@ export default function Index() {
                 {/* FAQ Section */}
                 <Card>
                   <BlockStack gap="400">
-                    <InlineStack gap="200" blockAlign="center" wrap={false}>
+                    <InlineStack gap="200" align="start" blockAlign="center" wrap={false}>
                       <Icon source={QuestionCircleIcon} />
                       <Text variant="headingMd">Need help? FAQ</Text>
                     </InlineStack>
@@ -692,7 +694,7 @@ export default function Index() {
                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
                            <InlineStack align="space-between">
                              <Text variant="bodyMd" fontWeight="semibold">Can I change the position of the options?</Text>
-                             <Icon source={openFaq === 0 ? "minus" : "plus"} size="extraSmall" />
+                             <Icon source={openFaq === 0 ? MinusIcon : PlusIcon} size="extraSmall" />
                            </InlineStack>
                          </Box>
                        </div>
@@ -707,7 +709,7 @@ export default function Index() {
                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
                            <InlineStack align="space-between">
                              <Text variant="bodyMd" fontWeight="semibold">How do I show options on collection pages?</Text>
-                             <Icon source={openFaq === 1 ? "minus" : "plus"} size="extraSmall" />
+                             <Icon source={openFaq === 1 ? MinusIcon : PlusIcon} size="extraSmall" />
                            </InlineStack>
                          </Box>
                        </div>
@@ -722,7 +724,7 @@ export default function Index() {
                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
                            <InlineStack align="space-between">
                              <Text variant="bodyMd" fontWeight="semibold">Can a product belong to multiple groups?</Text>
-                             <Icon source={openFaq === 2 ? "minus" : "plus"} size="extraSmall" />
+                             <Icon source={openFaq === 2 ? MinusIcon : PlusIcon} size="extraSmall" />
                            </InlineStack>
                          </Box>
                        </div>
