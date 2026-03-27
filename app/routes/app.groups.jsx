@@ -22,17 +22,30 @@ import {
   Tooltip,
   ProgressBar,
   Icon,
+  Grid,
+  Tabs,
 } from "@shopify/polaris";
-import { XIcon, SearchIcon, ViewIcon, DeleteIcon, ImportIcon } from "@shopify/polaris-icons";
+import { 
+  XIcon, 
+  SearchIcon, 
+  ViewIcon, 
+  DeleteIcon, 
+  ImportIcon, 
+  ExportIcon, 
+  PlusIcon,
+  FilterIcon,
+  QuestionCircleIcon,
+} from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 
-// Loader
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
+  const { getUsageInfo } = await import("../billing.server");
 
   const { session } = await authenticate.admin(request);
   const shop = session.shop;
+  const usageInfo = await getUsageInfo(shop);
 
   const groups = await prisma.productGroup.findMany({
     where: { shop: shop },
@@ -42,7 +55,9 @@ export async function loader({ request }) {
     orderBy: { createdAt: "desc" },
   });
 
-  return json({ groups, shop: shop });
+  const totalProducts = groups.reduce((acc, group) => acc + group._count.products, 0);
+
+  return json({ groups, shop: shop, usageInfo, totalProducts });
 }
 
 // Action (copied from index for delete/import support here too)
@@ -104,11 +119,14 @@ export async function action({ request }) {
 }
 
 export default function GroupsPage() {
-  const { groups } = useLoaderData();
+  const { groups, usageInfo, totalProducts } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
   const shopify = useAppBridge();
+
+  const [selectedTab, setSelectedTab] = useState(0);
+  const handleTabChange = useCallback((selectedTabIndex) => setSelectedTab(selectedTabIndex), []);
 
   const [actionBannerVisible, setActionBannerVisible] = useState(true);
   useEffect(() => { if (actionData) setActionBannerVisible(true); }, [actionData]);
@@ -124,6 +142,13 @@ export default function GroupsPage() {
     }
   }, [submit]);
 
+  const tabs = [
+    { id: 'all', content: 'All', accessibilityLabel: 'All product groups', panelID: 'all-groups-panel' },
+    { id: 'single', content: 'Single option', panelID: 'single-option-panel' },
+    { id: 'multi', content: 'Multi option', panelID: 'multi-option-panel' },
+    { id: 'subcategory', content: 'Subcategory', panelID: 'subcategory-panel' },
+  ];
+
   const getSyncStatusBadge = (status) => {
     switch (status) {
       case "synced": return <Badge tone="success">Synced</Badge>;
@@ -133,87 +158,147 @@ export default function GroupsPage() {
   };
 
   return (
-    <Page title="Product Groups">
-      <TitleBar title="Product Groups">
-        <button variant="primary" onClick={() => window.location.href = "/app"}>
-          Create Group
-        </button>
-      </TitleBar>
-
-      <Layout>
-        <Layout.Section>
-          <BlockStack gap="400">
-            {actionData?.success && actionBannerVisible && (
-              <Banner tone="success" onDismiss={() => setActionBannerVisible(false)}>
-                <p>{actionData.message}</p>
-              </Banner>
-            )}
-
-            {groups.length === 0 ? (
-              <Card>
-                <EmptyState
-                  heading="No product groups found"
-                  action={{
-                    content: "Create your first group",
-                    url: "/app",
-                  }}
-                  image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-                >
-                  <p>Check your dashboard or use automations to create groups.</p>
-                </EmptyState>
-              </Card>
-            ) : (
-              <Card padding="0">
-                <IndexTable
-                  resourceName={{ singular: "group", plural: "groups" }}
-                  itemCount={groups.length}
-                  headings={[
-                    { title: "Group Name" },
-                    { title: "Products" },
-                    { title: "Status" },
-                    { title: "Actions", alignment: "end" },
-                  ]}
-                  selectable={false}
-                >
-                  {groups.map((group, index) => (
-                    <IndexTable.Row id={group.id} key={group.id} position={index}>
-                      <IndexTable.Cell>
-                        <div style={{ maxWidth: '300px' }}>
-                          <Text variant="bodyMd" fontWeight="bold" truncate>
-                            <Link to={`/app/groups/${group.id}`}>{group.name}</Link>
-                          </Text>
-                        </div>
-                      </IndexTable.Cell>
-                      <IndexTable.Cell>{group._count.products}</IndexTable.Cell>
-                      <IndexTable.Cell>{getSyncStatusBadge(group.syncStatus)}</IndexTable.Cell>
-                      <IndexTable.Cell>
-                        <InlineStack gap="100" align="end">
-                          <Tooltip content="View details">
-                            <Button
-                              icon={ViewIcon}
-                              url={`/app/groups/${group.id}`}
-                              accessibilityLabel="View group"
-                            />
-                          </Tooltip>
-                          <Tooltip content="Delete group">
-                            <Button
-                              icon={DeleteIcon}
-                              tone="critical"
-                              onClick={() => handleDeleteGroup(group.id)}
-                              loading={isLoading && navigation.formData?.get("groupId") === group.id}
-                              accessibilityLabel="Delete group"
-                            />
-                          </Tooltip>
-                        </InlineStack>
-                      </IndexTable.Cell>
-                    </IndexTable.Row>
-                  ))}
-                </IndexTable>
-              </Card>
-            )}
+    <Page fullWidth>
+      <TitleBar title="Product groups" />
+      
+      <BlockStack gap="500">
+        {/* Header Section */}
+        <InlineStack align="space-between" blockAlign="start">
+          <BlockStack gap="100">
+            <Text variant="headingXl">Product groups</Text>
+            <Text variant="bodyMd" tone="subdued">Product groups combine multiple product listings into variant options.</Text>
           </BlockStack>
-        </Layout.Section>
-      </Layout>
+          <InlineStack gap="200">
+             <Button icon={ExportIcon}>Export</Button>
+             <Button icon={ImportIcon}>Import</Button>
+             <Button icon={PlusIcon}>Bulk update options</Button>
+             <Button variant="primary" url="/app" icon={PlusIcon}>Create group</Button>
+          </InlineStack>
+        </InlineStack>
+
+        {/* Stats Bar */}
+        <Grid>
+          <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
+            <Card>
+              <BlockStack gap="100">
+                 <Text variant="headingSm">Created product groups</Text>
+                 <Text variant="headingLg">{groups.length} groups</Text>
+              </BlockStack>
+            </Card>
+          </Grid.Cell>
+          <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
+            <Card>
+              <BlockStack gap="100">
+                 <Text variant="headingSm">Remaining product groups</Text>
+                 <InlineStack gap="200">
+                    <Text variant="headingLg">{usageInfo.limit === Infinity ? "Unlimited" : usageInfo.limit - groups.length} groups</Text>
+                    <Link to="/app/pricing" style={{ color: '#005bd3', textDecoration: 'none', fontSize: '14px', alignSelf: 'center' }}>Upgrade</Link>
+                 </InlineStack>
+              </BlockStack>
+            </Card>
+          </Grid.Cell>
+          <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
+            <Card>
+              <BlockStack gap="100">
+                 <Text variant="headingSm">Total products</Text>
+                 <Text variant="headingLg">{totalProducts} products</Text>
+              </BlockStack>
+            </Card>
+          </Grid.Cell>
+        </Grid>
+
+        {/* Groups Content */}
+        <Card padding="0">
+          <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange}>
+             <Box padding="400">
+                <InlineStack align="space-between" blockAlign="center">
+                   <div style={{ flex: 1, marginRight: '20px' }}>
+                      <TextField
+                        placeholder="Search groups"
+                        prefix={<Icon source={SearchIcon} />}
+                        autoComplete="off"
+                      />
+                   </div>
+                   <Button icon={FilterIcon} />
+                </InlineStack>
+             </Box>
+             <Divider />
+             
+             {groups.length === 0 ? (
+               <Box padding="1000">
+                 <BlockStack gap="500" align="center">
+                    <Thumbnail
+                      source="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+                      size="large"
+                      alt="Empty groups"
+                    />
+                    <BlockStack gap="200" align="center">
+                       <Text variant="headingMd" alignment="center">Product groups</Text>
+                       <Text variant="bodyMd" tone="subdued" alignment="center">
+                         Create a product group to link listings together. <Link to="/app/help">Learn more</Link>
+                       </Text>
+                    </BlockStack>
+                    <Button variant="primary" url="/app">Create group</Button>
+                 </BlockStack>
+               </Box>
+             ) : (
+               <IndexTable
+                 resourceName={{ singular: "group", plural: "groups" }}
+                 itemCount={groups.length}
+                 headings={[
+                   { title: "Group Name" },
+                   { title: "Products" },
+                   { title: "Status" },
+                   { title: "Actions", alignment: "end" },
+                 ]}
+                 selectable={false}
+               >
+                 {groups.map((group, index) => (
+                   <IndexTable.Row id={group.id} key={group.id} position={index}>
+                     <IndexTable.Cell>
+                       <div style={{ maxWidth: '300px' }}>
+                         <Text variant="bodyMd" fontWeight="bold" truncate>
+                           <Link to={`/app/groups/${group.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>{group.name}</Link>
+                         </Text>
+                       </div>
+                     </IndexTable.Cell>
+                     <IndexTable.Cell>{group._count.products}</IndexTable.Cell>
+                     <IndexTable.Cell>{getSyncStatusBadge(group.syncStatus)}</IndexTable.Cell>
+                     <IndexTable.Cell>
+                       <InlineStack gap="100" align="end">
+                         <Tooltip content="View details">
+                           <Button
+                             icon={ViewIcon}
+                             url={`/app/groups/${group.id}`}
+                             accessibilityLabel="View group"
+                           />
+                         </Tooltip>
+                         <Tooltip content="Delete group">
+                           <Button
+                             icon={DeleteIcon}
+                             tone="critical"
+                             onClick={() => handleDeleteGroup(group.id)}
+                             loading={isLoading && navigation.formData?.get("groupId") === group.id}
+                             accessibilityLabel="Delete group"
+                           />
+                         </Tooltip>
+                       </InlineStack>
+                     </IndexTable.Cell>
+                   </IndexTable.Row>
+                 ))}
+               </IndexTable>
+             )}
+          </Tabs>
+        </Card>
+
+        {/* Footer */}
+        <Box paddingBlockEnd="400">
+           <InlineStack align="center" gap="100">
+             <Icon source={QuestionCircleIcon} tone="base" />
+             <Link to="/app/help" style={{ textDecoration: 'none', color: '#005bd3', fontWeight: '500' }}>Help Center</Link>
+           </InlineStack>
+        </Box>
+      </BlockStack>
     </Page>
   );
 }
