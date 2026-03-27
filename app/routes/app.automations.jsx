@@ -24,7 +24,7 @@ import {
   Tabs,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { DeleteIcon, PlayIcon, PauseIcon } from "@shopify/polaris-icons";
+import { DeleteIcon, PlayIcon, PauseCircleIcon } from "@shopify/polaris-icons";
 
 // Loader
 export async function loader({ request }) {
@@ -603,7 +603,7 @@ export default function AutomationsPage() {
                             </Tooltip>
                             <Tooltip content={rule.status === "active" ? "Pause" : "Activate"}>
                               <Button
-                                icon={PauseIcon}
+                                icon={PauseCircleIcon}
                                 size="slim"
                                 onClick={() => handleToggleRule(rule.id)}
                                 accessibilityLabel="Toggle rule"
