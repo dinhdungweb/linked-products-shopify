@@ -32,6 +32,7 @@ import {
     OrderIcon,
     ViewIcon,
     DragHandleIcon,
+    ChevronDownIcon,
 } from "@shopify/polaris-icons";
 
 // Loader - Get group info and product list
