@@ -232,13 +232,17 @@ export async function action({ request, params }) {
 
     if (actionType === "updateProductItem") {
         const productId = formData.get("productId");
+        const updateData = {};
+        
+        if (formData.has("optionValue")) updateData.optionValue = formData.get("optionValue");
+        if (formData.has("customImageUrl")) updateData.customImageUrl = formData.get("customImageUrl");
+        if (formData.has("customColor")) updateData.customColor = formData.get("customColor");
+
+        console.log(`[Update Item] Product: ${productId}, Data:`, updateData);
+
         await prisma.productGroupItem.update({
             where: { groupId_productId: { groupId, productId } },
-            data: {
-                optionValue: formData.get("optionValue"),
-                customImageUrl: formData.get("customImageUrl") || null,
-                customColor: formData.get("customColor") || null,
-            },
+            data: updateData,
         });
         await syncGroupMetafields(groupId);
         return json({ success: true });
@@ -358,12 +362,7 @@ export default function GroupDetail() {
         const formData = new FormData();
         formData.append("action", "updateProductItem");
         formData.append("productId", productId);
-        
-        const item = group.products.find(p => p.productId === productId);
-        formData.append("optionValue", field === "optionValue" ? value : (item.optionValue || ""));
-        formData.append("customImageUrl", field === "customImageUrl" ? value : (item.customImageUrl || ""));
-        formData.append("customColor", field === "customColor" ? value : (item.customColor || ""));
-        
+        formData.append(field, value);
         submit(formData, { method: "POST" });
     };
 
