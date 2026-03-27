@@ -724,6 +724,12 @@ export default function GroupDetail() {
         setLocalProducts(group.products || []);
     }, [group]);
 
+    useEffect(() => {
+        if (actionData?.success && actionData?.message) {
+            shopify.toast.show(actionData.message, { duration: 3000 });
+        }
+    }, [actionData, shopify]);
+
     const isLoading = navigation.state !== "idle";
 
     const handleOpenResourcePicker = useCallback(async () => {
@@ -948,8 +954,6 @@ export default function GroupDetail() {
                 {/* Main Column */}
                 <Layout.Section>
                     <BlockStack gap="400">
-                        {actionData?.message && <Banner tone="success"><p>{actionData.message}</p></Banner>}
-                        
                         {/* Group Info Card */}
                         <Card>
                             <BlockStack gap="400">
@@ -1215,7 +1219,7 @@ export default function GroupDetail() {
                 <InlineStack align="space-between" blockAlign="center">
                     <Button variant="primary" tone="critical" onClick={handleDeleteGroup} loading={isLoading && navigation.formData?.get("action") === "deleteGroup"}>Delete</Button>
                     <InlineStack gap="300">
-                        <Button variant="primary" size="large" onClick={handleSync} loading={isLoading && navigation.formData?.get("action") === "sync"}>Save</Button>
+                        <Button variant="primary" size="large" onClick={handleSync} loading={isLoading && navigation.formData?.get("action") === "saveAll"}>Save</Button>
                     </InlineStack>
                 </InlineStack>
             </Box>
