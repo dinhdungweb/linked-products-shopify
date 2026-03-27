@@ -589,7 +589,7 @@ export default function Index() {
                     />
                     
                     <div style={{ marginTop: "10px" }}>
-                      <InlineStack gap="400" align="start" blockAlign="center">
+                      <InlineStack gap="400" align="start" blockAlign="center" wrap={false}>
                         <Box background={groups.length > 0 ? "bg-surface-success" : "bg-surface-secondary"} padding="200" borderRadius="200">
                           <Icon source={ClipboardChecklistIcon} tone={groups.length > 0 ? "success" : "base"} />
                         </Box>
@@ -609,7 +609,7 @@ export default function Index() {
                     
                     <Divider />
                     
-                    <InlineStack gap="400" align="start" blockAlign="center">
+                    <InlineStack gap="400" align="start" blockAlign="center" wrap={false}>
                       <Box background="bg-surface-secondary" padding="200" borderRadius="200">
                         <Icon source={InfoIcon} />
                       </Box>
