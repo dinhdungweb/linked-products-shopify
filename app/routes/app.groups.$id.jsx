@@ -411,7 +411,7 @@ export default function GroupDetail() {
         if (styleId === 'slide_swatch') {
             return (
                 <InlineStack gap="200" wrap={false}>
-                    {products.slice(0, 3).map((p, i) => (
+                    {products.map((p, i) => (
                         <div key={i} style={{ 
                             width: isCard ? '50px' : '80px', 
                             flexShrink: 0, 
@@ -438,7 +438,7 @@ export default function GroupDetail() {
         if (styleId === 'polaroid_swatch') {
             return (
                 <InlineStack gap="200" wrap={false}>
-                    {products.slice(0, 4).map((p, i) => (
+                    {products.map((p, i) => (
                         <div key={i} style={{ 
                             padding: isCard ? '2px' : '4px', 
                             backgroundColor: '#fff', 
@@ -455,7 +455,7 @@ export default function GroupDetail() {
             );
         }
 
-        if (styleId.includes('color_swatch') || styleId === 'swatch_card' || styleId === 'color_swatch_card') {
+        if (styleId === 'color_swatch' || styleId === 'square_color_swatch') {
             return (
                 <InlineStack gap="150" wrap={false}>
                     {products.map((p, i) => (
@@ -466,7 +466,7 @@ export default function GroupDetail() {
                             flexShrink: 0,
                             background: p.customColor || '#f5f5dc', 
                             border: '1px solid #ddd',
-                            outline: i === 0 ? '2px solid #5c6ac4' : 'none',
+                            outline: i === 0 ? '2px solid #000' : 'none',
                             outlineOffset: '2px'
                         }} />
                     ))}
@@ -474,24 +474,74 @@ export default function GroupDetail() {
             );
         }
 
-        if (styleId.includes('button') || styleId === 'pill_swatch') {
+        if (styleId === 'pill_swatch') {
             return (
                 <InlineStack gap="150" wrap={false}>
-                    {products.slice(0, 3).map((p, i) => (
+                    {products.map((p, i) => (
                         <div key={i} style={{ 
-                            padding: isCard ? '2px 6px' : '6px 12px', 
+                            padding: isCard ? '4px 8px' : '6px 12px', 
+                            border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
+                            backgroundColor: '#fff', 
+                            borderRadius: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}>
+                            <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: p.customColor || '#ccc' }} />
+                            <span style={{ fontSize: isCard ? '10px' : '12px' }}>{p.optionValue}</span>
+                        </div>
+                    ))}
+                </InlineStack>
+            );
+        }
+
+        if (styleId === 'button' || styleId === 'pill_button') {
+            return (
+                <InlineStack gap="150" wrap={false}>
+                    {products.map((p, i) => (
+                        <div key={i} style={{ 
+                            padding: isCard ? '4px 8px' : '8px 16px', 
                             border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
                             backgroundColor: i === 0 ? '#000' : '#fff', 
                             color: i === 0 ? '#fff' : '#000', 
                             fontSize: isCard ? '10px' : '12px', 
-                            borderRadius: (styleId.includes('pill') || styleId === 'pill_swatch') ? '20px' : '4px',
-                            fontWeight: i === 0 ? 'bold' : 'normal',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
+                            borderRadius: styleId === 'pill_button' ? '20px' : '4px',
+                            fontWeight: i === 0 ? 'bold' : 'normal'
                         }}>
-                            {styleId === 'pill_swatch' && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.customColor || '#ccc' }} />}
-                            {p.optionValue || "Value"}
+                            {p.optionValue}
+                        </div>
+                    ))}
+                </InlineStack>
+            );
+        }
+
+        if (styleId.includes('card')) {
+             return (
+                <InlineStack gap="200" wrap={false}>
+                    {products.map((p, i) => (
+                        <div key={i} style={{ 
+                            width: isCard ? '60px' : '80px', 
+                            flexShrink: 0, 
+                            border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
+                            borderRadius: '8px', 
+                            backgroundColor: '#fff', 
+                            padding: '8px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}>
+                            <div style={{ 
+                                width: isCard ? '30px' : '40px', 
+                                height: isCard ? '30px' : '40px', 
+                                borderRadius: styleId.includes('color') ? '50%' : '4px', 
+                                backgroundColor: p.customColor || '#f4f4f4',
+                                overflow: 'hidden',
+                                border: '1px solid #eee'
+                            }}>
+                                {styleId.includes('image') && <img src={p.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                            </div>
+                            <div style={{ fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textAlign: 'center', width: '100%' }}>{p.optionValue}</div>
                         </div>
                     ))}
                 </InlineStack>
@@ -500,10 +550,10 @@ export default function GroupDetail() {
 
         if (styleId.includes('dropdown')) {
             return (
-                <div style={{ width: '100%', padding: isCard ? '4px 8px' : '10px 14px', border: '1px solid #8c9196', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
+                <div style={{ width: '100%', maxWidth: '240px', padding: isCard ? '6px 12px' : '10px 14px', border: '2px solid #000', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
                     <InlineStack gap="200" blockAlign="center">
-                        {styleId === 'image_dropdown' && <img src={products[0].image} alt="" style={{ width: '20px', height: '20px', borderRadius: '2px' }} />}
-                        <span style={{ fontSize: isCard ? '12px' : '14px' }}>{products[0].optionValue || "Select..."}</span>
+                        {styleId === 'image_dropdown' && <img src={products[0].image} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px' }} />}
+                        <span style={{ fontSize: isCard ? '12px' : '14px', fontWeight: '600' }}>{products[0].optionValue || "Select..." || products[0].title}</span>
                     </InlineStack>
                     <Icon source={ChevronDownIcon} tone="base" />
                 </div>
@@ -513,8 +563,8 @@ export default function GroupDetail() {
         // Fallback to text blocks
         return (
             <InlineStack gap="150" wrap={false}>
-                {products.slice(0, 4).map((p, i) => (
-                    <div key={i} style={{ padding: '4px 8px', border: i === 0 ? '2px solid #000' : '1px solid #ddd', borderRadius: '4px', fontSize: '12px' }}>{p.optionValue}</div>
+                {products.map((p, i) => (
+                    <div key={i} style={{ padding: '8px 16px', border: i === 0 ? '2px solid #000' : '1px solid #ddd', borderRadius: '4px', fontSize: '12px', backgroundColor: i === 0 ? '#000' : '#fff', color: i === 0 ? '#fff' : '#333' }}>{p.optionValue}</div>
                 ))}
             </InlineStack>
         );
@@ -559,7 +609,7 @@ export default function GroupDetail() {
 
         if (styleId === 'slide_swatch') return (
             <InlineStack gap="200" wrap={false}>
-                {['Beige Brown', 'Black White', 'Red Rose'].map((name, i) => (
+                {['Beige Brown', 'Black White', 'Red Rose', 'Teal Lily', 'Yellow Bloom', 'Purple Mini'].map((name, i) => (
                     <div key={i} style={{ width: '70px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff', overflow: 'hidden' }}>
                         <div style={{ width: '100%', height: '80px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <img src={PREVIEW_IMAGES[i]} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }} />
@@ -575,7 +625,7 @@ export default function GroupDetail() {
 
         if (styleId === 'polaroid_swatch') return (
             <InlineStack gap="200" wrap={false}>
-                {PREVIEW_IMAGES.slice(0, 4).map((img, i) => (
+                {PREVIEW_IMAGES.map((img, i) => (
                     <div key={i} style={{ padding: '4px', backgroundColor: '#fff', border: i === 1 ? '2px solid #000' : '1px solid #ccc', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                         <div style={{ width: '40px', height: '48px', overflow: 'hidden' }}>
                             <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -598,7 +648,7 @@ export default function GroupDetail() {
 
         if (styleId === 'pill_swatch') return (
             <InlineStack gap="200" wrap={false}>
-                {['Beige', 'Purple', 'Orange'].map((text, i) => (
+                {['Beige', 'Purple', 'Orange', 'Green', 'Yellow', 'Black'].map((text, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', flexShrink: 0, borderRadius: '20px', backgroundColor: '#fff', border: i === 1 ? '2px solid #000' : '1px solid #ccc' }}>
                         <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: PREVIEW_COLORS[i] }} />
                         <span style={{ fontSize: '12px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{text}</span>
@@ -609,7 +659,7 @@ export default function GroupDetail() {
 
         if (styleId === 'button' || styleId === 'pill_button') return (
             <InlineStack gap="200" wrap={false}>
-                {['Beige', 'Dark blue', 'Green'].map((n, i) => (
+                {['Beige', 'Dark blue', 'Green', 'Yellow', 'Black', 'Red'].map((n, i) => (
                     <div key={n} style={{ padding: '8px 16px', border: i === 1 ? '2px solid #000' : '1px solid #ccc', backgroundColor: i === 1 ? '#000' : '#fff', color: i === 1 ? '#fff' : '#000', fontSize: '13px', borderRadius: styleId === 'pill_button' ? '20px' : '4px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{n}</div>
                 ))}
             </InlineStack>
@@ -634,7 +684,7 @@ export default function GroupDetail() {
 
         if (styleId === 'image_swatch_card' || styleId === 'color_swatch_card') return (
             <InlineStack gap="200" wrap={false}>
-                {['Beige', 'Purple', 'Orange'].map((name, i) => (
+                {['Beige', 'Purple', 'Orange', 'Green', 'Yellow', 'Black'].map((name, i) => (
                     <div key={i} style={{ padding: '8px', border: i === 1 ? '1px solid #000' : '1px solid #ccc', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                         <div style={{ width: styleId === 'image_swatch_card' ? '40px' : '32px', height: styleId === 'image_swatch_card' ? '40px' : '32px', borderRadius: '50%', overflow: 'hidden', backgroundColor: PREVIEW_COLORS[i], border: '1px solid #ddd' }}>
                             {styleId === 'image_swatch_card' && <img src={PREVIEW_IMAGES[i]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
