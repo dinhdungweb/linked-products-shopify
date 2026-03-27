@@ -753,20 +753,24 @@ export default function Index() {
                 <InlineStack gap="400" wrap={false}>
                   <Box flex="1">
                     <Card>
-                      <BlockStack gap="200" align="center">
-                        <Icon source={EmailIcon} tone="info" />
-                        <Text variant="headingSm">Get email support</Text>
-                        <Text variant="bodySm" alignment="center">Email us and we'll get back to you as soon as possible.</Text>
+                      <BlockStack gap="200" align="start">
+                        <InlineStack gap="200" align="start" blockAlign="center">
+                          <Icon source={EmailIcon} tone="info" />
+                          <Text variant="headingSm">Get email support</Text>
+                        </InlineStack>
+                        <Text variant="bodySm" alignment="start">Email us and we'll get back to you as soon as possible.</Text>
                         <Button variant="plain" url="mailto:support@example.com">Contact us</Button>
                       </BlockStack>
                     </Card>
                   </Box>
                   <Box flex="1">
                     <Card>
-                      <BlockStack gap="200" align="center">
-                        <Icon source={ChatIcon} tone="info" />
-                        <Text variant="headingSm">Start live chat</Text>
-                        <Text variant="bodySm" alignment="center">Chat with us for a quick solution to your questions.</Text>
+                      <BlockStack gap="200" align="start">
+                        <InlineStack gap="200" align="start" blockAlign="center">
+                          <Icon source={ChatIcon} tone="info" />
+                          <Text variant="headingSm">Start live chat</Text>
+                        </InlineStack>
+                        <Text variant="bodySm" alignment="start">Chat with us for a quick solution to your questions.</Text>
                         <Button variant="plain">Chat now</Button>
                       </BlockStack>
                     </Card>
