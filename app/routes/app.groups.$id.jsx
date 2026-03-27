@@ -1107,10 +1107,12 @@ export default function GroupDetail() {
                         {/* Group Status */}
                         <Card>
                             <BlockStack gap="200">
-                                <Text variant="headingSm">Group status</Text>
-                                <Badge tone={localStatus === "active" ? "success" : "info"}>
-                                    {localStatus === "active" ? "Active" : "Draft"}
-                                </Badge>
+                                <InlineStack align="space-between" blockAlign="center">
+                                    <Text variant="headingSm">Group status</Text>
+                                    <Badge tone={localStatus === "active" ? "success" : "info"}>
+                                        {localStatus === "active" ? "Active" : "Draft"}
+                                    </Badge>
+                                </InlineStack>
                                 <Select
                                     label="Group Status"
                                     labelHidden
