@@ -41,7 +41,9 @@ export default function OptionStylesPage() {
     "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400&q=80",
     "https://images.unsplash.com/photo-1502716115624-b56573c11516?w=400&q=80",
     "https://images.unsplash.com/photo-1434389674669-e08b4cac3105?w=400&q=80",
-    "https://images.unsplash.com/photo-1485230895905-efec09beab9b?w=400&q=80"
+    "https://images.unsplash.com/photo-1485230895905-efec09beab9b?w=400&q=80",
+    "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=400&q=80",
+    "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&q=80"
   ];
   
   const colors = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
@@ -62,7 +64,7 @@ export default function OptionStylesPage() {
       </Box>
       <Divider />
       <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
-         <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflowX: 'auto', paddingBottom: '4px' }}>
+         <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflowX: 'auto', paddingBottom: '4px' }}>
            {previewNode}
          </div>
       </div>
@@ -86,7 +88,7 @@ export default function OptionStylesPage() {
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'hidden' }}>
         <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '150px' }}>
-           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflowX: 'hidden' }}>
+           <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflowX: 'hidden' }}>
              {previewNode}
            </div>
         </div>
@@ -103,7 +105,7 @@ export default function OptionStylesPage() {
 
   // --- PREVIEW NODES ---
   const imageSwatchPreview = (
-    <InlineStack gap="200" wrap={false}>
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
       {images.map((img, i) => (
         <div key={i} style={{ width: '48px', height: '48px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', overflow: 'hidden' }}>
           <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -113,15 +115,22 @@ export default function OptionStylesPage() {
   );
 
   const slideSwatchPreview = (
-    <InlineStack gap="200" wrap={false}>
-      {['Beige Brown', 'Black White', 'Red Rose', 'Teal Lily'].map((name, i) => (
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
+      {[
+        {name: 'Beige Brown', price: '$12.88'},
+        {name: 'Black White', price: '$15.99'},
+        {name: 'Red Rose', price: '$19.99'},
+        {name: 'Teal Lily', price: '$24.99'},
+        {name: 'Yellow Bloom', price: '$18.50'},
+        {name: 'Purple Mini', price: '$22.00'}
+      ].map((item, i) => (
         <div key={i} style={{ width: '70px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff', overflow: 'hidden' }}>
-          <div style={{ width: '100%', height: '80px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={images[i]} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '100%', height: '80px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+            <img src={images[i]} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ padding: '4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '10px', fontWeight: 'bold' }}>{name}</div>
-            <div style={{ fontSize: '10px', color: '#666' }}>$15.99</div>
+            <div style={{ fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+            <div style={{ fontSize: '10px', color: '#666' }}>{item.price}</div>
           </div>
         </div>
       ))}
@@ -129,11 +138,11 @@ export default function OptionStylesPage() {
   );
 
   const polaroidSwatchPreview = (
-    <InlineStack gap="200" wrap={false}>
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
       {images.map((img, i) => (
         <div key={i} style={{ padding: '4px', backgroundColor: '#fff', border: i === 1 ? '2px solid #000' : '1px solid #ccc', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ width: '40px', height: '48px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={img} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '40px', height: '48px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflow: 'hidden' }}>
+            <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
         </div>
       ))}
@@ -141,7 +150,7 @@ export default function OptionStylesPage() {
   );
 
   const colorSwatchPreview = (
-    <InlineStack gap="200" align="start">
+    <InlineStack gap="200" align="start" blockAlign="start">
       {colors.map((color, i) => (
         <div key={i} style={{ 
           width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
@@ -155,7 +164,7 @@ export default function OptionStylesPage() {
   );
 
   const squareColorSwatchPreview = (
-    <InlineStack gap="200" align="start">
+    <InlineStack gap="200" align="start" blockAlign="start">
       {colors.map((color, i) => (
         <div key={i} style={{ 
           width: '32px', height: '32px', borderRadius: '4px', flexShrink: 0,
@@ -169,14 +178,14 @@ export default function OptionStylesPage() {
   );
 
   const colorPillPreview = (
-    <InlineStack gap="200" wrap={false}>
-      {['Beige', 'Purple', 'Orange', 'Green'].map((text, i) => (
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
+      {['Beige', 'Purple', 'Orange', 'Green', 'Yellow', 'Black', 'Red'].map((text, i) => (
         <div key={i} style={{ 
           display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', flexShrink: 0,
           borderRadius: '20px', backgroundColor: '#fff',
           border: i === 1 ? '2px solid #000' : '1px solid #ccc'
         }}>
-          <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: colors[i] }} />
+          <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: colors[i] || '#000' }} />
           <span style={{ fontSize: '12px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{text}</span>
         </div>
       ))}
@@ -184,22 +193,26 @@ export default function OptionStylesPage() {
   );
 
   const buttonPreview = (
-    <InlineStack gap="200" wrap={false}>
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
       <div style={{ padding: '8px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px' }}>Beige</div>
       <div style={{ padding: '8px 16px', border: '2px solid #000', backgroundColor: '#000', color: '#fff', fontSize: '13px', fontWeight: 'bold' }}>Dark blue</div>
       <div style={{ padding: '8px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px' }}>Green</div>
       <div style={{ padding: '8px 16px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#999', fontSize: '13px', textDecoration: 'line-through' }}>Yellow</div>
       <div style={{ padding: '8px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px' }}>Black</div>
+      <div style={{ padding: '8px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px' }}>Red</div>
+      <div style={{ padding: '8px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px' }}>White</div>
     </InlineStack>
   );
 
   const pillButtonPreview = (
-    <InlineStack gap="200" wrap={false}>
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
       <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>Beige</div>
       <div style={{ padding: '6px 16px', border: '2px solid #000', backgroundColor: '#000', color: '#fff', fontSize: '13px', fontWeight: 'bold', borderRadius: '20px' }}>Dark blue</div>
       <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>Green</div>
       <div style={{ padding: '6px 16px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#999', fontSize: '13px', textDecoration: 'line-through', borderRadius: '20px' }}>Yellow</div>
       <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>Black</div>
+      <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>Red</div>
+      <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>White</div>
     </InlineStack>
   );
 
