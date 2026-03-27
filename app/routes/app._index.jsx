@@ -694,10 +694,10 @@ export default function Index() {
                        {/* FAQ 1 */}
                        <div style={{ cursor: 'pointer' }} onClick={() => toggleFaq(0)}>
                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                           <InlineStack align="space-between">
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                              <Text variant="bodyMd" fontWeight="semibold">Can I change the position of the options?</Text>
                              <Icon source={openFaq === 0 ? MinusIcon : PlusIcon} size="extraSmall" />
-                           </InlineStack>
+                           </div>
                          </Box>
                        </div>
                        {openFaq === 0 && (
@@ -709,10 +709,10 @@ export default function Index() {
                        {/* FAQ 2 */}
                        <div style={{ cursor: 'pointer' }} onClick={() => toggleFaq(1)}>
                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                           <InlineStack align="space-between">
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                              <Text variant="bodyMd" fontWeight="semibold">How do I show options on collection pages?</Text>
                              <Icon source={openFaq === 1 ? MinusIcon : PlusIcon} size="extraSmall" />
-                           </InlineStack>
+                           </div>
                          </Box>
                        </div>
                        {openFaq === 1 && (
@@ -724,10 +724,10 @@ export default function Index() {
                        {/* FAQ 3 */}
                        <div style={{ cursor: 'pointer' }} onClick={() => toggleFaq(2)}>
                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                           <InlineStack align="space-between">
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                              <Text variant="bodyMd" fontWeight="semibold">Can a product belong to multiple groups?</Text>
                              <Icon source={openFaq === 2 ? MinusIcon : PlusIcon} size="extraSmall" />
-                           </InlineStack>
+                           </div>
                          </Box>
                        </div>
                        {openFaq === 2 && (
