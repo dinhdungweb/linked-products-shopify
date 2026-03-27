@@ -212,23 +212,31 @@
 
 /* Card Style (Image/Color) */
 .linked-option--card {
+  display: inline-flex !important;
   flex-direction: column;
-  padding: 8px !important;
+  padding: 10px 8px !important;
   gap: 8px;
   background: #fff;
+  min-width: 80px;
+  align-items: center;
 }
 
 .linked-option--card .card-media {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   overflow: hidden;
-  border: 1px solid #ddd;
+  border: 1px solid rgba(0,0,0,0.1);
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .linked-option--card .card-media.is-color {
   background-size: cover;
+  background-position: center;
 }
 
 .linked-option--card .card-media img {
@@ -239,7 +247,13 @@
 
 .linked-option--card .card-label {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .linked-option--swatch .swatch-bg--color {
