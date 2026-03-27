@@ -36,16 +36,16 @@ export default function OptionStylesPage() {
   ];
 
   const images = [
-    "https://picsum.photos/id/1027/400/400",
-    "https://picsum.photos/id/1011/400/400",
-    "https://picsum.photos/id/1059/400/400",
-    "https://picsum.photos/id/1074/400/400",
-    "https://picsum.photos/id/1084/400/400",
-    "https://picsum.photos/id/1069/400/400",
-    "https://picsum.photos/id/1062/400/400",
-    "https://picsum.photos/id/1012/400/400"
+    "https://picsum.photos/id/1027/400/500",
+    "https://picsum.photos/id/1011/400/500",
+    "https://picsum.photos/id/1059/400/500",
+    "https://picsum.photos/id/1074/400/500",
+    "https://picsum.photos/id/1084/400/500",
+    "https://picsum.photos/id/1069/400/500",
+    "https://picsum.photos/id/1062/400/500",
+    "https://picsum.photos/id/1012/400/500"
   ];
-  
+
   const colors = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
 
   const renderStyleCard = (title, previewNode) => (
@@ -64,9 +64,9 @@ export default function OptionStylesPage() {
       </Box>
       <Divider />
       <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
-         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', overflowX: 'auto', paddingBottom: '4px' }}>
-           {previewNode}
-         </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflowX: 'auto', paddingBottom: '4px' }}>
+          {previewNode}
+        </div>
       </div>
     </div>
   );
@@ -84,19 +84,19 @@ export default function OptionStylesPage() {
         </div>
       );
     }
-    
+
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'hidden' }}>
         <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '150px' }}>
-           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', overflowX: 'hidden' }}>
-             {previewNode}
-           </div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflowX: 'hidden' }}>
+            {previewNode}
+          </div>
         </div>
         <Divider />
         <Box padding="300">
           <InlineStack align="space-between" blockAlign="center">
-             <Text variant="headingSm" as="h3">{title}</Text>
-             <Button icon={PlusIcon} size="micro">Add</Button>
+            <Text variant="headingSm" as="h3">{title}</Text>
+            <Button icon={PlusIcon} size="micro">Add</Button>
           </InlineStack>
         </Box>
       </div>
@@ -117,12 +117,12 @@ export default function OptionStylesPage() {
   const slideSwatchPreview = (
     <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
       {[
-        {name: 'Beige Brown', price: '$12.88'},
-        {name: 'Black White', price: '$15.99'},
-        {name: 'Red Rose', price: '$19.99'},
-        {name: 'Teal Lily', price: '$24.99'},
-        {name: 'Yellow Bloom', price: '$18.50'},
-        {name: 'Purple Mini', price: '$22.00'}
+        { name: 'Beige Brown', price: '$12.88' },
+        { name: 'Black White', price: '$15.99' },
+        { name: 'Red Rose', price: '$19.99' },
+        { name: 'Teal Lily', price: '$24.99' },
+        { name: 'Yellow Bloom', price: '$18.50' },
+        { name: 'Purple Mini', price: '$22.00' }
       ].map((item, i) => (
         <div key={i} style={{ width: '70px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff', overflow: 'hidden' }}>
           <div style={{ width: '100%', height: '80px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
@@ -153,10 +153,10 @@ export default function OptionStylesPage() {
     <div style={{ padding: '4px' }}>
       <InlineStack gap="200" align="start" blockAlign="start">
         {colors.map((color, i) => (
-          <div key={i} style={{ 
+          <div key={i} style={{
             width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
-            background: color, 
-            border: '2px solid #fff', 
+            background: color,
+            border: '2px solid #fff',
             outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd',
             outlineOffset: '2px'
           }} />
@@ -169,10 +169,10 @@ export default function OptionStylesPage() {
     <div style={{ padding: '4px' }}>
       <InlineStack gap="200" align="start" blockAlign="start">
         {colors.map((color, i) => (
-          <div key={i} style={{ 
+          <div key={i} style={{
             width: '32px', height: '32px', borderRadius: '4px', flexShrink: 0,
-            background: color, 
-            border: '2px solid #fff', 
+            background: color,
+            border: '2px solid #fff',
             outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd',
             outlineOffset: '2px'
           }} />
@@ -184,7 +184,7 @@ export default function OptionStylesPage() {
   const colorPillPreview = (
     <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
       {['Beige', 'Purple', 'Orange', 'Green', 'Yellow', 'Black', 'Red'].map((text, i) => (
-        <div key={i} style={{ 
+        <div key={i} style={{
           display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', flexShrink: 0,
           borderRadius: '20px', backgroundColor: '#fff',
           border: i === 1 ? '2px solid #000' : '1px solid #ccc'
@@ -240,12 +240,12 @@ export default function OptionStylesPage() {
   const imageSwatchCardPreview = (
     <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
       {[
-        {name: 'Beige Brown', price: '$12.88'},
-        {name: 'Black White', price: '$15.99'},
-        {name: 'Red Rose', price: '$19.99'},
-        {name: 'Teal Lily', price: '$19.99'},
-        {name: 'Yellow Bloom', price: '$18.50'},
-        {name: 'Purple Mini', price: '$22.00'},
+        { name: 'Beige Brown', price: '$12.88' },
+        { name: 'Black White', price: '$15.99' },
+        { name: 'Red Rose', price: '$19.99' },
+        { name: 'Teal Lily', price: '$19.99' },
+        { name: 'Yellow Bloom', price: '$18.50' },
+        { name: 'Purple Mini', price: '$22.00' },
       ].map((item, i) => (
         <div key={i} style={{ padding: '8px', border: i === 1 ? '1px solid #000' : '1px solid #ccc', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -274,108 +274,108 @@ export default function OptionStylesPage() {
   return (
     <Page fullWidth>
       <TitleBar title="Option styles" />
-      
+
       <BlockStack gap="600">
         {/* Header Section */}
         <BlockStack gap="200">
-           <Text variant="headingXl">Option styles</Text>
-           <Text variant="bodyMd" tone="subdued">Customize your product page and product card options.</Text>
+          <Text variant="headingXl">Option styles</Text>
+          <Text variant="bodyMd" tone="subdued">Customize your product page and product card options.</Text>
         </BlockStack>
 
         <Box paddingBlockEnd="200">
-           <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
-           <Divider />
+          <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
+          <Divider />
         </Box>
 
         {/* My Styles Section */}
         <BlockStack gap="400">
-           <InlineStack align="space-between" blockAlign="start">
-             <BlockStack gap="100">
-                <Text variant="headingLg">My styles</Text>
-                <Text variant="bodyMd" tone="subdued">Manage and customize your option styles on your product page.</Text>
-             </BlockStack>
-             <div style={{ width: '120px' }}>
-                <Select
-                  options={filterOptions}
-                  onChange={handleFilterChange}
-                  value={selectedFilter}
-                />
-             </div>
-           </InlineStack>
+          <InlineStack align="space-between" blockAlign="start">
+            <BlockStack gap="100">
+              <Text variant="headingLg">My styles</Text>
+              <Text variant="bodyMd" tone="subdued">Manage and customize your option styles on your product page.</Text>
+            </BlockStack>
+            <div style={{ width: '120px' }}>
+              <Select
+                options={filterOptions}
+                onChange={handleFilterChange}
+                value={selectedFilter}
+              />
+            </div>
+          </InlineStack>
 
-           <Grid>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-               {renderStyleCard("Image swatch", imageSwatchPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-               {renderStyleCard("Slide swatch (Mobile only)", slideSwatchPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-               {renderStyleCard("Polaroid swatch", polaroidSwatchPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-               {renderStyleCard("Color swatch", colorSwatchPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-               {renderStyleCard("Square color swatch", squareColorSwatchPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-               {renderStyleCard("Color swatch in pill button", colorPillPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-               {renderStyleCard("Button", buttonPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-               {renderStyleCard("Pill button", pillButtonPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-               {renderStyleCard("Dropdown", dropdownPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-               {renderStyleCard("Image swatch in dropdown", imageDropdownPreview)}
-             </Grid.Cell>
-           </Grid>
+          <Grid>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("Image swatch", imageSwatchPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("Slide swatch (Mobile only)", slideSwatchPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("Polaroid swatch", polaroidSwatchPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("Color swatch", colorSwatchPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("Square color swatch", squareColorSwatchPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("Color swatch in pill button", colorPillPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("Button", buttonPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("Pill button", pillButtonPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("Dropdown", dropdownPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("Image swatch in dropdown", imageDropdownPreview)}
+            </Grid.Cell>
+          </Grid>
         </BlockStack>
 
         <Box paddingBlockStart="200" paddingBlockEnd="200">
-           <Divider />
+          <Divider />
         </Box>
 
         {/* Explore More Styles Section */}
         <BlockStack gap="400">
-           <BlockStack gap="100">
-              <Text variant="headingLg">Explore more styles</Text>
-              <Text variant="bodyMd" tone="subdued">Discover more product page styles to fit your brand.</Text>
-           </BlockStack>
+          <BlockStack gap="100">
+            <Text variant="headingLg">Explore more styles</Text>
+            <Text variant="bodyMd" tone="subdued">Discover more product page styles to fit your brand.</Text>
+          </BlockStack>
 
-           <Grid>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-               {renderExploreCard("Slide swatch (Mobile only)", slideSwatchPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-               {renderExploreCard("Image swatch card", imageSwatchCardPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-               {renderExploreCard("Polaroid swatch", polaroidSwatchPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-               {renderExploreCard("Color swatch card", colorSwatchCardPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-               {renderExploreCard("Button", buttonPreview)}
-             </Grid.Cell>
-             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-               {renderExploreCard("Find more styles", null, true)}
-             </Grid.Cell>
-           </Grid>
+          <Grid>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
+              {renderExploreCard("Slide swatch (Mobile only)", slideSwatchPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
+              {renderExploreCard("Image swatch card", imageSwatchCardPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
+              {renderExploreCard("Polaroid swatch", polaroidSwatchPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
+              {renderExploreCard("Color swatch card", colorSwatchCardPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
+              {renderExploreCard("Button", buttonPreview)}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
+              {renderExploreCard("Find more styles", null, true)}
+            </Grid.Cell>
+          </Grid>
         </BlockStack>
 
         {/* Footer */}
         <Box paddingBlockEnd="600" paddingBlockStart="400">
-           <InlineStack align="center" gap="100">
-             <Icon source={QuestionCircleIcon} tone="base" />
-             <a href="#" style={{ textDecoration: 'none', color: '#005bd3', fontWeight: '500' }}>Help Center</a>
-           </InlineStack>
+          <InlineStack align="center" gap="100">
+            <Icon source={QuestionCircleIcon} tone="base" />
+            <a href="#" style={{ textDecoration: 'none', color: '#005bd3', fontWeight: '500' }}>Help Center</a>
+          </InlineStack>
         </Box>
       </BlockStack>
     </Page>
