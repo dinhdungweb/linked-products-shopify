@@ -764,15 +764,19 @@ const ColorPickerPopover = ({ color, onChange }) => {
         <Popover
             active={active}
             activator={
-                <Box
-                    width="34px"
-                    height="34px"
-                    background="bg-surface-secondary"
-                    borderColor="border"
-                    borderWidth="025"
-                    borderRadius="100"
-                    cursor="pointer"
+                <div
                     onClick={toggleActive}
+                    style={{ 
+                        width: '34px', 
+                        height: '34px', 
+                        minWidth: '34px',
+                        background: '#f4f4f4',
+                        border: '1px solid #dcdcdc',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        flexShrink: 0
+                    }}
                 >
                     <div style={{ 
                         width: '100%', 
@@ -781,7 +785,7 @@ const ColorPickerPopover = ({ color, onChange }) => {
                         background: color || '#000000',
                         border: '1px solid rgba(0,0,0,0.1)'
                     }} />
-                </Box>
+                </div>
             }
             onClose={toggleActive}
         >
@@ -814,15 +818,22 @@ const ImagePickerPopover = ({ imageUrl, onChange, productImages = [] }) => {
         <Popover
             active={active}
             activator={
-                <Box
-                    width="34px"
-                    height="34px"
-                    background="bg-surface-secondary"
-                    borderColor="border"
-                    borderWidth="025"
-                    borderRadius="100"
-                    cursor="pointer"
+                <div
                     onClick={toggleActive}
+                    style={{ 
+                        width: '34px', 
+                        height: '34px', 
+                        minWidth: '34px',
+                        background: '#f4f4f4',
+                        border: '1px solid #dcdcdc',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                    }}
                 >
                     <div style={{ 
                         width: '100%', 
@@ -840,7 +851,7 @@ const ImagePickerPopover = ({ imageUrl, onChange, productImages = [] }) => {
                             <Text variant="bodyXs" tone="subdued">+</Text>
                         )}
                     </div>
-                </Box>
+                </div>
             }
             onClose={toggleActive}
         >
