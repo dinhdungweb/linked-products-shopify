@@ -1081,10 +1081,10 @@ export default function GroupDetail() {
                                                         flexDirection: 'column', 
                                                         backgroundColor: 'var(--p-color-bg-surface, #fff)', 
                                                         borderRadius: 'var(--p-border-radius-200, 8px)', 
-                                                        boxShadow: (selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? 'var(--p-shadow-300, 0 4px 12px rgba(0,0,0,0.15))' : 'var(--p-shadow-100, 0 1px 2px rgba(0,0,0,0.05))', 
+                                                        boxShadow: (selectingFor === "productPage" ? localSelectorStyle : localCardSelectorStyle) === style.id ? 'var(--p-shadow-300, 0 4px 12px rgba(0,0,0,0.15))' : 'var(--p-shadow-100, 0 1px 2px rgba(0,0,0,0.05))', 
                                                         overflow: 'hidden',
                                                         cursor: 'pointer',
-                                                        border: (selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? '2px solid var(--p-color-border-info, #008060)' : '1px solid var(--p-color-border-subdued, #ebebeb)',
+                                                        border: (selectingFor === "productPage" ? localSelectorStyle : localCardSelectorStyle) === style.id ? '2px solid var(--p-color-border-info, #008060)' : '1px solid var(--p-color-border-subdued, #ebebeb)',
                                                         transition: 'all 0.15s ease'
                                                     }}
                                                 >
@@ -1092,7 +1092,7 @@ export default function GroupDetail() {
                                                         <InlineStack align="space-between" blockAlign="center">
                                                             <InlineStack gap="200" blockAlign="center">
                                                                 <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                    {(selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#008060' }} />}
+                                                                    {(selectingFor === "productPage" ? localSelectorStyle : localCardSelectorStyle) === style.id && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#008060' }} />}
                                                                 </div>
                                                                 <BlockStack gap="050">
                                                                     <Text variant="headingSm" as="h3">{style.label}</Text>
