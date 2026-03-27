@@ -36,18 +36,18 @@ export default function OptionStylesPage() {
   ];
 
   const images = [
-    "https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png",
-    "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_extra_small.png",
-    "https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png",
-    "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_extra_small.png",
-    "https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png",
-    "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_extra_small.png"
+    "https://images.unsplash.com/photo-1515347619362-73bc3ee01db1?w=400&q=80",
+    "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=400&q=80",
+    "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400&q=80",
+    "https://images.unsplash.com/photo-1502716115624-b56573c11516?w=400&q=80",
+    "https://images.unsplash.com/photo-1434389674669-e08b4cac3105?w=400&q=80",
+    "https://images.unsplash.com/photo-1485230895905-efec09beab9b?w=400&q=80"
   ];
   
   const colors = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
 
   const renderStyleCard = (title, previewNode) => (
-    <Card padding="0">
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'hidden' }}>
       <Box padding="300">
         <InlineStack align="space-between" blockAlign="center">
           <InlineStack gap="200" blockAlign="center">
@@ -61,18 +61,18 @@ export default function OptionStylesPage() {
         </InlineStack>
       </Box>
       <Divider />
-      <Box padding="400" minHeight="120px" background="bg-surface-secondary">
-        <div style={{ overflowX: 'auto', paddingBottom: '4px' }}>
-          {previewNode}
-        </div>
-      </Box>
-    </Card>
+      <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
+         <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflowX: 'auto', paddingBottom: '4px' }}>
+           {previewNode}
+         </div>
+      </div>
+    </div>
   );
 
   const renderExploreCard = (title, previewNode, asDarkCard = false) => {
     if (asDarkCard) {
       return (
-        <div style={{ backgroundColor: '#4a4a4a', color: 'white', borderRadius: '8px', padding: '24px', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ backgroundColor: '#4a4a4a', color: 'white', borderRadius: '8px', padding: '24px', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <Icon source={StoreIcon} tone="textInverse" />
           <Text variant="headingMd" tone="textInverse">Find more styles</Text>
           <Text variant="bodyMd" tone="textInverse">Discover more product page styles to fit your brand, including color swatch, image swatch, button, dropdown.</Text>
@@ -84,12 +84,12 @@ export default function OptionStylesPage() {
     }
     
     return (
-      <Card padding="0">
-        <Box padding="400" minHeight="150px" background="bg-surface-secondary">
-           <div style={{ overflowX: 'hidden' }}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'hidden' }}>
+        <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '150px' }}>
+           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflowX: 'hidden' }}>
              {previewNode}
            </div>
-        </Box>
+        </div>
         <Divider />
         <Box padding="300">
           <InlineStack align="space-between" blockAlign="center">
@@ -97,7 +97,7 @@ export default function OptionStylesPage() {
              <Button icon={PlusIcon} size="micro">Add</Button>
           </InlineStack>
         </Box>
-      </Card>
+      </div>
     );
   };
 
