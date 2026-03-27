@@ -69,12 +69,10 @@
           <div class="variant-picker__dropdown-container" data-style="{{ active_selector_style }}">
               <div class="lp-dropdown">
                   <div class="lp-dropdown__selected" onclick="this.nextElementSibling.classList.toggle('show')">
-                      <div class="lp-dropdown__item">
-                          {%- if active_selector_style == 'image_dropdown' -%}
-                              <img src="{{ product.featured_image | image_url: width: 60 }}" alt="" class="lp-dropdown__img" width="32" height="32">
-                          {%- endif -%}
-                          <span class="lp-dropdown__text">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
-                      </div>
+                      {%- if active_selector_style == 'image_dropdown' -%}
+                          <img src="{{ product.featured_image | image_url: width: 60 }}" alt="" class="lp-dropdown__img" width="32" height="32">
+                      {%- endif -%}
+                      <span class="lp-dropdown__text">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
                       <svg class="lp-dropdown__icon" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   </div>
                   <div class="lp-dropdown__options">
