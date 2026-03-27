@@ -654,24 +654,7 @@ export default function Index() {
 
                 {/* What's New & Status */}
                 <Grid>
-                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                    <Card>
-                      <BlockStack gap="300">
-                        <InlineStack gap="200" blockAlign="center">
-                          <Icon source={MegaphoneIcon} />
-                          <Text variant="headingMd">What's new? 📢</Text>
-                        </InlineStack>
-                        <BlockStack gap="200">
-                          <Text variant="bodyMd">• <b>New:</b> Multi-option automation via product tags.</Text>
-                          <Text variant="bodyMd">• <b>New:</b> Dropdown style for high-variant products.</Text>
-                          <Text variant="bodyMd">• <b>New:</b> Collection page swatches support (Theme App Extension).</Text>
-                          <Text variant="bodyMd">• <b>Improved:</b> Bulk group creation via CSV Import.</Text>
-                          <Button variant="plain" url="/app/help">View all updates</Button>
-                        </BlockStack>
-                      </BlockStack>
-                    </Card>
-                  </Grid.Cell>
-                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 12, lg: 12, xl: 12 }}>
                      <Card>
                         <BlockStack gap="300">
                           <Text variant="headingMd">App status</Text>
@@ -726,17 +709,6 @@ export default function Index() {
                        <Button variant="plain" url="/app/help">View all FAQs</Button>
                     </BlockStack>
                   </BlockStack>
-                </Card>
-
-                {/* Affiliate Banner */}
-                <Card background="bg-surface-secondary">
-                  <InlineStack align="space-between" blockAlign="center">
-                     <BlockStack gap="200">
-                        <Text variant="headingMd">Join our affiliate program</Text>
-                        <Text variant="bodyMd" tone="subdued">Sign up now to earn 20% commission for 12 months for every store you refer.</Text>
-                     </BlockStack>
-                     <Button variant="primary">Join Program</Button>
-                  </InlineStack>
                 </Card>
 
                 {/* Support Cards */}
