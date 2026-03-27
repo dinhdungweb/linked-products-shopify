@@ -295,6 +295,49 @@ export async function action({ request, params }) {
         return json({ success: true, message: "Option values auto-filled!" });
     }
 
+    if (actionType === "saveAll") {
+        const groupName = formData.get("groupName");
+        const optionName = formData.get("optionName");
+        const selectorStyle = formData.get("selectorStyle");
+        const cardSelectorStyle = formData.get("cardSelectorStyle");
+        const inventoryBehavior = formData.get("inventoryBehavior");
+        const status = formData.get("status");
+        const productsJson = formData.get("products");
+
+        await prisma.$transaction(async (tx) => {
+            // 1. Update Group Settings
+            await tx.productGroup.update({
+                where: { id: groupId },
+                data: {
+                    name: groupName,
+                    optionName: optionName,
+                    selectorStyle: selectorStyle,
+                    cardSelectorStyle: cardSelectorStyle,
+                    inventoryBehavior: inventoryBehavior,
+                    status: status,
+                }
+            });
+
+            // 2. Update Product Items
+            if (productsJson) {
+                const products = JSON.parse(productsJson);
+                for (const item of products) {
+                    await tx.productGroupItem.update({
+                        where: { groupId_productId: { groupId, productId: item.productId } },
+                        data: {
+                            optionValue: item.optionValue,
+                            customImageUrl: item.customImageUrl || null,
+                            customColor: item.customColor || null,
+                        }
+                    });
+                }
+            }
+        });
+
+        await syncGroupMetafields(groupId);
+        return json({ success: true, message: "All changes saved and synced!" });
+    }
+
     if (actionType === "sync") {
         await syncGroupMetafields(groupId);
         return json({ success: true, message: "Synced successfully!" });
@@ -323,18 +366,25 @@ export default function GroupDetail() {
     // UI State for Preview
     const [previewOnProductCard, setPreviewOnProductCard] = useState(true);
 
-    // Local state for inputs to avoid focus loss on every keystroke
+    // Local state for all group settings (Classic Save Pattern)
     const [localGroupName, setLocalGroupName] = useState(group.name || "");
     const [localOptionName, setLocalOptionName] = useState(group.optionName || "Color");
-    const [localOptionValues, setLocalOptionValues] = useState({});
+    const [localSelectorStyle, setLocalSelectorStyle] = useState(group.selectorStyle || "block");
+    const [localCardSelectorStyle, setLocalCardSelectorStyle] = useState(group.cardSelectorStyle || "swatch");
+    const [localInventoryBehavior, setLocalInventoryBehavior] = useState(group.inventoryBehavior || "show");
+    const [localStatus, setLocalStatus] = useState(group.status || "active");
+    const [localProducts, setLocalProducts] = useState(group.products || []);
 
-    // Sync local state when group data changes (e.g. after a save or from another action)
+    // Sync local state when group data changes from server (Loader refresh)
     useEffect(() => {
         setLocalGroupName(group.name || "");
         setLocalOptionName(group.optionName || "Color");
-        // Clear local item overrides to sync with server values
-        setLocalOptionValues({});
-    }, [group.name, group.optionName, group.products]);
+        setLocalSelectorStyle(group.selectorStyle || "block");
+        setLocalCardSelectorStyle(group.cardSelectorStyle || "swatch");
+        setLocalInventoryBehavior(group.inventoryBehavior || "show");
+        setLocalStatus(group.status || "active");
+        setLocalProducts(group.products || []);
+    }, [group]);
 
     const isLoading = navigation.state !== "idle";
 
@@ -359,25 +409,13 @@ export default function GroupDetail() {
     };
 
     const handleUpdateField = (productId, field, value) => {
-        const formData = new FormData();
-        formData.append("action", "updateProductItem");
-        formData.append("productId", productId);
-        formData.append(field, value);
-        submit(formData, { method: "POST" });
-    };
-
-    const handleFieldBlur = (field, value) => {
-        const formData = new FormData();
-        formData.append("action", "updateGroupSettings");
-        formData.append(field, value);
-        submit(formData, { method: "POST" });
+        setLocalProducts(prev => prev.map(p => 
+            p.productId === productId ? { ...p, [field]: value } : p
+        ));
     };
 
     const handleGroupStatusChange = (value) => {
-        const formData = new FormData();
-        formData.append("action", "updateGroupSettings");
-        formData.append("status", value);
-        submit(formData, { method: "POST" });
+        setLocalStatus(value);
     };
 
     const handleAutoFill = () => {
@@ -388,7 +426,23 @@ export default function GroupDetail() {
 
     const handleSync = () => {
         const formData = new FormData();
-        formData.append("action", "sync");
+        formData.append("action", "saveAll");
+        formData.append("groupName", localGroupName);
+        formData.append("optionName", localOptionName);
+        formData.append("selectorStyle", localSelectorStyle);
+        formData.append("cardSelectorStyle", localCardSelectorStyle);
+        formData.append("inventoryBehavior", localInventoryBehavior);
+        formData.append("status", localStatus);
+        
+        // Prepare products list for saving
+        const productsToSave = localProducts.map(p => ({
+            productId: p.productId,
+            optionValue: p.optionValue,
+            customImageUrl: p.customImageUrl,
+            customColor: p.customColor
+        }));
+        formData.append("products", JSON.stringify(productsToSave));
+
         submit(formData, { method: "POST" });
     };
 
@@ -400,14 +454,11 @@ export default function GroupDetail() {
     };
 
     const handleStyleSelect = (styleId) => {
-        const formData = new FormData();
-        formData.append("action", "updateGroupSettings");
         if (selectingFor === "productPage") {
-            formData.append("selectorStyle", styleId);
+            setLocalSelectorStyle(styleId);
         } else {
-            formData.append("cardSelectorStyle", styleId);
+            setLocalCardSelectorStyle(styleId);
         }
-        submit(formData, { method: "POST" });
         setShowStyleModal(false);
     };
 
@@ -887,7 +938,6 @@ export default function GroupDetail() {
                                     label="Product group name (optional)"
                                     value={localGroupName}
                                     onChange={setLocalGroupName}
-                                    onBlur={() => handleFieldBlur("groupName", localGroupName)}
                                     helpText="For internal use only"
                                     autoComplete="off"
                                     maxLength={255}
@@ -897,7 +947,6 @@ export default function GroupDetail() {
                                     label="Option name"
                                     value={localOptionName}
                                     onChange={setLocalOptionName}
-                                    onBlur={() => handleFieldBlur("optionName", localOptionName)}
                                     autoComplete="off"
                                     maxLength={255}
                                     suffix={<Text tone="subdued">{localOptionName.length}/255</Text>}
@@ -911,7 +960,7 @@ export default function GroupDetail() {
                                 <InlineStack align="space-between" blockAlign="center">
                                     <Text variant="headingMd">Products</Text>
                                     <InlineStack gap="200">
-                                        <Button icon={MagicIcon} onClick={handleAutoFill} variant="tertiary" disabled={group.products.length === 0}>Auto-fill</Button>
+                                        <Button icon={MagicIcon} onClick={handleAutoFill} variant="tertiary" disabled={localProducts.length === 0}>Auto-fill</Button>
                                         <Button icon={PlusCircleIcon} onClick={handleOpenResourcePicker}>Add products</Button>
                                         <Button icon={OrderIcon} variant="tertiary" />
                                     </InlineStack>
@@ -919,7 +968,7 @@ export default function GroupDetail() {
                             </Box>
                             <Divider />
                             
-                            {group.products.length === 0 ? (
+                            {localProducts.length === 0 ? (
                                 <Box padding="1000">
                                     <BlockStack gap="200" align="center">
                                         <Text variant="bodyMd" tone="subdued">No products added yet.</Text>
@@ -928,7 +977,7 @@ export default function GroupDetail() {
                                 </Box>
                             ) : (
                                 <BlockStack>
-                                    {group.products.map((product, idx) => (
+                                    {localProducts.map((product, idx) => (
                                         <div key={product.productId}>
                                             <Box padding="400">
                                                 <Grid>
@@ -958,13 +1007,8 @@ export default function GroupDetail() {
                                                                         label="Option value"
                                                                         labelHidden
                                                                         placeholder="Option value"
-                                                                        value={localOptionValues[product.productId] !== undefined ? localOptionValues[product.productId] : (product.optionValue || "")}
-                                                                        onChange={(v) => setLocalOptionValues(prev => ({ ...prev, [product.productId]: v }))}
-                                                                        onBlur={() => {
-                                                                            if (localOptionValues[product.productId] !== undefined) {
-                                                                                handleUpdateField(product.productId, "optionValue", localOptionValues[product.productId]);
-                                                                            }
-                                                                        }}
+                                                                        value={product.optionValue || ""}
+                                                                        onChange={(v) => handleUpdateField(product.productId, "optionValue", v)}
                                                                         autoComplete="off"
                                                                     />
                                                                 </div>
@@ -976,7 +1020,8 @@ export default function GroupDetail() {
                                                                             { label: 'One color', value: 'one' },
                                                                             { label: 'Two colors', value: 'two' },
                                                                         ]}
-                                                                        value="one"
+                                                                        value={product.style || "one"}
+                                                                        onChange={(v) => handleUpdateField(product.productId, "style", v)}
                                                                     />
                                                                 </div>
                                                                 {/* Swatch Preview Box */}
@@ -1028,7 +1073,7 @@ export default function GroupDetail() {
                                                     </Grid.Cell>
                                                 </Grid>
                                             </Box>
-                                            {idx < group.products.length - 1 && <Divider />}
+                                            {idx < localProducts.length - 1 && <Divider />}
                                         </div>
                                     ))}
                                 </BlockStack>
@@ -1044,16 +1089,54 @@ export default function GroupDetail() {
                         <Card>
                             <BlockStack gap="200">
                                 <Text variant="headingSm">Group status</Text>
+                                <Badge tone={localStatus === "active" ? "success" : "info"}>
+                                    {localStatus === "active" ? "Active" : "Draft"}
+                                </Badge>
                                 <Select
-                                    label="Status"
+                                    label="Group Status"
                                     labelHidden
                                     options={[
                                         { label: 'Active', value: 'active' },
                                         { label: 'Draft', value: 'draft' },
                                     ]}
-                                    value={group.status || "draft"}
-                                    onChange={handleGroupStatusChange}
+                                    value={localStatus}
+                                    onChange={setLocalStatus}
                                 />
+                            </BlockStack>
+                        </Card>
+
+                        {/* Appearance Card */}
+                        <Card>
+                            <BlockStack gap="300">
+                                <Text variant="headingSm">Appearance</Text>
+                                <Select
+                                    label="Inventory behavior"
+                                    options={[
+                                        { label: 'Show out of stock', value: 'show' },
+                                        { label: 'Hide out of stock', value: 'hide' },
+                                    ]}
+                                    value={localInventoryBehavior}
+                                    onChange={setLocalInventoryBehavior}
+                                />
+                                <Divider />
+                                <Box>
+                                    <BlockStack gap="200">
+                                        <InlineStack align="space-between">
+                                            <Text variant="bodyMd">Product page</Text>
+                                            <Button variant="plain" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button>
+                                        </InlineStack>
+                                        <Badge tone="info" size="small">{STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Badge>
+                                    </BlockStack>
+                                </Box>
+                                <Box>
+                                    <BlockStack gap="200">
+                                        <InlineStack align="space-between">
+                                            <Text variant="bodyMd">Product Card</Text>
+                                            <Button variant="plain" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button>
+                                        </InlineStack>
+                                        <Badge tone="info" size="small">{localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Badge>
+                                    </BlockStack>
+                                </Box>
                             </BlockStack>
                         </Card>
 
@@ -1064,11 +1147,11 @@ export default function GroupDetail() {
                                     <Text variant="headingSm">Preview on product page</Text>
                                     <Button variant="tertiary" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button>
                                 </InlineStack>
-                                <Text variant="bodySm" tone="subdued">Style: {STYLE_OPTIONS.find(s => s.id === group.selectorStyle)?.label || group.selectorStyle}</Text>
+                                <Text variant="bodySm" tone="subdued">Style: {STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Text>
                                 <Divider />
                                 <BlockStack gap="200">
-                                    <Text variant="bodySm" tone="subdued" fontWeight="semibold">{group.optionName || "Color"}:</Text>
-                                    {renderSidebarPreview(group.selectorStyle)}
+                                    <Text variant="bodySm" tone="subdued" fontWeight="semibold">{localOptionName || "Color"}:</Text>
+                                    {renderSidebarPreview(localSelectorStyle)}
                                     <Box paddingBlockStart="400" />
                                 </BlockStack>
                             </BlockStack>
@@ -1085,22 +1168,29 @@ export default function GroupDetail() {
                                             <Checkbox
                                                 label=""
                                                 labelHidden
-                                                checked={group.cardSelectorStyle === "same" || !group.cardSelectorStyle}
-                                                onChange={(v) => {
-                                                    const fd = new FormData();
-                                                    fd.append("action", "updateGroupSettings");
-                                                    fd.append("cardSelectorStyle", v ? "same" : "swatch");
-                                                    submit(fd, { method: "POST" });
-                                                }}
+                                                checked={localCardSelectorStyle === "same"}
+                                                onChange={(v) => setLocalCardSelectorStyle(v ? "same" : "swatch")}
                                             />
                                         </div>
                                     </InlineStack>
                                 </InlineStack>
-                                <Text variant="bodySm" tone="subdued">Style: {group.cardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === group.cardSelectorStyle)?.label || group.cardSelectorStyle)}</Text>
+                                <Text variant="bodySm" tone="subdued">Style: {localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Text>
                                 <Divider />
-                                <div style={{ border: '1px solid #eee', padding: '12px', borderRadius: '8px', background: '#fff' }}>
-                                     {renderSidebarPreview(group.cardSelectorStyle === "same" ? group.selectorStyle : group.cardSelectorStyle, true)}
-                                </div>
+                                <LivePreview 
+                                    style={previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localSelectorStyle} 
+                                    optionName={localOptionName} 
+                                    products={localProducts}
+                                    inventoryBehavior={localInventoryBehavior}
+                                />
+                                <Box paddingBlockStart="400">
+                                    <InlineStack align="space-between">
+                                        <Text variant="bodySm" tone="subdued">Preview on:</Text>
+                                        <InlineStack gap="200">
+                                            <Button size="micro" pressed={!previewOnProductCard} onClick={() => setPreviewOnProductCard(false)}>Product Page</Button>
+                                            <Button size="micro" pressed={previewOnProductCard} onClick={() => setPreviewOnProductCard(true)}>Collection</Button>
+                                        </InlineStack>
+                                    </InlineStack>
+                                </Box>
                             </BlockStack>
                         </Card>
                     </BlockStack>
