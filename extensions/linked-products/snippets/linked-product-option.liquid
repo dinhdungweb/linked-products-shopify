@@ -205,9 +205,11 @@
        title="{{ value }}">
       <div class="card-media is-color" 
            style="{% if has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: #f4f4f4;{% endif %}">
-        {%- unless has_color or final_image_url != blank -%}
+        {%- if has_color or final_image_url != blank -%}
+          <span class="swatch-anchor"></span>
+        {%- else -%}
           <span style="font-size: 10px; color: #999;">{{ value | slice: 0, 1 }}</span>
-        {%- endunless -%}
+        {%- endif -%}
       </div>
       <span class="card-label">{{ value }}</span>
     </a>

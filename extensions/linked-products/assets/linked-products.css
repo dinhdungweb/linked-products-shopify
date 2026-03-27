@@ -228,7 +228,9 @@
   overflow: hidden;
   border: 1px solid rgba(0,0,0,0.1);
   position: relative;
-  display: flex;
+  display: flex !important; /* Force display even if empty according to theme */
+  visibility: visible !important;
+  opacity: 1 !important;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
