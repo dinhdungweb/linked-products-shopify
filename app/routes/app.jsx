@@ -26,7 +26,6 @@ export default function App() {
         <Link to="/app/automations">Automations</Link>
         <Link to="/app/settings">Settings</Link>
         <Link to="/app/pricing">Billing</Link>
-        <Link to="/app/other-apps">Other apps</Link>
         <Link to="/app/support">Support</Link>
       </NavMenu>
       <Outlet />
