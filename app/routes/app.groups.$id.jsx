@@ -388,7 +388,7 @@ export default function GroupDetail() {
         const products = group.products.slice(0, 6);
         if (products.length === 0) return <Text tone="subdued">Add products to see preview</Text>;
 
-        if (styleId === 'image_swatch' || styleId === 'slide_swatch' || styleId === 'polaroid_swatch') {
+        if (styleId === 'image_swatch') {
             return (
                 <InlineStack gap="200" wrap={false}>
                     {products.map((p, i) => (
@@ -397,12 +397,58 @@ export default function GroupDetail() {
                             height: isCard ? '24px' : '48px', 
                             flexShrink: 0, 
                             border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
-                            borderRadius: styleId === 'polaroid_swatch' ? '0' : '4px',
-                            padding: styleId === 'polaroid_swatch' ? '2px' : '0',
+                            borderRadius: '4px',
                             backgroundColor: '#fff',
                             overflow: 'hidden' 
                         }}>
                             <img src={p.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                    ))}
+                </InlineStack>
+            );
+        }
+
+        if (styleId === 'slide_swatch') {
+            return (
+                <InlineStack gap="200" wrap={false}>
+                    {products.slice(0, 3).map((p, i) => (
+                        <div key={i} style={{ 
+                            width: isCard ? '50px' : '80px', 
+                            flexShrink: 0, 
+                            border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
+                            borderRadius: '4px', 
+                            backgroundColor: '#fff', 
+                            overflow: 'hidden' 
+                        }}>
+                            <div style={{ width: '100%', height: isCard ? '50px' : '80px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <img src={p.image} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }} />
+                            </div>
+                            {!isCard && (
+                                <div style={{ padding: '4px', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden' }}>{p.optionValue}</div>
+                                    <div style={{ fontSize: '10px', color: '#666' }}>$12.88</div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </InlineStack>
+            );
+        }
+
+        if (styleId === 'polaroid_swatch') {
+            return (
+                <InlineStack gap="200" wrap={false}>
+                    {products.slice(0, 4).map((p, i) => (
+                        <div key={i} style={{ 
+                            padding: isCard ? '2px' : '4px', 
+                            backgroundColor: '#fff', 
+                            border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
+                            flexShrink: 0, 
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)' 
+                        }}>
+                            <div style={{ width: isCard ? '20px' : '40px', height: isCard ? '24px' : '48px', overflow: 'hidden' }}>
+                                <img src={p.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
                         </div>
                     ))}
                 </InlineStack>
@@ -617,47 +663,49 @@ export default function GroupDetail() {
                             <p>Choose a style to start with. You can customize it later.</p>
                          </Banner>
                     </Box>
-                    <Grid>
-                        {STYLE_OPTIONS.map((style) => (
-                            <Grid.Cell key={style.id} columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
-                                <div 
-                                    onClick={() => handleStyleSelect(style.id)}
-                                    style={{ 
-                                        height: '100%', 
-                                        display: 'flex', 
-                                        flexDirection: 'column', 
-                                        backgroundColor: 'var(--p-color-bg-surface, #fff)', 
-                                        borderRadius: 'var(--p-border-radius-300, 8px)', 
-                                        boxShadow: (selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? 'var(--p-shadow-300, 0 4px 12px rgba(0,0,0,0.15))' : 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1))', 
-                                        overflow: 'hidden',
-                                        cursor: 'pointer',
-                                        border: (selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? '2px solid var(--p-color-border-info, #008060)' : '1px solid transparent',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                >
-                                    <Box padding="300">
-                                        <InlineStack align="space-between" blockAlign="center">
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    {(selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#008060' }} />}
-                                                </div>
-                                                <BlockStack gap="050">
-                                                    <Text variant="headingSm" as="h3">{style.label}</Text>
-                                                    <Text variant="bodySm" tone="subdued">Display as {style.type}</Text>
-                                                </BlockStack>
+                    <div style={{ minWidth: '900px' }}>
+                        <Grid>
+                            {STYLE_OPTIONS.map((style) => (
+                                <Grid.Cell key={style.id} columnSpan={{ xs: 6, sm: 12, md: 6, lg: 6 }}>
+                                    <div 
+                                        onClick={() => handleStyleSelect(style.id)}
+                                        style={{ 
+                                            height: '100%', 
+                                            display: 'flex', 
+                                            flexDirection: 'column', 
+                                            backgroundColor: 'var(--p-color-bg-surface, #fff)', 
+                                            borderRadius: 'var(--p-border-radius-300, 8px)', 
+                                            boxShadow: (selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? 'var(--p-shadow-300, 0 4px 12px rgba(0,0,0,0.15))' : 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1))', 
+                                            overflow: 'hidden',
+                                            cursor: 'pointer',
+                                            border: (selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? '2px solid var(--p-color-border-info, #008060)' : '1px solid transparent',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        <Box padding="300">
+                                            <InlineStack align="space-between" blockAlign="center">
+                                                <InlineStack gap="200" blockAlign="center">
+                                                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        {(selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#008060' }} />}
+                                                    </div>
+                                                    <BlockStack gap="050">
+                                                        <Text variant="headingSm" as="h3">{style.label}</Text>
+                                                        <Text variant="bodySm" tone="subdued">Display as {style.type}</Text>
+                                                    </BlockStack>
+                                                </InlineStack>
                                             </InlineStack>
-                                        </InlineStack>
-                                    </Box>
-                                    <Divider />
-                                    <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
-                                        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflowX: 'auto', paddingBottom: '4px' }}>
-                                            {renderPreview(style.id)}
+                                        </Box>
+                                        <Divider />
+                                        <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
+                                            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflowX: 'auto', paddingBottom: '4px' }}>
+                                                {renderPreview(style.id)}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Grid.Cell>
-                        ))}
-                    </Grid>
+                                </Grid.Cell>
+                            ))}
+                        </Grid>
+                    </div>
                 </Modal.Section>
             </Modal>
             
