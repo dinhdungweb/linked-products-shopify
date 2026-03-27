@@ -595,6 +595,9 @@ export async function action({ request, params }) {
         const maxPosition = await prisma.productGroupItem.aggregate({ where: { groupId: targetGroupId }, _max: { position: true } });
         let position = (maxPosition._max.position || 0);
 
+        const group = await prisma.productGroup.findUnique({ where: { id: targetGroupId } });
+        const defaultStyle = (group?.selectorStyle?.includes('image') || group?.selectorStyle?.includes('slide') || group?.selectorStyle?.includes('polaroid')) ? 'image' : 'one';
+
         for (const product of products) {
             position++;
             await prisma.productGroupItem.create({
@@ -604,6 +607,7 @@ export async function action({ request, params }) {
                     productHandle: product.handle,
                     optionValue: product.title,
                     position,
+                    style: defaultStyle,
                 },
             });
         }
@@ -1008,6 +1012,24 @@ export default function GroupDetail() {
     const handleStyleSelect = (styleId) => {
         if (selectingFor === "productPage") {
             setLocalSelectorStyle(styleId);
+            
+            // Auto-update product styles based on selection
+            const styleInfo = STYLE_OPTIONS.find(s => s.id === styleId);
+            if (styleInfo) {
+                let targetProductStyle = null;
+                if (styleInfo.category === 'Image Swatch' || styleId === 'image_dropdown') {
+                    targetProductStyle = 'image';
+                } else if (styleInfo.category === 'Color swatch') {
+                    targetProductStyle = 'one';
+                }
+
+                if (targetProductStyle) {
+                    setLocalProducts(current => current.map(p => ({
+                        ...p,
+                        style: targetProductStyle
+                    })));
+                }
+            }
         } else {
             setLocalCardSelectorStyle(styleId);
         }
