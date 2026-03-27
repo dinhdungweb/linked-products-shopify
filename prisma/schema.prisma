@@ -40,6 +40,7 @@ model ProductGroup {
   name              String    // Tên nhóm (để dễ quản lý)
   optionName        String    @default("Color") // Tên option hiển thị (Color, Size, etc.)
   selectorStyle     String    @default("block") // swatch, variant_image, block
+  cardSelectorStyle String    @default("same")  // same, swatch, pill
   syncStatus        String    @default("pending") // pending, synced, error
   inventoryBehavior String    @default("show") // hide, show
   status            String    @default("active") // active, draft

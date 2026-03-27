@@ -238,25 +238,30 @@ export async function action({ request, params }) {
     if (actionType === "updateGroupSettings") {
         const optionName = formData.get("optionName");
         const selectorStyle = formData.get("selectorStyle");
+        const cardSelectorStyle = formData.get("cardSelectorStyle");
         const groupName = formData.get("groupName");
         const status = formData.get("status");
 
         if (groupId === "new") {
-             // We don't save settings for "new" until at least some products are added or it's explicitly saved
-             // But for now, let's allow creating an empty group if needed, or just return success
-             // The "Save" button at the bottom will handle the final sync/creation
              return json({ success: true });
         }
 
         const updateData = {};
         if (optionName !== null) updateData.optionName = optionName;
         if (selectorStyle !== null) updateData.selectorStyle = selectorStyle;
+        if (cardSelectorStyle !== null) updateData.cardSelectorStyle = cardSelectorStyle;
         if (groupName !== null) updateData.name = groupName;
         if (status !== null) updateData.status = status;
 
         await prisma.productGroup.update({ where: { id: groupId }, data: updateData });
         await syncGroupMetafields(groupId);
         return json({ success: true });
+    }
+
+    if (actionType === "deleteGroup") {
+        await prisma.productGroup.delete({ where: { id: groupId } });
+        const { redirect } = await import("@remix-run/node");
+        return redirect("/app/groups");
     }
 
     if (actionType === "autoFill") {
@@ -297,6 +302,10 @@ export default function GroupDetail() {
     const [editOptionValue, setEditOptionValue] = useState("");
     const [editCustomImageUrl, setEditCustomImageUrl] = useState("");
     const [editCustomColor, setEditCustomColor] = useState("");
+    
+    // Style Modal State
+    const [showStyleModal, setShowStyleModal] = useState(false);
+    const [selectingFor, setSelectingFor] = useState("productPage"); // productPage or productCard
     
     // UI State for Preview
     const [previewOnProductCard, setPreviewOnProductCard] = useState(true);
@@ -355,8 +364,112 @@ export default function GroupDetail() {
         submit(formData, { method: "POST" });
     };
 
+    const handleDeleteGroup = () => {
+        if (!confirm("Are you sure you want to delete this entire group? This action cannot be undone.")) return;
+        const formData = new FormData();
+        formData.append("action", "deleteGroup");
+        submit(formData, { method: "POST" });
+    };
+
+    const handleStyleSelect = (styleId) => {
+        const formData = new FormData();
+        formData.append("action", "updateGroupSettings");
+        if (selectingFor === "productPage") {
+            formData.append("selectorStyle", styleId);
+        } else {
+            formData.append("cardSelectorStyle", styleId);
+        }
+        submit(formData, { method: "POST" });
+        setShowStyleModal(false);
+    };
+
+    const STYLE_OPTIONS = [
+        { id: 'swatch_card', label: 'Color swatch card', type: 'Color swatch', preview: '/swatch_card.png' },
+        { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch', preview: '/image_swatch.png' },
+        { id: 'slide_swatch', label: 'Slide swatch (Mobile only)', type: 'Image Swatch', preview: '/slide_swatch.png' },
+        { id: 'polaroid_swatch', label: 'Polaroid swatch', type: 'Image Swatch', preview: '/polaroid_swatch.png' },
+        { id: 'color_swatch', label: 'Color swatch', type: 'Color swatch', preview: '/color_swatch.png' },
+        { id: 'square_color_swatch', label: 'Square color swatch', type: 'Color swatch', preview: '/square_color_swatch.png' },
+        { id: 'pill_swatch', label: 'Color swatch in pill button', type: 'Color swatch', preview: '/pill_swatch.png' },
+        { id: 'button', label: 'Button', type: 'Button', preview: '/button.png' },
+        { id: 'pill_button', label: 'Pill button', type: 'Button', preview: '/pill_button.png' },
+        { id: 'dropdown', label: 'Dropdown', type: 'Dropdown', preview: '/dropdown.png' },
+        { id: 'image_dropdown', label: 'Image swatch in dropdown', type: 'Dropdown', preview: '/image_dropdown.png' },
+    ];
+
     return (
         <Page fullWidth>
+            {/* Style Selection Modal */}
+            <Modal
+                open={showStyleModal}
+                onClose={() => setShowStyleModal(false)}
+                title="LineOption Combined Listings"
+                large
+            >
+                <Modal.Section>
+                    <Box paddingBlockEnd="400">
+                         <Banner icon={MagicIcon} tone="info">
+                            <p>Choose a style to start with. You can customize it later.</p>
+                         </Banner>
+                    </Box>
+                    <Grid>
+                        {STYLE_OPTIONS.map((style) => (
+                            <Grid.Cell key={style.id} columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
+                                <Box 
+                                    padding="400" 
+                                    borderColor={(selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? "border-info" : "border"} 
+                                    borderWidth="050" 
+                                    borderRadius="300"
+                                    onClick={() => handleStyleSelect(style.id)}
+                                    cursor="pointer"
+                                    shadow={(selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? "400" : "none"}
+                                >
+                                    <BlockStack gap="200">
+                                        <InlineStack gap="200" blockAlign="center">
+                                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                {(selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#008060' }} />}
+                                            </div>
+                                            <BlockStack gap="050">
+                                                <Text variant="bodyMd" fontWeight="semibold">{style.label}</Text>
+                                                <Text variant="bodySm" tone="subdued">Display as {style.type}</Text>
+                                            </BlockStack>
+                                        </InlineStack>
+                                        <Box padding="200" background="bg-surface-secondary" borderRadius="200">
+                                            {/* Mocking the preview based on style type */}
+                                            <InlineStack gap="200" align="start">
+                                                {style.id === 'swatch_card' && (
+                                                    <InlineStack gap="200">
+                                                        {[1,2,3,4].map(n => <div key={n} style={{ width: '30px', height: '30px', borderRadius: '50%', background: ['#f5f5dc', '#dfcfe0', '#ff9800', '#008000'][n-1], border: '1px solid #ddd' }} />)}
+                                                    </InlineStack>
+                                                )}
+                                                {style.id.includes('image') && (
+                                                    <InlineStack gap="100">
+                                                        {[1,2,3].map(n => <div key={n} style={{ width: '40px', height: '50px', borderRadius: '4px', background: '#fff', border: '1px solid #ddd' }} />)}
+                                                    </InlineStack>
+                                                )}
+                                                {style.id.includes('button') && (
+                                                    <InlineStack gap="100">
+                                                        {['Beige', 'Blue'].map(n => <div key={n} style={{ padding: '4px 8px', borderRadius: style.id.includes('pill') ? '20px' : '4px', border: '1px solid #ddd', fontSize: '10px' }}>{n}</div>)}
+                                                    </InlineStack>
+                                                )}
+                                                {style.id.includes('color_swatch') && (
+                                                    <InlineStack gap="100">
+                                                        {[1,2,3,4,5].map(n => <div key={n} style={{ width: '15px', height: '15px', borderRadius: style.id.includes('square') ? '2px' : '50%', background: ['#f5f5dc', '#dfcfe0', '#ff9800', '#008000', '#ffc0cb'][n-1] }} />)}
+                                                    </InlineStack>
+                                                )}
+                                                {style.id.includes('dropdown') && (
+                                                     <div style={{ width: '100%', padding: '4px 8px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '10px', background: '#fff' }}>Beige Brown ▼</div>
+                                                )}
+                                            </InlineStack>
+                                        </Box>
+                                    </BlockStack>
+                                </Box>
+                            </Grid.Cell>
+                        ))}
+                    </Grid>
+                </Modal.Section>
+            </Modal>
+            
             {/* Swatch Edit Modal */}
             <Modal
                 open={showEditModal}
@@ -618,16 +731,11 @@ export default function GroupDetail() {
                         {/* Preview Product Page */}
                         <Card>
                             <BlockStack gap="300">
-                                <Text variant="headingSm">Preview on product page</Text>
-                                <Select
-                                    label="Selector style"
-                                    labelHidden
-                                    options={[
-                                        { label: 'Color swatch card', value: 'swatch_card' },
-                                        { label: 'Text block', value: 'block' },
-                                    ]}
-                                    value="swatch_card"
-                                />
+                                <InlineStack align="space-between" blockAlign="center">
+                                    <Text variant="headingSm">Preview on product page</Text>
+                                    <Button variant="tertiary" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button>
+                                </InlineStack>
+                                <Text variant="bodySm" tone="subdued">Style: {STYLE_OPTIONS.find(s => s.id === group.selectorStyle)?.label || group.selectorStyle}</Text>
                                 <Divider />
                                 <BlockStack gap="200">
                                     <Text variant="bodySm" tone="subdued" fontWeight="semibold">{group.optionName || "Color"}:</Text>
@@ -672,24 +780,24 @@ export default function GroupDetail() {
                             <BlockStack gap="300">
                                 <InlineStack align="space-between" blockAlign="center">
                                     <Text variant="headingSm">Preview on product card</Text>
-                                    <div style={{ transform: 'scale(1.2)' }}>
-                                        <Checkbox
-                                            label=""
-                                            labelHidden
-                                            checked={previewOnProductCard}
-                                            onChange={setPreviewOnProductCard}
-                                        />
-                                    </div>
+                                    <InlineStack gap="200" blockAlign="center">
+                                         <Button variant="tertiary" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button>
+                                         <div style={{ transform: 'scale(1.2)' }}>
+                                            <Checkbox
+                                                label=""
+                                                labelHidden
+                                                checked={group.cardSelectorStyle === "same" || !group.cardSelectorStyle}
+                                                onChange={(v) => {
+                                                    const fd = new FormData();
+                                                    fd.append("action", "updateGroupSettings");
+                                                    fd.append("cardSelectorStyle", v ? "same" : "swatch");
+                                                    submit(fd, { method: "POST" });
+                                                }}
+                                            />
+                                        </div>
+                                    </InlineStack>
                                 </InlineStack>
-                                <Select
-                                    label="Style"
-                                    labelHidden
-                                    options={[
-                                        { label: 'Color swatch', value: 'swatch' },
-                                        { label: 'Pill', value: 'pill' },
-                                    ]}
-                                    value="swatch"
-                                />
+                                <Text variant="bodySm" tone="subdued">Style: {group.cardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === group.cardSelectorStyle)?.label || group.cardSelectorStyle)}</Text>
                                 <Divider />
                                 <InlineStack gap="200" blockAlign="center">
                                     <Box 
@@ -725,8 +833,11 @@ export default function GroupDetail() {
                  zIndex="10"
                  marginBlockStart="800"
             >
-                <InlineStack align="end">
-                    <Button variant="primary" size="large" onClick={handleSync} loading={isLoading}>Save</Button>
+                <InlineStack align="space-between" blockAlign="center">
+                    <Button variant="primary" tone="critical" onClick={handleDeleteGroup} loading={isLoading && navigation.formData?.get("action") === "deleteGroup"}>Delete</Button>
+                    <InlineStack gap="300">
+                        <Button variant="primary" size="large" onClick={handleSync} loading={isLoading && navigation.formData?.get("action") === "sync"}>Save</Button>
+                    </InlineStack>
                 </InlineStack>
             </Box>
         </Page>
