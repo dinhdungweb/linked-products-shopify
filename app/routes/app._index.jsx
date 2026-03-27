@@ -478,6 +478,8 @@ export default function Index() {
   }, [actionData]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
+  const [openFaq, setOpenFaq] = useState(null);
+  const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvData, setCsvData] = useState("");
@@ -680,33 +682,59 @@ export default function Index() {
                 {/* FAQ Section */}
                 <Card>
                   <BlockStack gap="400">
-                    <InlineStack gap="200" blockAlign="center">
+                    <InlineStack gap="200" blockAlign="center" wrap={false}>
                       <Icon source={QuestionCircleIcon} />
                       <Text variant="headingMd">Need help? FAQ</Text>
                     </InlineStack>
                     <BlockStack gap="200">
-                       <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                         <Text variant="bodyMd" fontWeight="semibold">Can I change the position of the options?</Text>
-                       </Box>
-                       <Box padding="200">
-                         <Text variant="bodySm" tone="subdued">Yes, you can drag and drop products within a group details page to change their display order.</Text>
-                       </Box>
+                       {/* FAQ 1 */}
+                       <div style={{ cursor: 'pointer' }} onClick={() => toggleFaq(0)}>
+                         <Box padding="200" background="bg-surface-secondary" borderRadius="100">
+                           <InlineStack align="space-between">
+                             <Text variant="bodyMd" fontWeight="semibold">Can I change the position of the options?</Text>
+                             <Icon source={openFaq === 0 ? "minus" : "plus"} size="extraSmall" />
+                           </InlineStack>
+                         </Box>
+                       </div>
+                       {openFaq === 0 && (
+                         <Box padding="200">
+                           <Text variant="bodySm" tone="subdued">Yes, you can drag and drop products within a group details page to change their display order.</Text>
+                         </Box>
+                       )}
                        
-                       <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                         <Text variant="bodyMd" fontWeight="semibold">How do I show options on collection pages?</Text>
-                       </Box>
-                       <Box padding="200">
-                         <Text variant="bodySm" tone="subdued">Go to Theme Editor, navigate to your Collection page, and add the "Collection Swatches" app block to your product grid.</Text>
-                       </Box>
+                       {/* FAQ 2 */}
+                       <div style={{ cursor: 'pointer' }} onClick={() => toggleFaq(1)}>
+                         <Box padding="200" background="bg-surface-secondary" borderRadius="100">
+                           <InlineStack align="space-between">
+                             <Text variant="bodyMd" fontWeight="semibold">How do I show options on collection pages?</Text>
+                             <Icon source={openFaq === 1 ? "minus" : "plus"} size="extraSmall" />
+                           </InlineStack>
+                         </Box>
+                       </div>
+                       {openFaq === 1 && (
+                         <Box padding="200">
+                           <Text variant="bodySm" tone="subdued">Go to Theme Editor, navigate to your Collection page, and add the "Collection Swatches" app block to your product grid.</Text>
+                         </Box>
+                       )}
 
-                       <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                         <Text variant="bodyMd" fontWeight="semibold">Can a product belong to multiple groups?</Text>
-                       </Box>
-                       <Box padding="200">
-                         <Text variant="bodySm" tone="subdued">No, to ensure SEO consistency and avoid conflicts, each product can only belong to one linked group at a time.</Text>
-                       </Box>
+                       {/* FAQ 3 */}
+                       <div style={{ cursor: 'pointer' }} onClick={() => toggleFaq(2)}>
+                         <Box padding="200" background="bg-surface-secondary" borderRadius="100">
+                           <InlineStack align="space-between">
+                             <Text variant="bodyMd" fontWeight="semibold">Can a product belong to multiple groups?</Text>
+                             <Icon source={openFaq === 2 ? "minus" : "plus"} size="extraSmall" />
+                           </InlineStack>
+                         </Box>
+                       </div>
+                       {openFaq === 2 && (
+                         <Box padding="200">
+                           <Text variant="bodySm" tone="subdued">No, to ensure SEO consistency and avoid conflicts, each product can only belong to one linked group at a time.</Text>
+                         </Box>
+                       )}
                        
-                       <Button variant="plain" url="/app/help">View all FAQs</Button>
+                       <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                         <Button variant="plain" url="/app/help">View all FAQs</Button>
+                       </div>
                     </BlockStack>
                   </BlockStack>
                 </Card>
