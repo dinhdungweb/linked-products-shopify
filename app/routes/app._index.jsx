@@ -794,10 +794,10 @@ export default function Index() {
                 <Card>
                   <BlockStack gap="300">
                      <Text variant="headingMd">Quick Actions</Text>
-                     <Button icon={PlusCircleIcon} onClick={() => setShowCreateModal(true)}>Create Group</Button>
-                     <Button icon={PlusCircleIcon} url="/app/groups">Manage Groups</Button>
-                     <Button icon={AutomationIcon} url="/app/automations">Automations</Button>
-                     <Button icon={ImportIcon} onClick={() => setShowImportModal(true)}>Import CSV</Button>
+                      <Button fullWidth textAlign="left" icon={PlusCircleIcon} onClick={() => setShowCreateModal(true)}>Create Group</Button>
+                      <Button fullWidth textAlign="left" icon={PlusCircleIcon} url="/app/groups">Manage Groups</Button>
+                      <Button fullWidth textAlign="left" icon={AutomationIcon} url="/app/automations">Automations</Button>
+                      <Button fullWidth textAlign="left" icon={ImportIcon} onClick={() => setShowImportModal(true)}>Import CSV</Button>
                   </BlockStack>
                 </Card>
               </BlockStack>
