@@ -753,7 +753,7 @@ export default function Index() {
                 <InlineStack gap="400" wrap={false}>
                   <Box flex="1">
                     <Card>
-                      <BlockStack gap="200" align="start">
+                      <BlockStack gap="200" align="start" inlineAlign="start">
                         <InlineStack gap="200" align="start" blockAlign="center">
                           <Icon source={EmailIcon} tone="info" />
                           <Text variant="headingSm">Get email support</Text>
@@ -765,7 +765,7 @@ export default function Index() {
                   </Box>
                   <Box flex="1">
                     <Card>
-                      <BlockStack gap="200" align="start">
+                      <BlockStack gap="200" align="start" inlineAlign="start">
                         <InlineStack gap="200" align="start" blockAlign="center">
                           <Icon source={ChatIcon} tone="info" />
                           <Text variant="headingSm">Start live chat</Text>
