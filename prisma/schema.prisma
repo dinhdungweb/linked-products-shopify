@@ -96,3 +96,42 @@ model Shop {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
+
+// Shop settings - Cấu hình hiển thị global
+model AppSetting {
+  id                    String    @id @default(cuid())
+  shop                  String    @unique
+  appEnabled            Boolean   @default(true)
+  showOnProductCards    Boolean   @default(true)
+  applyToCollection     Boolean   @default(true)
+  applyToSearch         Boolean   @default(true)
+  applyToHome           Boolean   @default(false)
+  hideMultiOptionOnCards Boolean  @default(true)
+  hideInaccessible      Boolean   @default(true)
+  removeArchived        Boolean   @default(false)
+  seamlessSwitching     Boolean   @default(false)
+  autoScroll            Boolean   @default(false)
+  enableAutosuggestion  Boolean   @default(true)
+  notificationEmail     String?
+  selectOptionLabel     String    @default("Select {option}")
+  soldOutLabel          String    @default("Sold out")
+  unavailableLabel      String    @default("Unavailable")
+  swatchSize            Int       @default(50)
+  itemsGap              Int       @default(8)
+  borderRadius          Int       @default(8)
+  borderWidth           Int       @default(2)
+  borderColor           String    @default("#e5e5e5")
+  selectedBorderColor   String    @default("#000000")
+  showOptionName        Boolean   @default(true)
+  blockPaddingX         Int       @default(12)
+  blockPaddingY         Int       @default(8)
+  blockFontSize         Int       @default(14)
+  blockBgColor          String    @default("#ffffff")
+  blockTextColor        String    @default("#000000")
+  selectedBgColor       String    @default("#000000")
+  selectedTextColor     String    @default("#ffffff")
+  customCssProduct      String    @default("")
+  customCssCollection   String    @default("")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}

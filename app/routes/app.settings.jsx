@@ -1,77 +1,127 @@
-import { useState, useCallback } from "react";
-import {
-  Page,
-  Layout,
-  Card,
-  BlockStack,
-  Text,
-  InlineStack,
-  Box,
-  Divider,
-  Icon,
-  Button,
-  TextField,
-  Banner,
-  Checkbox,
-  Grid,
-  Tabs,
-  Badge,
-} from "@shopify/polaris";
-import { 
-  SettingsIcon, 
-  ExternalIcon, 
-  LanguageIcon,
-  AlertCircleIcon,
-  CheckCircleIcon,
-} from "@shopify/polaris-icons";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { json } from "@remix-run/node";
+import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import prisma from "../db.server";
+import { authenticate } from "../shopify.server";
+
+export const loader = async ({ request }) => {
+  const { session } = await authenticate.admin(request);
+  const shop = session.shop;
+
+  let settings = await prisma.appSetting.findUnique({
+    where: { shop },
+  });
+
+  if (!settings) {
+    settings = await prisma.appSetting.create({
+      data: { shop },
+    });
+  }
+
+  return json({ settings });
+};
+
+export const action = async ({ request }) => {
+  const { session, admin } = await authenticate.admin(request);
+  const shop = session.shop;
+  const formData = await request.formData();
+  const data = Object.fromEntries(formData);
+
+  // Convert types
+  const settingsData = {
+    appEnabled: data.appEnabled === "true",
+    showOnProductCards: data.showOnProductCards === "true",
+    applyToCollection: data.applyToCollection === "true",
+    applyToSearch: data.applyToSearch === "true",
+    applyToHome: data.applyToHome === "true",
+    hideMultiOptionOnCards: data.hideMultiOptionOnCards === "true",
+    hideInaccessible: data.hideInaccessible === "true",
+    removeArchived: data.removeArchived === "true",
+    seamlessSwitching: data.seamlessSwitching === "true",
+    autoScroll: data.autoScroll === "true",
+    enableAutosuggestion: data.enableAutosuggestion === "true",
+    notificationEmail: data.notificationEmail,
+    selectOptionLabel: data.selectOptionLabel,
+    soldOutLabel: data.soldOutLabel,
+    unavailableLabel: data.unavailableLabel,
+    swatchSize: parseInt(data.swatchSize),
+    itemsGap: parseInt(data.itemsGap),
+    borderRadius: parseInt(data.borderRadius),
+    borderWidth: parseInt(data.borderWidth),
+    borderColor: data.borderColor,
+    selectedBorderColor: data.selectedBorderColor,
+    showOptionName: data.showOptionName === "true",
+    blockPaddingX: parseInt(data.blockPaddingX),
+    blockPaddingY: parseInt(data.blockPaddingY),
+    blockFontSize: parseInt(data.blockFontSize),
+    blockBgColor: data.blockBgColor,
+    blockTextColor: data.blockTextColor,
+    selectedBgColor: data.selectedBgColor,
+    selectedTextColor: data.selectedTextColor,
+    customCssProduct: data.customCssProduct,
+    customCssCollection: data.customCssCollection,
+  };
+
+  const updatedSettings = await prisma.appSetting.upsert({
+    where: { shop },
+    update: settingsData,
+    create: { shop, ...settingsData },
+  });
+
+  // Get Shop GID for metafields
+  const shopData = await admin.graphql(`{ shop { id } }`);
+  const shopJson = await shopData.json();
+  const shopId = shopJson.data.shop.id;
+
+  await admin.graphql(`
+    mutation setSettings($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        userErrors { field message }
+      }
+    }
+  `, {
+    variables: {
+      metafields: [{
+        namespace: "linked_products",
+        key: "settings",
+        type: "json",
+        ownerId: shopId,
+        value: JSON.stringify(updatedSettings)
+      }]
+    }
+  });
+
+  return json({ success: true, settings: updatedSettings });
+};
 
 export default function SettingsPage() {
+  const { settings: initialSettings } = useLoaderData();
+  const submit = useSubmit();
+  const navigation = useNavigation();
+  const isLoading = navigation.state !== "idle";
+
   const [selectedTab, setSelectedTab] = useState(0);
-  const [showBanner, setShowBanner] = useState(false);
 
   // Settings State
-  const [settings, setSettings] = useState({
-    appEnabled: true,
-    showOnProductCards: true,
-    applyToCollection: true,
-    applyToSearch: true,
-    applyToHome: false,
-    hideMultiOptionOnCards: true,
-    hideInaccessible: true,
-    removeArchived: false,
-    seamlessSwitching: false,
-    autoScroll: false,
-    enableAutosuggestion: true,
-    notificationEmail: "",
-    customCssProduct: "",
-    customCssCollection: ".king-linked-options-collection__container {\n \n}",
-  });
-
-  // Translation State
-  const [translations, setTranslations] = useState({
-    selectOption: "Select {option}",
-    soldOut: "Sold out",
-    unavailable: "Unavailable",
-  });
-
-  const handleTabChange = useCallback(
-    (selectedTabIndex) => setSelectedTab(selectedTabIndex),
-    [],
-  );
+  const [settings, setSettings] = useState(initialSettings);
 
   const handleSettingChange = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleTranslationChange = (key, value) => {
-    setTranslations(prev => ({ ...prev, [key]: value }));
+  const handleSave = () => {
+    const formData = new FormData();
+    Object.keys(settings).forEach(key => {
+      formData.append(key, settings[key]);
+    });
+    submit(formData, { method: "post" });
   };
 
-  const handleSave = () => {
-    setShowBanner(true);
-    setTimeout(() => setShowBanner(false), 3000);
-  };
+  useEffect(() => {
+    if (navigation.state === "idle" && showBanner === false && initialSettings !== settings) {
+      // Logic to show success banner after save can be more robust, 
+      // but for now let's just use the action return if needed.
+    }
+  }, [navigation.state]);
 
   const tabs = [
     {
@@ -79,10 +129,20 @@ export default function SettingsPage() {
       content: (
         <InlineStack gap="200" align="start" blockAlign="center">
           <Icon source={SettingsIcon} />
-          <span>Settings</span>
+          <span>General</span>
         </InlineStack>
       ),
       panelID: "settings-panel",
+    },
+    {
+      id: "visual-styles",
+      content: (
+        <InlineStack gap="200" align="start" blockAlign="center">
+          <Icon source={CheckCircleIcon} />
+          <span>Visual Styles</span>
+        </InlineStack>
+      ),
+      panelID: "visual-styles-panel",
     },
     {
       id: "theme-setup",
@@ -105,6 +165,132 @@ export default function SettingsPage() {
       panelID: "translation-panel",
     },
   ];
+
+  const renderVisualStylesTab = () => (
+    <BlockStack gap="500">
+      <Layout.AnnotatedSection
+        title="Swatch & Image Sizes"
+        description="Control the dimensions and spacing of your swatches."
+      >
+        <Card>
+          <BlockStack gap="400">
+            <Grid>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
+                <TextField
+                  label="Swatch/Image size (px)"
+                  type="number"
+                  value={settings.swatchSize.toString()}
+                  onChange={(v) => handleSettingChange("swatchSize", parseInt(v))}
+                  autoComplete="off"
+                />
+              </Grid.Cell>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
+                <TextField
+                  label="Gap between items (px)"
+                  type="number"
+                  value={settings.itemsGap.toString()}
+                  onChange={(v) => handleSettingChange("itemsGap", parseInt(v))}
+                  autoComplete="off"
+                />
+              </Grid.Cell>
+            </Grid>
+          </BlockStack>
+        </Card>
+      </Layout.AnnotatedSection>
+
+      <Layout.AnnotatedSection
+        title="Borders & Radius"
+        description="Configure how the borders and corners look."
+      >
+        <Card>
+          <BlockStack gap="400">
+            <Grid>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
+                <TextField
+                  label="Border radius (px)"
+                  type="number"
+                  value={settings.borderRadius.toString()}
+                  onChange={(v) => handleSettingChange("borderRadius", parseInt(v))}
+                  autoComplete="off"
+                />
+              </Grid.Cell>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
+                <TextField
+                  label="Border width (px)"
+                  type="number"
+                  value={settings.borderWidth.toString()}
+                  onChange={(v) => handleSettingChange("borderWidth", parseInt(v))}
+                  autoComplete="off"
+                />
+              </Grid.Cell>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
+                <Checkbox
+                  label="Show option name label"
+                  checked={settings.showOptionName}
+                  onChange={(v) => handleSettingChange("showOptionName", v)}
+                />
+              </Grid.Cell>
+            </Grid>
+            <Grid>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
+                <TextField
+                  label="Default border color"
+                  value={settings.borderColor}
+                  onChange={(v) => handleSettingChange("borderColor", v)}
+                  autoComplete="off"
+                  prefix={<div style={{ width: '20px', height: '20px', backgroundColor: settings.borderColor, border: '1px solid #ccc' }} />}
+                />
+              </Grid.Cell>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
+                <TextField
+                  label="Selected border color"
+                  value={settings.selectedBorderColor}
+                  onChange={(v) => handleSettingChange("selectedBorderColor", v)}
+                  autoComplete="off"
+                  prefix={<div style={{ width: '20px', height: '20px', backgroundColor: settings.selectedBorderColor, border: '1px solid #ccc' }} />}
+                />
+              </Grid.Cell>
+            </Grid>
+          </BlockStack>
+        </Card>
+      </Layout.AnnotatedSection>
+
+      <Layout.AnnotatedSection
+        title="Text Block Styles"
+        description="Settings for the 'Text Block' swatch style."
+      >
+        <Card>
+          <BlockStack gap="400">
+            <Grid>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
+                <TextField label="Padding X" type="number" value={settings.blockPaddingX.toString()} onChange={(v) => handleSettingChange("blockPaddingX", parseInt(v))} autoComplete="off" />
+              </Grid.Cell>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
+                <TextField label="Padding Y" type="number" value={settings.blockPaddingY.toString()} onChange={(v) => handleSettingChange("blockPaddingY", parseInt(v))} autoComplete="off" />
+              </Grid.Cell>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
+                <TextField label="Font size" type="number" value={settings.blockFontSize.toString()} onChange={(v) => handleSettingChange("blockFontSize", parseInt(v))} autoComplete="off" />
+              </Grid.Cell>
+            </Grid>
+            <Grid>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                <TextField label="BG color" value={settings.blockBgColor} onChange={(v) => handleSettingChange("blockBgColor", v)} autoComplete="off" />
+              </Grid.Cell>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                <TextField label="Text color" value={settings.blockTextColor} onChange={(v) => handleSettingChange("blockTextColor", v)} autoComplete="off" />
+              </Grid.Cell>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                <TextField label="Selected BG" value={settings.selectedBgColor} onChange={(v) => handleSettingChange("selectedBgColor", v)} autoComplete="off" />
+              </Grid.Cell>
+              <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                <TextField label="Selected Text" value={settings.selectedTextColor} onChange={(v) => handleSettingChange("selectedTextColor", v)} autoComplete="off" />
+              </Grid.Cell>
+            </Grid>
+          </BlockStack>
+        </Card>
+      </Layout.AnnotatedSection>
+    </BlockStack>
+  );
 
   const renderSettingsTab = () => (
     <BlockStack gap="500">
@@ -178,7 +364,6 @@ export default function SettingsPage() {
         </Card>
       </Layout.AnnotatedSection>
 
-      {/* Hide inaccessible storefront products */}
       <Layout.AnnotatedSection
         title="Hide inaccessible storefront products"
         description="Automatically hides products that aren't accessible to customers, helping prevent 404 errors and broken links."
@@ -201,45 +386,6 @@ export default function SettingsPage() {
         </Card>
       </Layout.AnnotatedSection>
 
-      {/* Storefront Experience */}
-      <Layout.AnnotatedSection
-        title="Storefront experience"
-        description="Enhance the shopping experience with smooth transitions and smart scrolling."
-      >
-        <Card>
-          <BlockStack gap="400">
-             <Checkbox
-               label="Enable seamless product switching (Beta)"
-               checked={settings.seamlessSwitching}
-               onChange={(v) => handleSettingChange("seamlessSwitching", v)}
-               helpText="Update product details and URL without reloading the page for a smoother experience."
-             />
-             <Checkbox
-               label="Enable auto scroll to previous position"
-               checked={settings.autoScroll}
-               onChange={(v) => handleSettingChange("autoScroll", v)}
-               helpText="Automatically scrolls to where the option was on the previous page after switching."
-             />
-          </BlockStack>
-        </Card>
-      </Layout.AnnotatedSection>
-
-      {/* Product Creation */}
-      <Layout.AnnotatedSection
-        title="Product creation"
-        description="Smart tools to speed up your workflow when managing groups."
-      >
-        <Card>
-           <Checkbox
-             label="Enable autosuggestion"
-             checked={settings.enableAutosuggestion}
-             onChange={(v) => handleSettingChange("enableAutosuggestion", v)}
-             helpText="Suggest option values based on your past entries while you create new product groups."
-           />
-        </Card>
-      </Layout.AnnotatedSection>
-
-      {/* Notifications */}
       <Layout.AnnotatedSection
         title="Notification email"
         description="Email address for receiving app notifications."
@@ -247,7 +393,7 @@ export default function SettingsPage() {
         <Card>
           <TextField
             label="Notification email address"
-            value={settings.notificationEmail}
+            value={settings.notificationEmail || ""}
             onChange={(v) => handleSettingChange("notificationEmail", v)}
             placeholder="support@example.com"
             autoComplete="email"
@@ -256,9 +402,8 @@ export default function SettingsPage() {
         </Card>
       </Layout.AnnotatedSection>
 
-      {/* Custom CSS */}
       <Layout.AnnotatedSection
-        title="Customize"
+        title="Customize CSS"
         description="Customize CSS to control the app block style."
       >
         <Card>
@@ -277,9 +422,6 @@ export default function SettingsPage() {
               multiline={6}
               autoComplete="off"
             />
-            <Text variant="bodySm" tone="subdued">
-              Need help with styling? Please <a href="/app/support">contact support</a>.
-            </Text>
           </BlockStack>
         </Card>
       </Layout.AnnotatedSection>
@@ -304,13 +446,6 @@ export default function SettingsPage() {
               </Box>
             </Box>
             
-            <BlockStack gap="200">
-              <Text variant="headingSm">Steps to enable:</Text>
-              <Text as="p">1. Click the button below to open Theme Editor.</Text>
-              <Text as="p">2. Find <b>Linked Product Variants</b> in the App Embeds tab.</Text>
-              <Text as="p">3. Toggle it <b>ON</b> and click <b>Save</b>.</Text>
-            </BlockStack>
-
             <Button primary url="https://admin.shopify.com/store/current/themes/current/editor?context=apps" target="_blank">
               Open Theme Editor
             </Button>
@@ -330,23 +465,13 @@ export default function SettingsPage() {
           <BlockStack gap="400">
             <TextField
               label="Select option label"
-              value={translations.selectOption}
-              onChange={(v) => handleTranslationChange("selectOption", v)}
+              value={settings.selectOptionLabel}
+              onChange={(v) => handleSettingChange("selectOptionLabel", v)}
               helpText="Use {option} as a placeholder for the option name (e.g. Color)."
               autoComplete="off"
             />
-            <TextField
-              label="Sold out label"
-              value={translations.soldOut}
-              onChange={(v) => handleTranslationChange("soldOut", v)}
-              autoComplete="off"
-            />
-            <TextField
-              label="Unavailable label"
-              value={translations.unavailable}
-              onChange={(v) => handleTranslationChange("unavailable", v)}
-              autoComplete="off"
-            />
+            <TextField label="Sold out label" value={settings.soldOutLabel} onChange={(v) => handleSettingChange("soldOutLabel", v)} autoComplete="off" />
+            <TextField label="Unavailable label" value={settings.unavailableLabel} onChange={(v) => handleSettingChange("unavailableLabel", v)} autoComplete="off" />
           </BlockStack>
         </Card>
       </Layout.AnnotatedSection>
@@ -355,40 +480,27 @@ export default function SettingsPage() {
 
   return (
     <Page>
-      <TitleBar title="Settings">
-        <button variant="primary" onClick={handleSave}>Save Settings</button>
-      </TitleBar>
+      <TitleBar title="Settings" />
 
       <BlockStack gap="500">
         <Box paddingBlockEnd="200">
-           <BlockStack gap="200">
-              <Text variant="headingXl">Settings</Text>
-              <Text variant="bodyMd" tone="subdued">Manage your app settings and preferences.</Text>
-           </BlockStack>
+           <InlineStack align="space-between" blockAlign="center">
+             <BlockStack gap="200">
+                <Text variant="headingXl">Settings</Text>
+                <Text variant="bodyMd" tone="subdued">Manage your app settings and visual preferences.</Text>
+             </BlockStack>
+             <Button variant="primary" size="large" onClick={handleSave} loading={isLoading} icon={CheckCircleIcon}>Save Changes</Button>
+           </InlineStack>
         </Box>
 
-        <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange}>
+        <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab}>
           <Box paddingBlockStart="500" paddingBlockEnd="800">
-             {showBanner && (
-               <Box paddingBlockEnd="400">
-                 <Banner tone="success" onDismiss={() => setShowBanner(false)}>
-                   Settings saved successfully!
-                 </Banner>
-               </Box>
-             )}
-
              {selectedTab === 0 && renderSettingsTab()}
-             {selectedTab === 1 && renderThemeSetupTab()}
-             {selectedTab === 2 && renderTranslationTab()}
+             {selectedTab === 1 && renderVisualStylesTab()}
+             {selectedTab === 2 && renderThemeSetupTab()}
+             {selectedTab === 3 && renderTranslationTab()}
           </Box>
         </Tabs>
-
-        {/* Floating Save Button Bar - Optional UX enhancement */}
-        <Box paddingBlockStart="400" paddingBlockEnd="600">
-          <InlineStack align="end">
-             <Button variant="primary" size="large" onClick={handleSave} icon={CheckCircleIcon}>Save Changes</Button>
-          </InlineStack>
-        </Box>
       </BlockStack>
     </Page>
   );
