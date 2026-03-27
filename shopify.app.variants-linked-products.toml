@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-name = "Variants Linked Products"
+name = "Linked Product Variants"
 client_id = "2dc3da0c1804b6a547c472b2d3b6a6ca"
 application_url = "https://linked-products.bluepeaks.top"
 embedded = true

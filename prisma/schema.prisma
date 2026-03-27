@@ -66,6 +66,25 @@ model ProductGroupItem {
   @@index([groupId])
 }
 
+// Automation Rule - Quy tắc tự động gom nhóm sản phẩm
+model AutomationRule {
+  id              String    @id @default(cuid())
+  shop            String    // Shop domain
+  name            String    // Tên rule để dễ quản lý
+  type            String    // title_pattern, tag, sku_pattern, collection
+  pattern         String    // Pattern hoặc giá trị để match (regex cho title/sku, tag name, collection id)
+  optionName      String    @default("Color") // Tên option cho nhóm được tạo
+  selectorStyle   String    @default("block") // swatch, variant_image, block, dropdown
+  status          String    @default("active") // active, paused
+  groupsCreated   Int       @default(0)  // Số nhóm đã tạo
+  lastRunAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([shop])
+  @@index([shop, type])
+}
+
 // Shop - Track subscription plan
 model Shop {
   id            String    @id @default(cuid())

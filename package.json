@@ -1,5 +1,5 @@
 {
-  "name": "variants-linked-products",
+  "name": "linked-product-variants",
   "private": true,
   "scripts": {
     "build": "remix vite:build",

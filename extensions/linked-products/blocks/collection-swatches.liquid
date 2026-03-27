@@ -1,0 +1,285 @@
+{%- comment -%}
+  Collection Swatches - Show linked product swatches on collection pages
+  This block renders mini swatches below each product card in collection view.
+  
+  It reads the linked_products metafield and renders small color/image indicators
+  so customers can see available variants from the collection page itself.
+{%- endcomment -%}
+
+{%- assign linked_handles_raw = product.metafields.linked_products.linked_list.value -%}
+
+{%- if linked_handles_raw != blank and linked_handles_raw.size > 1 -%}
+  {%- assign current_handle = product.handle -%}
+  {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
+  {%- assign meta_selector_style = product.metafields.linked_products.selector_style.value -%}
+  {%- assign active_style = meta_selector_style | default: block.settings.swatch_style -%}
+  
+  <div class="collection-swatches" style="
+    --cs-size: {{ block.settings.swatch_size }}px;
+    --cs-gap: {{ block.settings.gap }}px;
+    --cs-border-radius: {{ block.settings.border_radius }}px;
+    --cs-border-color: {{ block.settings.border_color }};
+    --cs-selected-border-color: {{ block.settings.selected_border_color }};
+  ">
+    <div class="collection-swatches__list">
+      {%- assign count = 0 -%}
+      {%- assign max_visible = block.settings.max_visible | default: 5 -%}
+      
+      {%- for item in linked_handles_raw -%}
+        {%- assign item_handle = item.handle -%}
+        {%- assign is_current = false -%}
+        {%- if item_handle == current_handle -%}
+          {%- assign is_current = true -%}
+        {%- endif -%}
+        
+        {%- unless is_current -%}
+          {%- assign linked_prod = all_products[item_handle] -%}
+          {%- if linked_prod != blank and linked_prod != empty -%}
+            {%- if inventory_behavior == 'hide' and linked_prod.available == false -%}
+              {%- continue -%}
+            {%- endif -%}
+          {%- else -%}
+            {%- continue -%}
+          {%- endif -%}
+        {%- endunless -%}
+        
+        {%- assign count = count | plus: 1 -%}
+        {%- if count > max_visible -%}
+          {%- break -%}
+        {%- endif -%}
+        
+        {%- comment -%}Determine swatch appearance{%- endcomment -%}
+        {%- assign swatch_color = item.color -%}
+        {%- assign swatch_image = item.image -%}
+        {%- assign swatch_value = item.title -%}
+        
+        {%- if is_current -%}
+          {%- assign swatch_url = product.url -%}
+          {%- assign swatch_product = product -%}
+        {%- else -%}
+          {%- assign swatch_url = linked_prod.url -%}
+          {%- assign swatch_product = linked_prod -%}
+        {%- endif -%}
+        
+        {%- comment -%}Auto-detect color if no custom color set{%- endcomment -%}
+        {%- assign auto_color = "" -%}
+        {%- if swatch_color == blank -%}
+          {%- assign color_name = swatch_value | downcase | strip -%}
+          {%- case color_name -%}
+            {%- when 'red' -%}{%- assign auto_color = "#dc2626" -%}
+            {%- when 'blue' -%}{%- assign auto_color = "#2563eb" -%}
+            {%- when 'green' -%}{%- assign auto_color = "#16a34a" -%}
+            {%- when 'yellow' -%}{%- assign auto_color = "#eab308" -%}
+            {%- when 'orange' -%}{%- assign auto_color = "#ea580c" -%}
+            {%- when 'purple' -%}{%- assign auto_color = "#9333ea" -%}
+            {%- when 'pink' -%}{%- assign auto_color = "#ec4899" -%}
+            {%- when 'black' -%}{%- assign auto_color = "#171717" -%}
+            {%- when 'white' -%}{%- assign auto_color = "#ffffff" -%}
+            {%- when 'gray', 'grey' -%}{%- assign auto_color = "#6b7280" -%}
+            {%- when 'brown' -%}{%- assign auto_color = "#92400e" -%}
+            {%- when 'beige' -%}{%- assign auto_color = "#d4b896" -%}
+            {%- when 'navy' -%}{%- assign auto_color = "#1e3a5f" -%}
+            {%- when 'teal' -%}{%- assign auto_color = "#0d9488" -%}
+            {%- when 'gold' -%}{%- assign auto_color = "#d4af37" -%}
+            {%- when 'silver' -%}{%- assign auto_color = "#c0c0c0" -%}
+            {%- when 'cream' -%}{%- assign auto_color = "#fffdd0" -%}
+            {%- when 'coral' -%}{%- assign auto_color = "#ff7f50" -%}
+          {%- endcase -%}
+        {%- endif -%}
+        
+        {%- assign final_color = swatch_color | default: auto_color -%}
+        
+        <a href="{{ swatch_url }}" 
+           class="cs-swatch{% if is_current %} cs-swatch--active{% endif %}{% if swatch_product.available == false %} cs-swatch--unavailable{% endif %}"
+           title="{{ swatch_value }}{% if swatch_product.available == false %} (Sold out){% endif %}"
+           aria-label="{{ swatch_value }}">
+          
+          {%- if final_color != blank -%}
+            <span class="cs-swatch__color" style="background-color: {{ final_color }};"></span>
+          {%- elsif swatch_image != blank -%}
+            <img src="{{ swatch_image }}" alt="{{ swatch_value }}" width="24" height="24" loading="lazy" class="cs-swatch__img">
+          {%- elsif swatch_product.featured_image != blank -%}
+            <img src="{{ swatch_product.featured_image | image_url: width: 60 }}" alt="{{ swatch_value }}" width="24" height="24" loading="lazy" class="cs-swatch__img">
+          {%- else -%}
+            <span class="cs-swatch__text">{{ swatch_value | slice: 0 }}</span>
+          {%- endif -%}
+        </a>
+      {%- endfor -%}
+      
+      {%- comment -%}Show "+N" indicator if there are more{%- endcomment -%}
+      {%- assign total_items = linked_handles_raw.size -%}
+      {%- if total_items > max_visible -%}
+        {%- assign remaining = total_items | minus: max_visible -%}
+        <span class="cs-swatch cs-swatch--more" title="{{ remaining }} more options">
+          +{{ remaining }}
+        </span>
+      {%- endif -%}
+    </div>
+  </div>
+{%- endif -%}
+
+<!--
+  © 2026 Bluepeaks Studio. All rights reserved.
+  This file is part of the Variants Linked Products Shopify App.
+-->
+
+<style>
+  .collection-swatches {
+    margin-top: 6px;
+    --cs-size: 22px;
+    --cs-gap: 4px;
+    --cs-border-radius: 50%;
+    --cs-border-color: #e5e5e5;
+    --cs-selected-border-color: #000;
+  }
+  
+  .collection-swatches__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cs-gap);
+    align-items: center;
+  }
+  
+  .cs-swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cs-size);
+    height: var(--cs-size);
+    border-radius: var(--cs-border-radius);
+    border: 1.5px solid var(--cs-border-color);
+    overflow: hidden;
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  
+  .cs-swatch:hover {
+    border-color: var(--cs-selected-border-color);
+    transform: scale(1.15);
+  }
+  
+  .cs-swatch--active {
+    border-color: var(--cs-selected-border-color);
+    border-width: 2px;
+  }
+  
+  .cs-swatch--unavailable {
+    opacity: 0.4;
+  }
+  
+  .cs-swatch__color {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  
+  .cs-swatch__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+  }
+  
+  .cs-swatch__text {
+    font-size: 10px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+  }
+  
+  .cs-swatch--more {
+    font-size: 10px;
+    font-weight: 600;
+    color: #666;
+    background: #f5f5f5;
+    border-color: transparent;
+    pointer-events: none;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Collection Swatches",
+  "target": "section",
+  "stylesheet": "linked-products.css",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Swatch Appearance"
+    },
+    {
+      "type": "select",
+      "id": "swatch_style",
+      "label": "Default Swatch Style",
+      "options": [
+        { "value": "swatch", "label": "Color Swatch" },
+        { "value": "variant_image", "label": "Product Image" },
+        { "value": "block", "label": "Text" }
+      ],
+      "default": "swatch",
+      "info": "Fallback style when no metafield setting exists"
+    },
+    {
+      "type": "range",
+      "id": "swatch_size",
+      "label": "Swatch size",
+      "min": 16,
+      "max": 36,
+      "step": 2,
+      "default": 22,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "Gap between swatches",
+      "min": 2,
+      "max": 10,
+      "step": 1,
+      "default": 4,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 50,
+      "step": 2,
+      "default": 50,
+      "unit": "%",
+      "info": "50% = circle, 0 = square"
+    },
+    {
+      "type": "range",
+      "id": "max_visible",
+      "label": "Max visible swatches",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "default": 5,
+      "info": "Show '+N' indicator for remaining"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border color",
+      "default": "#e5e5e5"
+    },
+    {
+      "type": "color",
+      "id": "selected_border_color",
+      "label": "Active border color",
+      "default": "#000000"
+    }
+  ]
+}
+{% endschema %}

@@ -198,6 +198,22 @@ export async function action({ request, params }) {
                 value: group.inventoryBehavior || "show",
                 type: "single_line_text_field",
             });
+            // 4. option_name metafield (dynamic per group)
+            metafields.push({
+                ownerId: product.productId,
+                namespace: "linked_products",
+                key: "option_name",
+                value: group.optionName || "Color",
+                type: "single_line_text_field",
+            });
+            // 5. selector_style metafield (dynamic per group)
+            metafields.push({
+                ownerId: product.productId,
+                namespace: "linked_products",
+                key: "selector_style",
+                value: group.selectorStyle || "block",
+                type: "single_line_text_field",
+            });
         }
 
         // Batching: Shopify limits metafieldsSet to 25 items per call
@@ -380,69 +396,15 @@ export async function action({ request, params }) {
         }
     }
 
-    // SYNC - Sync metafields to Shopify
+    // SYNC - Sync metafields to Shopify (unified with syncGroupMetafields)
     if (actionType === "sync") {
         try {
-            const group = await prisma.productGroup.findUnique({
-                where: { id: groupId },
-                include: { products: { orderBy: { position: "asc" } } },
-            });
-
-            if (!group || group.products.length < 2) {
-                return json({ error: "At least 2 products are required to sync" }, { status: 400 });
+            const syncResult = await syncGroupMetafields(groupId);
+            if (syncResult.success) {
+                return json({ success: true, message: "Synced successfully!" });
+            } else {
+                return json({ error: syncResult.error }, { status: 400 });
             }
-
-            const allHandles = group.products.map((p) => p.productHandle).filter(Boolean);
-
-            // For each product, save all handles to preserve order
-            for (const product of group.products) {
-                // Save all handles for consistent order
-                const allHandlesForProduct = allHandles;
-
-                // Update product metafields
-                const metafieldMutation = await admin.graphql(`
-          mutation UpdateProductMetafields($input: ProductInput!) {
-            productUpdate(input: $input) {
-              product { id }
-              userErrors { field message }
-            }
-          }
-        `, {
-                    variables: {
-                        input: {
-                            id: product.productId,
-                            metafields: [
-                                {
-                                    namespace: "linked_products",
-                                    key: "linked_list",
-                                    value: JSON.stringify(allHandlesForProduct),
-                                    type: "json",
-                                },
-                                {
-                                    namespace: "linked_products",
-                                    key: "option_value",
-                                    value: product.optionValue || "",
-                                    type: "single_line_text_field",
-                                },
-                            ],
-                        },
-                    },
-                });
-
-                const result = await metafieldMutation.json();
-                if (result.data?.productUpdate?.userErrors?.length > 0) {
-                    console.error("Sync error:", result.data.productUpdate.userErrors);
-                    throw new Error(result.data.productUpdate.userErrors[0].message);
-                }
-            }
-
-            // Update sync status
-            await prisma.productGroup.update({
-                where: { id: groupId },
-                data: { syncStatus: "synced" },
-            });
-
-            return json({ success: true, message: "Synced successfully!" });
         } catch (error) {
             await prisma.productGroup.update({
                 where: { id: groupId },
@@ -464,6 +426,31 @@ export async function action({ request, params }) {
         try {
             await syncGroupMetafields(groupId);
             return json({ success: true, message: "Inventory settings updated and synced!" });
+        } catch (error) {
+            return json({ success: true, message: `Settings saved but sync failed: ${error.message}` });
+        }
+    }
+
+    // Update Group Settings (Option Name, Selector Style)
+    if (actionType === "updateGroupSettings") {
+        const optionName = formData.get("optionName");
+        const selectorStyle = formData.get("selectorStyle");
+        const groupName = formData.get("groupName");
+
+        const updateData = {};
+        if (optionName !== null) updateData.optionName = optionName;
+        if (selectorStyle !== null) updateData.selectorStyle = selectorStyle;
+        if (groupName !== null) updateData.name = groupName;
+
+        await prisma.productGroup.update({
+            where: { id: groupId },
+            data: updateData,
+        });
+
+        // Auto-sync after setting update
+        try {
+            await syncGroupMetafields(groupId);
+            return json({ success: true, message: "Group settings updated and synced!" });
         } catch (error) {
             return json({ success: true, message: `Settings saved but sync failed: ${error.message}` });
         }
@@ -498,7 +485,8 @@ export default function GroupDetail() {
     const isSyncing = navigation.state !== "idle" && (
         navigation.formData?.get("action") === "sync" ||
         navigation.formData?.get("action") === "addProducts" ||
-        navigation.formData?.get("action") === "updateInventoryBehavior"
+        navigation.formData?.get("action") === "updateInventoryBehavior" ||
+        navigation.formData?.get("action") === "updateGroupSettings"
     );
 
     // Open Resource Picker to select products
@@ -575,6 +563,19 @@ export default function GroupDetail() {
         submit(formData, { method: "POST" });
     }, [submit]);
 
+    const handleOptionNameChange = useCallback((value) => {
+        const formData = new FormData();
+        formData.append("action", "updateGroupSettings");
+        formData.append("optionName", value);
+        submit(formData, { method: "POST" });
+    }, [submit]);
+
+    const handleSelectorStyleChange = useCallback((value) => {
+        const formData = new FormData();
+        formData.append("action", "updateGroupSettings");
+        formData.append("selectorStyle", value);
+        submit(formData, { method: "POST" });
+    }, [submit]);
 
     const getSyncBadge = () => {
         switch (group.syncStatus) {
@@ -643,6 +644,46 @@ export default function GroupDetail() {
                                 </BlockStack>
                             </Box>
                         )}
+
+                        <Card>
+                            <BlockStack gap="400">
+                                <Text variant="headingMd">Group Settings</Text>
+                                <InlineStack gap="400" blockAlign="end">
+                                    <div style={{ flex: 1 }}>
+                                        <Select
+                                            label="Option Name"
+                                            options={[
+                                                { label: 'Color', value: 'Color' },
+                                                { label: 'Size', value: 'Size' },
+                                                { label: 'Material', value: 'Material' },
+                                                { label: 'Style', value: 'Style' },
+                                                { label: 'Pattern', value: 'Pattern' },
+                                                { label: 'Type', value: 'Type' },
+                                                { label: 'Flavor', value: 'Flavor' },
+                                                { label: 'Model', value: 'Model' },
+                                            ]}
+                                            value={group.optionName || "Color"}
+                                            onChange={handleOptionNameChange}
+                                            helpText="Display name for this option group"
+                                        />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <Select
+                                            label="Selector Style"
+                                            options={[
+                                                { label: 'Text Block', value: 'block' },
+                                                { label: 'Color Swatch', value: 'swatch' },
+                                                { label: 'Product Image', value: 'variant_image' },
+                                                { label: 'Dropdown', value: 'dropdown' },
+                                            ]}
+                                            value={group.selectorStyle || "block"}
+                                            onChange={handleSelectorStyleChange}
+                                            helpText="How the options appear on storefront"
+                                        />
+                                    </div>
+                                </InlineStack>
+                            </BlockStack>
+                        </Card>
 
                         <Card>
                             <BlockStack gap="400">

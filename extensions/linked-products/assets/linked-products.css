@@ -224,6 +224,45 @@
   background-color: #f9f9f9;
 }
 
+/* Dropdown style */
+.variant-picker__dropdown {
+  position: relative;
+  max-width: 300px;
+}
+
+.linked-products-dropdown {
+  width: 100%;
+  padding: var(--lp-block-padding-y, 8px) var(--lp-block-padding-x, 12px);
+  padding-right: 36px;
+  font-size: var(--lp-block-font-size, 14px);
+  font-weight: 500;
+  color: var(--lp-block-text, #000);
+  background-color: var(--lp-block-bg, #fff);
+  border: var(--lp-border-width, 2px) solid var(--lp-border-color, #e5e5e5);
+  border-radius: var(--lp-border-radius, 8px);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23666' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  transition: border-color 0.2s ease;
+  min-height: 40px;
+}
+
+.linked-products-dropdown:hover,
+.linked-products-dropdown:focus {
+  border-color: var(--lp-selected-border-color, #000);
+  outline: none;
+}
+
+.linked-products-dropdown option:disabled {
+  color: #999;
+  font-style: italic;
+}
+
 /* ============================================
    Responsive
    ============================================ */
@@ -242,5 +281,9 @@
     min-height: 36px;
     padding: calc(var(--lp-block-padding-y) * 0.8) calc(var(--lp-block-padding-x) * 0.8);
     font-size: 0.8125rem;
+  }
+
+  .linked-products-dropdown {
+    max-width: 100%;
   }
 }

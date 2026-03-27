@@ -16,6 +16,12 @@
   {%- assign current_handle = product.handle -%}
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
   
+  {%- comment -%}Dynamic settings: prefer metafield from admin, fallback to block settings{%- endcomment -%}
+  {%- assign meta_selector_style = product.metafields.linked_products.selector_style.value -%}
+  {%- assign meta_option_name = product.metafields.linked_products.option_name.value -%}
+  {%- assign active_selector_style = meta_selector_style | default: block.settings.selector_style -%}
+  {%- assign active_option_name = meta_option_name | default: block.settings.option_name -%}
+  
   <div class="linked-products-picker{% unless block.settings.enable_hover_effect %} no-hover-effect{% endunless %}" style="
     --lp-swatch-size: {{ block.settings.swatch_size }}px;
     --lp-items-gap: {{ block.settings.items_gap }}px;
@@ -33,69 +39,102 @@
   ">
     <div class="variant-picker">
       <fieldset class="variant-picker__option">
-        {%- if block.settings.show_option_name and block.settings.option_name != blank -%}
+        {%- if block.settings.show_option_name and active_option_name != blank -%}
           <div class="variant-picker__option-info">
             <div class="h-stack gap-2">
-              <legend class="text-subdued">{{ block.settings.option_name | escape }}:</legend>
+              <legend class="text-subdued">{{ active_option_name | escape }}:</legend>
               <span class="selected-value">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
             </div>
           </div>
         {%- endif -%}
 
-        <div class="variant-picker__option-values wrap" style="gap: var(--lp-items-gap);">
-          {%- assign current_rendered = false -%}
-          
-          {%- for item in linked_handles_raw -%}
-            {%- assign item_handle = item.handle -%}
-            {%- if item_handle == current_handle -%}
-              {%- comment -%}Render current product with selected = true{%- endcomment -%}
+        {%- if active_selector_style == 'dropdown' -%}
+          {%- comment -%}Dropdown style{%- endcomment -%}
+          <div class="variant-picker__dropdown">
+            <select class="linked-products-dropdown" onchange="if(this.value) window.location.href = this.value;">
+              {%- assign current_rendered_dd = false -%}
+              {%- for item in linked_handles_raw -%}
+                {%- assign item_handle = item.handle -%}
+                {%- if item_handle == current_handle -%}
+                  {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
+                  <option value="{{ product.url }}" selected>{{ current_value }}</option>
+                  {%- assign current_rendered_dd = true -%}
+                {%- else -%}
+                  {%- assign linked_prod = all_products[item_handle] -%}
+                  {%- if linked_prod != blank and linked_prod != empty -%}
+                    {%- if inventory_behavior == 'hide' and linked_prod.available == false -%}
+                      {%- continue -%}
+                    {%- endif -%}
+                    {%- assign value = item.title | default: linked_prod.title -%}
+                    <option value="{{ linked_prod.url }}"
+                      {%- if linked_prod.available == false %} disabled{%- endif -%}
+                    >{{ value }}{%- if linked_prod.available == false %} (Sold out){%- endif -%}</option>
+                  {%- endif -%}
+                {%- endif -%}
+              {%- endfor -%}
+              {%- unless current_rendered_dd -%}
+                {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
+                <option value="{{ product.url }}" selected>{{ current_value }}</option>
+              {%- endunless -%}
+            </select>
+          </div>
+        {%- else -%}
+          {%- comment -%}Swatch / Image / Block styles{%- endcomment -%}
+          <div class="variant-picker__option-values wrap" style="gap: var(--lp-items-gap);">
+            {%- assign current_rendered = false -%}
+            
+            {%- for item in linked_handles_raw -%}
+              {%- assign item_handle = item.handle -%}
+              {%- if item_handle == current_handle -%}
+                {%- comment -%}Render current product with selected = true{%- endcomment -%}
+                {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
+                {%- render 'linked-product-option', 
+                    product_obj: product,
+                    value: current_value, 
+                    selected: true,
+                    style: active_selector_style,
+                    settings: block.settings,
+                    custom_image: item.image,
+                    custom_color: item.color
+                -%}
+                {%- assign current_rendered = true -%}
+              {%- else -%}
+                {%- comment -%}Render linked product{%- endcomment -%}
+                {%- assign linked_prod = all_products[item_handle] -%}
+                {%- if linked_prod != blank and linked_prod != empty -%}
+                  
+                  {%- comment -%}Inventory logic{%- endcomment -%}
+                  {%- if inventory_behavior == 'hide' and linked_prod.available == false -%}
+                    {%- continue -%}
+                  {%- endif -%}
+
+                  {%- assign value = item.title | default: linked_prod.title -%}
+                  {%- render 'linked-product-option', 
+                      product_obj: linked_prod,
+                      value: value, 
+                      selected: false,
+                      style: active_selector_style,
+                      settings: block.settings,
+                      custom_image: item.image,
+                      custom_color: item.color
+                  -%}
+                {%- endif -%}
+              {%- endif -%}
+            {%- endfor -%}
+            
+            {%- comment -%}If current product not rendered (not in list), render at end{%- endcomment -%}
+            {%- unless current_rendered -%}
               {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
               {%- render 'linked-product-option', 
                   product_obj: product,
                   value: current_value, 
                   selected: true,
-                  style: block.settings.selector_style,
-                  settings: block.settings,
-                  custom_image: item.image,
-                  custom_color: item.color
+                  style: active_selector_style,
+                  settings: block.settings
               -%}
-              {%- assign current_rendered = true -%}
-            {%- else -%}
-              {%- comment -%}Render linked product{%- endcomment -%}
-              {%- assign linked_prod = all_products[item_handle] -%}
-              {%- if linked_prod != blank and linked_prod != empty -%}
-                
-                {%- comment -%}Inventory logic{%- endcomment -%}
-                {%- if inventory_behavior == 'hide' and linked_prod.available == false -%}
-                  {%- continue -%}
-                {%- endif -%}
-
-                {%- assign value = item.title | default: linked_prod.title -%}
-                {%- render 'linked-product-option', 
-                    product_obj: linked_prod,
-                    value: value, 
-                    selected: false,
-                    style: block.settings.selector_style,
-                    settings: block.settings,
-                    custom_image: item.image,
-                    custom_color: item.color
-                -%}
-              {%- endif -%}
-            {%- endif -%}
-          {%- endfor -%}
-          
-          {%- comment -%}If current product not rendered (not in list), render at end{%- endcomment -%}
-          {%- unless current_rendered -%}
-            {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
-            {%- render 'linked-product-option', 
-                product_obj: product,
-                value: current_value, 
-                selected: true,
-                style: block.settings.selector_style,
-                settings: block.settings
-            -%}
-          {%- endunless -%}
-        </div>
+            {%- endunless -%}
+          </div>
+        {%- endif -%}
       </fieldset>
     </div>
   </div>
@@ -135,9 +174,10 @@
       "id": "selector_style",
       "label": "Selector Style",
       "options": [
-        { "value": "swatch", "label": "Color Swatch" },
+      { "value": "swatch", "label": "Color Swatch" },
         { "value": "variant_image", "label": "Product Image" },
-        { "value": "block", "label": "Text Block" }
+        { "value": "block", "label": "Text Block" },
+        { "value": "dropdown", "label": "Dropdown" }
       ],
       "default": "block"
     },

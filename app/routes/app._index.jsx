@@ -23,7 +23,7 @@ import {
   ProgressBar,
   Icon,
 } from "@shopify/polaris";
-import { XIcon, SearchIcon, ViewIcon, DeleteIcon } from "@shopify/polaris-icons";
+import { XIcon, SearchIcon, ViewIcon, DeleteIcon, ImportIcon } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
 
@@ -241,11 +241,203 @@ export async function action({ request }) {
       return json({ error: "Group not found" }, { status: 400 });
     }
 
+    // Lấy danh sách sản phẩm trong nhóm trước khi xóa
+    const group = await prisma.productGroup.findUnique({
+      where: { id: groupId },
+      include: { products: true },
+    });
+
+    if (!group) {
+      return json({ error: "Group not found" }, { status: 400 });
+    }
+
+    // Xóa metafield trên Shopify cho từng sản phẩm
+    try {
+      const metafieldKeys = [
+        "linked_products.linked_list",
+        "linked_products.option_value",
+        "linked_products.inventory_behavior",
+        "linked_products.option_name",
+        "linked_products.selector_style",
+      ];
+
+      for (const product of group.products) {
+        // Lấy metafield IDs của sản phẩm
+        const metafieldQuery = await admin.graphql(`
+          query GetProductMetafields($productId: ID!) {
+            product(id: $productId) {
+              metafields(first: 10, namespace: "linked_products") {
+                nodes {
+                  id
+                  key
+                }
+              }
+            }
+          }
+        `, { variables: { productId: product.productId } });
+
+        const metafieldResult = await metafieldQuery.json();
+        const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
+
+        if (metafieldNodes.length > 0) {
+          const metafieldIds = metafieldNodes.map(m => m.id);
+          await admin.graphql(`
+            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
+              metafieldsDelete(metafields: $metafields) {
+                deletedMetafields { ownerId }
+                userErrors { field message }
+              }
+            }
+          `, {
+            variables: {
+              metafields: metafieldIds.map(id => ({ id })),
+            },
+          });
+        }
+      }
+    } catch (error) {
+      console.warn("Warning: Could not clean up metafields:", error.message);
+      // Không throw error - vẫn cho phép xóa nhóm trong DB
+    }
+
     await prisma.productGroup.delete({
       where: { id: groupId },
     });
 
-    return json({ success: true, message: "Group deleted" });
+    return json({ success: true, message: "Group and metafields deleted successfully" });
+  }
+
+  // Import CSV
+  if (actionType === "importCSV") {
+    const csvData = formData.get("csvData");
+    if (!csvData) {
+      return json({ error: "No CSV data provided" }, { status: 400 });
+    }
+
+    try {
+      const lines = csvData.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+      let groupsCreated = 0;
+      let errors = [];
+
+      for (const line of lines) {
+        const parts = line.split(",").map(s => s.trim()).filter(s => s.length > 0);
+        if (parts.length < 3) {
+          errors.push(`Skipped line: "${line}" (need at least group name + 2 product handles)`);
+          continue;
+        }
+
+        const groupName = parts[0];
+        const handles = parts.slice(1);
+
+        // Lookup product IDs from handles
+        const products = [];
+        for (const handle of handles) {
+          try {
+            const response = await admin.graphql(`
+              query GetProductByHandle($handle: String!) {
+                productByHandle(handle: $handle) {
+                  id
+                  title
+                  handle
+                }
+              }
+            `, { variables: { handle } });
+            const result = await response.json();
+            const product = result.data?.productByHandle;
+            if (product) {
+              products.push(product);
+            } else {
+              errors.push(`Product not found: "${handle}"`);
+            }
+          } catch (e) {
+            errors.push(`Error looking up product: "${handle}"`);
+          }
+        }
+
+        if (products.length < 2) {
+          errors.push(`Skipped group "${groupName}": found only ${products.length} valid products`);
+          continue;
+        }
+
+        // Check link limit
+        const canAdd = await canAddLinks(session.shop, products.length);
+        if (!canAdd) {
+          errors.push(`Skipped group "${groupName}": link limit reached`);
+          break;
+        }
+
+        // Check for conflicts
+        const productIds = products.map(p => p.id);
+        const existingItems = await prisma.productGroupItem.findMany({
+          where: { productId: { in: productIds } },
+        });
+        if (existingItems.length > 0) {
+          errors.push(`Skipped group "${groupName}": some products already belong to another group`);
+          continue;
+        }
+
+        // Create group
+        const newGroup = await prisma.productGroup.create({
+          data: { shop: session.shop, name: groupName, optionName: "Color", selectorStyle: "block" },
+        });
+
+        for (let i = 0; i < products.length; i++) {
+          await prisma.productGroupItem.create({
+            data: {
+              groupId: newGroup.id,
+              productId: products[i].id,
+              productHandle: products[i].handle,
+              optionValue: products[i].title,
+              position: i + 1,
+            },
+          });
+        }
+
+        // Sync metafields
+        const metafields = [];
+        const metafieldValue = products.map(p => ({ handle: p.handle, title: p.title, image: "", color: "" }));
+
+        for (const product of products) {
+          metafields.push(
+            { ownerId: product.id, namespace: "linked_products", key: "linked_list", value: JSON.stringify(metafieldValue), type: "json" },
+            { ownerId: product.id, namespace: "linked_products", key: "option_value", value: product.title || "", type: "single_line_text_field" },
+            { ownerId: product.id, namespace: "linked_products", key: "inventory_behavior", value: "show", type: "single_line_text_field" },
+            { ownerId: product.id, namespace: "linked_products", key: "option_name", value: "Color", type: "single_line_text_field" },
+            { ownerId: product.id, namespace: "linked_products", key: "selector_style", value: "block", type: "single_line_text_field" },
+          );
+        }
+
+        const BATCH_SIZE = 25;
+        for (let i = 0; i < metafields.length; i += BATCH_SIZE) {
+          const batch = metafields.slice(i, i + BATCH_SIZE);
+          const mutation = await admin.graphql(`
+            mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
+              metafieldsSet(metafields: $metafields) {
+                metafields { id }
+                userErrors { field message }
+              }
+            }
+          `, { variables: { metafields: batch } });
+          const mfResult = await mutation.json();
+          if (mfResult.data?.metafieldsSet?.userErrors?.length > 0) {
+            console.warn("CSV import sync warning:", mfResult.data.metafieldsSet.userErrors);
+          }
+        }
+
+        await prisma.productGroup.update({
+          where: { id: newGroup.id },
+          data: { syncStatus: "synced" },
+        });
+
+        groupsCreated++;
+      }
+
+      const message = `Import completed: ${groupsCreated} groups created.` +
+        (errors.length > 0 ? `\n${errors.join("\n")}` : "");
+      return json({ success: true, message });
+    } catch (error) {
+      return json({ error: `Import failed: ${error.message}` }, { status: 500 });
+    }
   }
 
   return json({ error: "Invalid action" }, { status: 400 });
@@ -269,6 +461,8 @@ export default function Index() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [csvData, setCsvData] = useState("");
 
   const isLoading = navigation.state === "submitting" || navigation.state === "loading";
   const isSyncing = navigation.state !== "idle" && (
@@ -339,6 +533,9 @@ export default function Index() {
       <TitleBar title="Variants Linked Products">
         <button variant="primary" onClick={() => setShowCreateModal(true)}>
           Create Group
+        </button>
+        <button onClick={() => setShowImportModal(true)}>
+          Import CSV
         </button>
       </TitleBar>
 
@@ -586,6 +783,59 @@ export default function Index() {
               )}
             </BlockStack>
           </FormLayout>
+        </Modal.Section>
+      </Modal>
+
+      {/* Import CSV Modal */}
+      <Modal
+        open={showImportModal}
+        onClose={() => {
+          setShowImportModal(false);
+          setCsvData("");
+        }}
+        title="Import Groups from CSV"
+        primaryAction={{
+          content: "Import",
+          onAction: () => {
+            const formData = new FormData();
+            formData.append("action", "importCSV");
+            formData.append("csvData", csvData);
+            submit(formData, { method: "POST" });
+            setShowImportModal(false);
+            setCsvData("");
+          },
+          loading: isLoading && navigation.formData?.get("action") === "importCSV",
+          disabled: !csvData.trim(),
+        }}
+        secondaryActions={[{
+          content: "Cancel",
+          onAction: () => {
+            setShowImportModal(false);
+            setCsvData("");
+          },
+        }]}
+      >
+        <Modal.Section>
+          <BlockStack gap="400">
+            <Banner tone="info">
+              <BlockStack gap="200">
+                <p><strong>CSV Format:</strong> Each line creates one group.</p>
+                <p><code>Group Name, product-handle-1, product-handle-2, ...</code></p>
+                <p><strong>Example:</strong></p>
+                <p><code>T-Shirt Colors, red-tshirt, blue-tshirt, green-tshirt</code></p>
+                <p><code>Phone Cases, iphone-case-black, iphone-case-white</code></p>
+              </BlockStack>
+            </Banner>
+            <TextField
+              label="CSV Data"
+              value={csvData}
+              onChange={setCsvData}
+              multiline={8}
+              placeholder={"Group Name, product-handle-1, product-handle-2\nAnother Group, handle-a, handle-b, handle-c"}
+              autoComplete="off"
+              helpText="Paste your CSV data here. Each line = one new group."
+            />
+          </BlockStack>
         </Modal.Section>
       </Modal>
     </Page>
