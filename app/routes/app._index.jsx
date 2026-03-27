@@ -807,11 +807,21 @@ export default function Index() {
 
                 <Card>
                   <BlockStack gap="300">
-                     <Text variant="headingMd">Quick Actions</Text>
-                      <Button fullWidth textAlign="left" icon={PlusCircleIcon} onClick={() => setShowCreateModal(true)}>Create Group</Button>
-                      <Button fullWidth textAlign="left" icon={PlusCircleIcon} url="/app/groups">Manage Groups</Button>
-                      <Button fullWidth textAlign="left" icon={AutomationIcon} url="/app/automations">Automations</Button>
-                      <Button fullWidth textAlign="left" icon={ImportIcon} onClick={() => setShowImportModal(true)}>Import CSV</Button>
+                    <Text variant="headingMd">Quick Actions</Text>
+                    <Grid>
+                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                        <Button fullWidth textAlign="left" icon={PlusCircleIcon} onClick={() => setShowCreateModal(true)}>Create Group</Button>
+                      </Grid.Cell>
+                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                        <Button fullWidth textAlign="left" icon={PlusCircleIcon} url="/app/groups">Manage Groups</Button>
+                      </Grid.Cell>
+                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                        <Button fullWidth textAlign="left" icon={AutomationIcon} url="/app/automations">Automations</Button>
+                      </Grid.Cell>
+                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                        <Button fullWidth textAlign="left" icon={ImportIcon} onClick={() => setShowImportModal(true)}>Import CSV</Button>
+                      </Grid.Cell>
+                    </Grid>
                   </BlockStack>
                 </Card>
               </BlockStack>
