@@ -35,6 +35,7 @@ import {
   PlusIcon,
   FilterIcon,
   QuestionCircleIcon,
+  ChevronDownIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 
@@ -142,6 +143,9 @@ export default function GroupsPage() {
     }
   }, [submit]);
 
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+
   const tabs = [
     { id: 'all', content: 'All', accessibilityLabel: 'All product groups', panelID: 'all-groups-panel' },
     { id: 'single', content: 'Single option', panelID: 'single-option-panel' },
@@ -209,86 +213,107 @@ export default function GroupsPage() {
 
         {/* Groups Content */}
         <Card padding="0">
-          <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange}>
-             <Box padding="400">
-                <InlineStack align="space-between" blockAlign="center">
-                   <div style={{ flex: 1, marginRight: '20px' }}>
-                      <TextField
-                        placeholder="Search groups"
-                        prefix={<Icon source={SearchIcon} />}
-                        autoComplete="off"
-                      />
-                   </div>
-                   <Button icon={FilterIcon} />
-                </InlineStack>
-             </Box>
-             <Divider />
-             
-             {groups.length === 0 ? (
-               <Box padding="1000">
-                 <BlockStack gap="500" align="center">
-                    <Thumbnail
-                      source="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-                      size="large"
-                      alt="Empty groups"
-                    />
-                    <BlockStack gap="200" align="center">
-                       <Text variant="headingMd" alignment="center">Product groups</Text>
-                       <Text variant="bodyMd" tone="subdued" alignment="center">
-                         Create a product group to link listings together. <Link to="/app/help">Learn more</Link>
-                       </Text>
-                    </BlockStack>
-                    <Button variant="primary" url="/app">Create group</Button>
-                 </BlockStack>
+          {isSearchActive ? (
+            <BlockStack>
+               <Box padding="400">
+                  <InlineStack align="space-between" blockAlign="center" gap="400">
+                     <div style={{ flex: 1 }}>
+                        <TextField
+                          placeholder="Search product groups"
+                          prefix={<Icon source={SearchIcon} />}
+                          value={searchValue}
+                          onChange={setSearchValue}
+                          autoComplete="off"
+                        />
+                     </div>
+                     <Button variant="plain" onClick={() => setIsSearchActive(false)}>Cancel</Button>
+                  </InlineStack>
+                  <Box paddingBlockStart="300">
+                     <InlineStack gap="200">
+                        <Button icon={ChevronDownIcon} iconPosition="right">Status</Button>
+                        <Button icon={ChevronDownIcon} iconPosition="right">Product count</Button>
+                     </InlineStack>
+                  </Box>
                </Box>
-             ) : (
-               <IndexTable
-                 resourceName={{ singular: "group", plural: "groups" }}
-                 itemCount={groups.length}
-                 headings={[
-                   { title: "Group Name" },
-                   { title: "Products" },
-                   { title: "Status" },
-                   { title: "Actions", alignment: "end" },
-                 ]}
-                 selectable={false}
-               >
-                 {groups.map((group, index) => (
-                   <IndexTable.Row id={group.id} key={group.id} position={index}>
-                     <IndexTable.Cell>
-                       <div style={{ maxWidth: '300px' }}>
-                         <Text variant="bodyMd" fontWeight="bold" truncate>
-                           <Link to={`/app/groups/${group.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>{group.name}</Link>
-                         </Text>
-                       </div>
-                     </IndexTable.Cell>
-                     <IndexTable.Cell>{group._count.products}</IndexTable.Cell>
-                     <IndexTable.Cell>{getSyncStatusBadge(group.syncStatus)}</IndexTable.Cell>
-                     <IndexTable.Cell>
-                       <InlineStack gap="100" align="end">
-                         <Tooltip content="View details">
-                           <Button
-                             icon={ViewIcon}
-                             url={`/app/groups/${group.id}`}
-                             accessibilityLabel="View group"
-                           />
-                         </Tooltip>
-                         <Tooltip content="Delete group">
-                           <Button
-                             icon={DeleteIcon}
-                             tone="critical"
-                             onClick={() => handleDeleteGroup(group.id)}
-                             loading={isLoading && navigation.formData?.get("groupId") === group.id}
-                             accessibilityLabel="Delete group"
-                           />
-                         </Tooltip>
-                       </InlineStack>
-                     </IndexTable.Cell>
-                   </IndexTable.Row>
-                 ))}
-               </IndexTable>
-             )}
-          </Tabs>
+               <Divider />
+            </BlockStack>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
+              <div style={{ position: 'absolute', top: '8px', right: '16px', zIndex: 1 }}>
+                 <InlineStack gap="100">
+                    <Button variant="tertiary" icon={SearchIcon} onClick={() => setIsSearchActive(true)} />
+                    <Button variant="tertiary" icon={FilterIcon} />
+                 </InlineStack>
+              </div>
+              <Divider />
+            </div>
+          )}
+             
+          {groups.length === 0 ? (
+            <Box padding="1000">
+              <BlockStack gap="500" align="center">
+                <Thumbnail
+                  source="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+                  size="large"
+                  alt="Empty groups"
+                />
+                <BlockStack gap="200" align="center">
+                    <Text variant="headingMd" alignment="center">Product groups</Text>
+                    <Text variant="bodyMd" tone="subdued" alignment="center">
+                      Create a product group to link listings together. <Link to="/app/help">Learn more</Link>
+                    </Text>
+                </BlockStack>
+                <Button variant="primary" url="/app">Create group</Button>
+              </BlockStack>
+            </Box>
+          ) : (
+            <IndexTable
+              resourceName={{ singular: "group", plural: "groups" }}
+              itemCount={groups.length}
+              headings={[
+                { title: "Group Name" },
+                { title: "Products" },
+                { title: "Status" },
+                { title: "Actions", alignment: "end" },
+              ]}
+              selectable={false}
+            >
+              {groups.map((group, index) => (
+                <IndexTable.Row id={group.id} key={group.id} position={index}>
+                  <IndexTable.Cell>
+                    <div style={{ maxWidth: '300px' }}>
+                      <Text variant="bodyMd" fontWeight="bold" truncate>
+                        <Link to={`/app/groups/${group.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>{group.name}</Link>
+                      </Text>
+                    </div>
+                  </IndexTable.Cell>
+                  <IndexTable.Cell>{group._count.products}</IndexTable.Cell>
+                  <IndexTable.Cell>{getSyncStatusBadge(group.syncStatus)}</IndexTable.Cell>
+                  <IndexTable.Cell>
+                    <InlineStack gap="100" align="end">
+                      <Tooltip content="View details">
+                        <Button
+                          icon={ViewIcon}
+                          url={`/app/groups/${group.id}`}
+                          accessibilityLabel="View group"
+                        />
+                      </Tooltip>
+                      <Tooltip content="Delete group">
+                        <Button
+                          icon={DeleteIcon}
+                          tone="critical"
+                          onClick={() => handleDeleteGroup(group.id)}
+                          loading={isLoading && navigation.formData?.get("groupId") === group.id}
+                          accessibilityLabel="Delete group"
+                        />
+                      </Tooltip>
+                    </InlineStack>
+                  </IndexTable.Cell>
+                </IndexTable.Row>
+              ))}
+            </IndexTable>
+          )}
         </Card>
 
         {/* Footer */}
