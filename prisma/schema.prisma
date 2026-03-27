@@ -60,6 +60,8 @@ model ProductGroupItem {
   optionValue    String?   // Giá trị option (Red, Blue, etc.)
   customImageUrl String?   // Hình ảnh tùy chỉnh cho swatch
   customColor    String?   // Màu sắc tùy chỉnh (HEX)
+  customColor2   String?   // Màu sắc tùy chỉnh thứ 2 (HEX), dùng khi style là 'two'
+  style          String?   @default("one") // one, two
   position       Int       @default(0)
   group          ProductGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   createdAt      DateTime  @default(now())

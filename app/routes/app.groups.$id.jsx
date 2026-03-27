@@ -22,6 +22,8 @@ import {
     Icon,
     Checkbox,
     Grid,
+    Popover,
+    ColorPicker,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { 
@@ -67,6 +69,46 @@ const PREVIEW_IMAGES = [
 ];
 
 const PREVIEW_COLORS = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
+
+// Color conversion helpers
+function hexToHsb(hex) {
+    if (!hex || !hex.startsWith('#')) return { hue: 0, saturation: 0, brightness: 1 };
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, v = max;
+    const d = max - min;
+    s = max === 0 ? 0 : d / max;
+    if (max === min) { h = 0; }
+    else {
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    return { hue: h * 360, saturation: s, brightness: v };
+}
+
+function hsbToHex(hsb) {
+    const { hue, saturation, brightness } = hsb;
+    const s = saturation;
+    const v = brightness;
+    const c = v * s;
+    const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+    const m = v - c;
+    let r, g, b;
+    if (hue >= 0 && hue < 60) { r = c; g = x; b = 0; }
+    else if (hue >= 60 && hue < 120) { r = x; g = c; b = 0; }
+    else if (hue >= 120 && hue < 180) { r = 0; g = c; b = x; }
+    else if (hue >= 180 && hue < 240) { r = 0; g = x; b = c; }
+    else if (hue >= 240 && hue < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+    const toHex = (n) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+}
 
 const renderPreview = (styleId) => {
     if (styleId === 'image_swatch') return (
@@ -170,6 +212,20 @@ const renderPreview = (styleId) => {
     return null;
 };
 
+const getSwatchStyle = (p) => {
+    if (p.style === 'two') {
+        return { background: `linear-gradient(to right, ${p.customColor || '#F5F5F5'} 50%, ${p.customColor2 || '#D0D0D0'} 50%)` };
+    }
+    if (p.style === 'image') {
+        return { 
+            backgroundImage: `url(${p.customImageUrl || p.image || ''})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+        };
+    }
+    return { background: p.customColor || '#F5F5F5' };
+};
+
 const renderSidebarPreview = (styleId, isCard = false, products = []) => {
     if (!products || products.length === 0) return <Text tone="subdued">Add products to see preview</Text>;
 
@@ -249,7 +305,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         height: isCard ? '16px' : '32px', 
                         borderRadius: styleId.includes('square') ? '2px' : '50%', 
                         flexShrink: 0,
-                        background: p.customColor || '#f5f5dc', 
+                        ...getSwatchStyle(p),
                         border: '1px solid #ddd',
                         outline: i === 0 ? '2px solid #000' : 'none',
                         outlineOffset: '2px'
@@ -666,6 +722,8 @@ export async function action({ request, params }) {
                             optionValue: item.optionValue,
                             customImageUrl: item.customImageUrl || null,
                             customColor: item.customColor || null,
+                            customColor2: item.customColor2 || null,
+                            style: item.style || "one",
                         }
                     });
                 }
@@ -682,6 +740,143 @@ export async function action({ request, params }) {
     }
 
     return json({ error: "Invalid action" }, { status: 400 });
+}
+
+const ColorPickerPopover = ({ color, onChange }) => {
+    const [active, setActive] = useState(false);
+    const toggleActive = useCallback(() => setActive((active) => !active), []);
+
+    const hsb = hexToHsb(color || '#000000');
+    
+    const handleColorChange = (newHsb) => {
+        onChange(hsbToHex(newHsb));
+    };
+
+    const handleHexChange = (newHex) => {
+        if (/^#[0-9A-F]{6}$/i.test(newHex)) {
+            onChange(newHex.toUpperCase());
+        } else if (newHex.startsWith('#') && newHex.length <= 7) {
+            // Allow typing
+        }
+    };
+
+    return (
+        <Popover
+            active={active}
+            activator={
+                <Box
+                    width="34px"
+                    height="34px"
+                    background="bg-surface-secondary"
+                    borderColor="border"
+                    borderWidth="025"
+                    borderRadius="100"
+                    cursor="pointer"
+                    onClick={toggleActive}
+                >
+                    <div style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        borderRadius: '50%', 
+                        background: color || '#000000',
+                        border: '1px solid rgba(0,0,0,0.1)'
+                    }} />
+                </Box>
+            }
+            onClose={toggleActive}
+        >
+            <Box padding="300">
+                <BlockStack gap="300">
+                    <ColorPicker onChange={handleColorChange} color={hsb} allowAlpha={false} />
+                    <TextField
+                        label="HEX"
+                        labelHidden
+                        value={color || '#000000'}
+                        onChange={handleHexChange}
+                        autoComplete="off"
+                    />
+                </BlockStack>
+            </Box>
+        </Popover>
+    );
+};
+
+const ImagePickerPopover = ({ imageUrl, onChange, productImages = [] }) => {
+    const [active, setActive] = useState(false);
+    const toggleActive = useCallback(() => setActive((active) => !active), []);
+
+    const handleSelectImage = (url) => {
+        onChange(url);
+        setActive(false);
+    };
+
+    return (
+        <Popover
+            active={active}
+            activator={
+                <Box
+                    width="34px"
+                    height="34px"
+                    background="bg-surface-secondary"
+                    borderColor="border"
+                    borderWidth="025"
+                    borderRadius="100"
+                    cursor="pointer"
+                    onClick={toggleActive}
+                >
+                    <div style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        borderRadius: '50%', 
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px solid rgba(0,0,0,0.1)'
+                    }}>
+                        {imageUrl ? (
+                            <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <Text variant="bodyXs" tone="subdued">+</Text>
+                        )}
+                    </div>
+                </Box>
+            }
+            onClose={toggleActive}
+        >
+            <Box padding="300" width="240px">
+                <BlockStack gap="300">
+                    <Text variant="headingSm">Select image</Text>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+                        {productImages.map((img, i) => (
+                            <div 
+                                key={i} 
+                                onClick={() => handleSelectImage(img)}
+                                style={{ 
+                                    aspectRatio: '1/1', 
+                                    cursor: 'pointer', 
+                                    border: imageUrl === img ? '2px solid #008060' : '1px solid #ccc',
+                                    borderRadius: '4px',
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                        ))}
+                    </div>
+                    <Divider />
+                    <TextField
+                        label="Or enter image URL"
+                        labelHidden
+                        value={imageUrl || ''}
+                        onChange={onChange}
+                        autoComplete="off"
+                        placeholder="https://..."
+                    />
+                </BlockStack>
+            </Box>
+        </Popover>
+    );
 }
 
 export default function GroupDetail() {
@@ -783,7 +978,9 @@ export default function GroupDetail() {
             productId: p.productId,
             optionValue: p.optionValue,
             customImageUrl: p.customImageUrl,
-            customColor: p.customColor
+            customColor: p.customColor,
+            customColor2: p.customColor2,
+            style: p.style
         }));
         formData.append("products", JSON.stringify(productsToSave));
 
@@ -1024,63 +1221,54 @@ export default function GroupDetail() {
                                                                 </Badge>
                                                                 <Text fontWeight="semibold" variant="bodyMd">{product.title}</Text>
                                                             </InlineStack>
-                                                            <InlineStack gap="200" blockAlign="center">
+                                                            <InlineStack gap="200" blockAlign="end">
                                                                 <div style={{ width: '180px' }}>
                                                                     <TextField
                                                                         label="Option value"
-                                                                        labelHidden
                                                                         placeholder="Option value"
                                                                         value={product.optionValue || ""}
                                                                         onChange={(v) => handleUpdateField(product.productId, "optionValue", v)}
                                                                         autoComplete="off"
                                                                     />
                                                                 </div>
-                                                                <div style={{ width: '150px' }}>
+                                                                <div style={{ width: '130px' }}>
                                                                     <Select
                                                                         label="Style"
-                                                                        labelHidden
                                                                         options={[
                                                                             { label: 'One color', value: 'one' },
                                                                             { label: 'Two colors', value: 'two' },
+                                                                            { label: 'Image', value: 'image' },
                                                                         ]}
                                                                         value={product.style || "one"}
                                                                         onChange={(v) => handleUpdateField(product.productId, "style", v)}
                                                                     />
                                                                 </div>
-                                                                {/* Swatch Preview Box */}
-                                                                <Box 
-                                                                    width="34px" 
-                                                                    height="34px" 
-                                                                    background="bg-surface-secondary" 
-                                                                    borderColor="border" 
-                                                                    borderWidth="025" 
-                                                                    borderRadius="100"
-                                                                    cursor="pointer"
-                                                                    onClick={() => {
-                                                                        setEditingProduct(product);
-                                                                        setEditOptionValue(product.optionValue || "");
-                                                                        setEditCustomImageUrl(product.customImageUrl || "");
-                                                                        setEditCustomColor(product.customColor || "");
-                                                                        setShowEditModal(true);
-                                                                    }}
-                                                                >
-                                                                    <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                        {product.customColor ? (
-                                                                            <div style={{ width: '100%', height: '100%', background: product.customColor }} />
-                                                                        ) : product.customImageUrl ? (
-                                                                            <img src={product.customImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                                        ) : product.image ? (
-                                                                             <img src={product.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
-                                                                        ) : (
-                                                                            <div style={{ width: '100%', height: '100%', border: '1px dashed #ccc', borderRadius: '50%' }} />
-                                                                        )}
-                                                                        {!product.customColor && !product.customImageUrl && (
-                                                                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}>
-                                                                                <Text variant="bodyXs" tone="subdued">+</Text>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </Box>
+                                                                {/* Swatch Pickers */}
+                                                                <InlineStack gap="100">
+                                                                    {product.style === 'two' ? (
+                                                                        <InlineStack gap="100">
+                                                                            <ColorPickerPopover 
+                                                                                color={product.customColor || '#F5F5F5'} 
+                                                                                onChange={(v) => handleUpdateField(product.productId, "customColor", v)} 
+                                                                            />
+                                                                            <ColorPickerPopover 
+                                                                                color={product.customColor2 || '#D0D0D0'} 
+                                                                                onChange={(v) => handleUpdateField(product.productId, "customColor2", v)} 
+                                                                            />
+                                                                        </InlineStack>
+                                                                    ) : product.style === 'image' ? (
+                                                                        <ImagePickerPopover 
+                                                                            imageUrl={product.customImageUrl} 
+                                                                            onChange={(v) => handleUpdateField(product.productId, "customImageUrl", v)}
+                                                                            productImages={product.allImages || []}
+                                                                        />
+                                                                    ) : (
+                                                                        <ColorPickerPopover 
+                                                                            color={product.customColor || '#F5F5F5'} 
+                                                                            onChange={(v) => handleUpdateField(product.productId, "customColor", v)} 
+                                                                        />
+                                                                    )}
+                                                                </InlineStack>
                                                             </InlineStack>
                                                         </BlockStack>
                                                     </Grid.Cell>
