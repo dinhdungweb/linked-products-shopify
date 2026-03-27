@@ -151,7 +151,10 @@ export async function action({ request, params }) {
             metafields.push({ ...base, key: "inventory_behavior", value: group.inventoryBehavior || "show", type: "single_line_text_field" });
             metafields.push({ ...base, key: "option_name", value: group.optionName || "Color", type: "single_line_text_field" });
             metafields.push({ ...base, key: "selector_style", value: group.selectorStyle || "block", type: "single_line_text_field" });
+            metafields.push({ ...base, key: "card_selector_style", value: group.cardSelectorStyle || "swatch", type: "single_line_text_field" });
         }
+
+        console.log(`[Sync] Group ${gId}: Syncing ${metafields.length} metafields to ${group.products.length} products...`);
 
         const BATCH_SIZE = 25;
         for (let i = 0; i < metafields.length; i += BATCH_SIZE) {
@@ -164,8 +167,13 @@ export async function action({ request, params }) {
                 }
             `, { variables: { metafields: batch } });
             const result = await metafieldMutation.json();
-            if (result.data?.metafieldsSet?.userErrors?.length > 0) throw new Error(result.data.metafieldsSet.userErrors[0].message);
+            if (result.data?.metafieldsSet?.userErrors?.length > 0) {
+                console.error(`[Sync Error] ${result.data.metafieldsSet.userErrors[0].message}`);
+                throw new Error(result.data.metafieldsSet.userErrors[0].message);
+            }
         }
+
+        console.log(`[Sync Success] Group ${gId} synced successfully.`);
 
         await prisma.productGroup.update({ where: { id: gId }, data: { syncStatus: "synced" } });
         return { success: true };

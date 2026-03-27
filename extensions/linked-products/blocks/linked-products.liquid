@@ -66,34 +66,50 @@
         {%- endif -%}
 
         {%- if active_selector_style contains 'dropdown' -%}
-          <div class="variant-picker__dropdown">
-            <select class="linked-products-dropdown" onchange="if(this.value) window.location.href = this.value;">
-              {%- assign current_rendered_dd = false -%}
-              {%- for item in linked_handles_raw -%}
-                {%- assign item_handle = item.handle -%}
-                {%- if item_handle == current_handle -%}
-                  {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
-                  <option value="{{ product.url }}" selected>{{ current_value }}</option>
-                  {%- assign current_rendered_dd = true -%}
-                {%- else -%}
-                  {%- assign linked_prod = all_products[item_handle] -%}
-                  {%- if linked_prod != blank and linked_prod != empty -%}
-                    {%- if inventory_behavior == 'hide' and linked_prod.available == false -%}
-                      {%- continue -%}
-                    {%- endif -%}
-                    {%- assign value = item.title | default: linked_prod.title -%}
-                    <option value="{{ linked_prod.url }}"
-                      {%- if linked_prod.available == false %} disabled{%- endif -%}
-                    >{{ value }}{%- if linked_prod.available == false %} ({{ app_settings.soldOutLabel | default: 'Sold out' }}){%- endif -%}</option>
-                  {%- endif -%}
-                {%- endif -%}
-              {%- endfor -%}
-              {%- unless current_rendered_dd -%}
-                {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
-                <option value="{{ product.url }}" selected>{{ current_value }}</option>
-              {%- endunless -%}
-            </select>
+          <div class="variant-picker__dropdown-container" data-style="{{ active_selector_style }}">
+              <div class="lp-dropdown">
+                  <div class="lp-dropdown__selected" onclick="this.nextElementSibling.classList.toggle('show')">
+                      <div class="lp-dropdown__item">
+                          {%- if active_selector_style == 'image_dropdown' -%}
+                              <img src="{{ product.featured_image | image_url: width: 60 }}" alt="" class="lp-dropdown__img" width="32" height="32">
+                          {%- endif -%}
+                          <span class="lp-dropdown__text">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
+                      </div>
+                      <svg class="lp-dropdown__icon" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div class="lp-dropdown__options">
+                    {%- for item in linked_handles_raw -%}
+                      {%- assign item_handle = item.handle -%}
+                      {%- if item_handle == product.handle %}{% continue %}{% endif -%}
+                      {%- assign linked_prod = all_products[item_handle] -%}
+                      {%- if linked_prod != blank and linked_prod != empty -%}
+                        {%- if inventory_behavior == 'hide' and linked_prod.available == false %}{% continue %}{% endif -%}
+                        {%- assign value = item.title | default: linked_prod.title -%}
+                        <a href="{{ linked_prod.url }}" class="lp-dropdown__item {% if linked_prod.available == false %}is-sold-out{% endif %}">
+                            {%- if active_selector_style == 'image_dropdown' -%}
+                                {%- if item.image != blank -%}
+                                    <img src="{{ item.image }}" alt="" class="lp-dropdown__img" width="32" height="32">
+                                {%- else -%}
+                                    <img src="{{ linked_prod.featured_image | image_url: width: 60 }}" alt="" class="lp-dropdown__img" width="32" height="32">
+                                {%- endif -%}
+                            {%- endif -%}
+                            <span class="lp-dropdown__text">{{ value }}</span>
+                            {%- if linked_prod.available == false -%}
+                                <span class="lp-dropdown__sold-out">({{ app_settings.soldOutLabel | default: 'Sold out' }})</span>
+                            {%- endif -%}
+                        </a>
+                      {%- endif -%}
+                    {%- endfor -%}
+                  </div>
+              </div>
           </div>
+          <script>
+              document.addEventListener('click', function(e) {
+                  if (!e.target.closest('.lp-dropdown')) {
+                      document.querySelectorAll('.lp-dropdown__options.show').forEach(el => el.classList.remove('show'));
+                  }
+              });
+          </script>
         {%- else -%}
           <div class="variant-picker__option-values wrap" style="gap: var(--lp-items-gap);">
             {%- assign current_rendered = false -%}

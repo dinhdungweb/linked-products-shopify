@@ -11,8 +11,8 @@
 {%- if linked_handles_raw != blank and linked_handles_raw.size > 1 -%}
   {%- assign current_handle = product.handle -%}
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
-  {%- assign meta_selector_style = product.metafields.linked_products.selector_style.value -%}
-  {%- assign active_style = meta_selector_style | default: block.settings.swatch_style -%}
+  {%- assign meta_card_style = product.metafields.linked_products.card_selector_style.value -%}
+  {%- assign active_style = meta_card_style | default: block.settings.swatch_style | default: 'swatch' -%}
   
   <div class="collection-swatches" style="
     --cs-size: {{ block.settings.swatch_size }}px;
