@@ -36,14 +36,14 @@ export default function OptionStylesPage() {
   ];
 
   const images = [
-    "https://images.unsplash.com/photo-1515347619362-73bc3ee01db1?w=400&q=80",
-    "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=400&q=80",
-    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
-    "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80",
-    "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80",
-    "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?w=400&q=80",
-    "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80",
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80"
+    "https://picsum.photos/id/1027/400/400",
+    "https://picsum.photos/id/1011/400/400",
+    "https://picsum.photos/id/1059/400/400",
+    "https://picsum.photos/id/1074/400/400",
+    "https://picsum.photos/id/1084/400/400",
+    "https://picsum.photos/id/1069/400/400",
+    "https://picsum.photos/id/1062/400/400",
+    "https://picsum.photos/id/1012/400/400"
   ];
   
   const colors = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
