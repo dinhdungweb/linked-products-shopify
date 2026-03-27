@@ -38,12 +38,12 @@ export default function OptionStylesPage() {
   const images = [
     "https://images.unsplash.com/photo-1515347619362-73bc3ee01db1?w=400&q=80",
     "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=400&q=80",
-    "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400&q=80",
-    "https://images.unsplash.com/photo-1502716115624-b56573c11516?w=400&q=80",
-    "https://images.unsplash.com/photo-1434389674669-e08b4cac3105?w=400&q=80",
-    "https://images.unsplash.com/photo-1485230895905-efec09beab9b?w=400&q=80",
-    "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?w=400&q=80",
-    "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&q=80"
+    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
+    "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80",
+    "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80",
+    "https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?w=400&q=80",
+    "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=400&q=80",
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80"
   ];
   
   const colors = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
@@ -234,15 +234,22 @@ export default function OptionStylesPage() {
   );
 
   const imageSwatchCardPreview = (
-    <InlineStack gap="200" wrap={false} align="center" blockAlign="center">
-      {['Beige Brown', 'Black White', 'Red Rose'].map((name, i) => (
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
+      {[
+        {name: 'Beige Brown', price: '$12.88'},
+        {name: 'Black White', price: '$15.99'},
+        {name: 'Red Rose', price: '$19.99'},
+        {name: 'Teal Lily', price: '$19.99'},
+        {name: 'Yellow Bloom', price: '$18.50'},
+        {name: 'Purple Mini', price: '$22.00'},
+      ].map((item, i) => (
         <div key={i} style={{ padding: '8px', border: i === 1 ? '1px solid #000' : '1px solid #ccc', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={images[i]} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+            <img src={images[i]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '10px', fontWeight: 'bold' }}>{name}</div>
-            <div style={{ fontSize: '10px', color: '#666' }}>$12.88</div>
+            <div style={{ fontSize: '10px', fontWeight: 'bold' }}>{item.name}</div>
+            <div style={{ fontSize: '10px', color: '#666' }}>{item.price}</div>
           </div>
         </div>
       ))}
@@ -250,10 +257,10 @@ export default function OptionStylesPage() {
   );
 
   const colorSwatchCardPreview = (
-    <InlineStack gap="200" wrap={false} align="center" blockAlign="center">
-      {['Beige', 'Purple', 'Orange', 'Green'].map((name, i) => (
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
+      {['Beige', 'Purple', 'Orange', 'Green', 'Yellow', 'Black', 'Red', 'Combo'].map((name, i) => (
         <div key={i} style={{ padding: '8px', border: i === 1 ? '1px solid #000' : '1px solid #ccc', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: colors[i] }} />
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: colors[i] || '#000' }} />
           <div style={{ fontSize: '10px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{name}</div>
         </div>
       ))}
