@@ -322,12 +322,15 @@ export default function GroupDetail() {
     // Local state for inputs to avoid focus loss on every keystroke
     const [localGroupName, setLocalGroupName] = useState(group.name || "");
     const [localOptionName, setLocalOptionName] = useState(group.optionName || "Color");
+    const [localOptionValues, setLocalOptionValues] = useState({});
 
     // Sync local state when group data changes (e.g. after a save or from another action)
     useEffect(() => {
         setLocalGroupName(group.name || "");
         setLocalOptionName(group.optionName || "Color");
-    }, [group.name, group.optionName]);
+        // Clear local item overrides to sync with server values
+        setLocalOptionValues({});
+    }, [group.name, group.optionName, group.products]);
 
     const isLoading = navigation.state !== "idle";
 
@@ -956,8 +959,13 @@ export default function GroupDetail() {
                                                                         label="Option value"
                                                                         labelHidden
                                                                         placeholder="Option value"
-                                                                        value={product.optionValue}
-                                                                        onChange={(v) => handleUpdateField(product.productId, "optionValue", v)}
+                                                                        value={localOptionValues[product.productId] !== undefined ? localOptionValues[product.productId] : (product.optionValue || "")}
+                                                                        onChange={(v) => setLocalOptionValues(prev => ({ ...prev, [product.productId]: v }))}
+                                                                        onBlur={() => {
+                                                                            if (localOptionValues[product.productId] !== undefined) {
+                                                                                handleUpdateField(product.productId, "optionValue", localOptionValues[product.productId]);
+                                                                            }
+                                                                        }}
                                                                         autoComplete="off"
                                                                     />
                                                                 </div>
