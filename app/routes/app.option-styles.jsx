@@ -150,31 +150,35 @@ export default function OptionStylesPage() {
   );
 
   const colorSwatchPreview = (
-    <InlineStack gap="200" align="start" blockAlign="start">
-      {colors.map((color, i) => (
-        <div key={i} style={{ 
-          width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
-          background: color, 
-          border: '2px solid #fff', 
-          outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd',
-          outlineOffset: '2px'
-        }} />
-      ))}
-    </InlineStack>
+    <div style={{ padding: '4px' }}>
+      <InlineStack gap="200" align="start" blockAlign="start">
+        {colors.map((color, i) => (
+          <div key={i} style={{ 
+            width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+            background: color, 
+            border: '2px solid #fff', 
+            outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd',
+            outlineOffset: '2px'
+          }} />
+        ))}
+      </InlineStack>
+    </div>
   );
 
   const squareColorSwatchPreview = (
-    <InlineStack gap="200" align="start" blockAlign="start">
-      {colors.map((color, i) => (
-        <div key={i} style={{ 
-          width: '32px', height: '32px', borderRadius: '4px', flexShrink: 0,
-          background: color, 
-          border: '2px solid #fff', 
-          outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd',
-          outlineOffset: '2px'
-        }} />
-      ))}
-    </InlineStack>
+    <div style={{ padding: '4px' }}>
+      <InlineStack gap="200" align="start" blockAlign="start">
+        {colors.map((color, i) => (
+          <div key={i} style={{ 
+            width: '32px', height: '32px', borderRadius: '4px', flexShrink: 0,
+            background: color, 
+            border: '2px solid #fff', 
+            outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd',
+            outlineOffset: '2px'
+          }} />
+        ))}
+      </InlineStack>
+    </div>
   );
 
   const colorPillPreview = (
