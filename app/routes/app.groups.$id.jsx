@@ -384,18 +384,132 @@ export default function GroupDetail() {
     };
 
     const STYLE_OPTIONS = [
-        { id: 'swatch_card', label: 'Color swatch card', type: 'Color swatch', preview: '/swatch_card.png' },
-        { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch', preview: '/image_swatch.png' },
-        { id: 'slide_swatch', label: 'Slide swatch (Mobile only)', type: 'Image Swatch', preview: '/slide_swatch.png' },
-        { id: 'polaroid_swatch', label: 'Polaroid swatch', type: 'Image Swatch', preview: '/polaroid_swatch.png' },
-        { id: 'color_swatch', label: 'Color swatch', type: 'Color swatch', preview: '/color_swatch.png' },
-        { id: 'square_color_swatch', label: 'Square color swatch', type: 'Color swatch', preview: '/square_color_swatch.png' },
-        { id: 'pill_swatch', label: 'Color swatch in pill button', type: 'Color swatch', preview: '/pill_swatch.png' },
-        { id: 'button', label: 'Button', type: 'Button', preview: '/button.png' },
-        { id: 'pill_button', label: 'Pill button', type: 'Button', preview: '/pill_button.png' },
-        { id: 'dropdown', label: 'Dropdown', type: 'Dropdown', preview: '/dropdown.png' },
-        { id: 'image_dropdown', label: 'Image swatch in dropdown', type: 'Dropdown', preview: '/image_dropdown.png' },
+        { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch' },
+        { id: 'slide_swatch', label: 'Slide swatch (Mobile only)', type: 'Image Swatch' },
+        { id: 'polaroid_swatch', label: 'Polaroid swatch', type: 'Image Swatch' },
+        { id: 'color_swatch', label: 'Color swatch', type: 'Color swatch' },
+        { id: 'square_color_swatch', label: 'Square color swatch', type: 'Color swatch' },
+        { id: 'pill_swatch', label: 'Color swatch in pill button', type: 'Color swatch' },
+        { id: 'button', label: 'Button', type: 'Button' },
+        { id: 'pill_button', label: 'Pill button', type: 'Button' },
+        { id: 'dropdown', label: 'Dropdown', type: 'Dropdown' },
+        { id: 'image_dropdown', label: 'Image swatch in dropdown', type: 'Dropdown' },
+        { id: 'image_swatch_card', label: 'Image swatch card', type: 'Image Swatch' },
+        { id: 'color_swatch_card', label: 'Color swatch card', type: 'Color swatch' },
     ];
+
+    const PREVIEW_IMAGES = [
+        "https://picsum.photos/id/1027/400/500",
+        "https://picsum.photos/id/1011/400/500",
+        "https://picsum.photos/id/1059/400/500",
+        "https://picsum.photos/id/1074/400/500",
+        "https://picsum.photos/id/1084/400/500",
+        "https://picsum.photos/id/1069/400/500",
+    ];
+
+    const PREVIEW_COLORS = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
+
+    const renderPreview = (styleId) => {
+        if (styleId === 'image_swatch') return (
+            <InlineStack gap="200" wrap={false}>
+                {PREVIEW_IMAGES.map((img, i) => (
+                    <div key={i} style={{ width: '48px', height: '48px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', overflow: 'hidden' }}>
+                        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                ))}
+            </InlineStack>
+        );
+
+        if (styleId === 'slide_swatch') return (
+            <InlineStack gap="200" wrap={false}>
+                {['Beige Brown', 'Black White', 'Red Rose'].map((name, i) => (
+                    <div key={i} style={{ width: '70px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff', overflow: 'hidden' }}>
+                        <div style={{ width: '100%', height: '80px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img src={PREVIEW_IMAGES[i]} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }} />
+                        </div>
+                        <div style={{ padding: '4px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden' }}>{name}</div>
+                            <div style={{ fontSize: '10px', color: '#666' }}>$12.88</div>
+                        </div>
+                    </div>
+                ))}
+            </InlineStack>
+        );
+
+        if (styleId === 'polaroid_swatch') return (
+            <InlineStack gap="200" wrap={false}>
+                {PREVIEW_IMAGES.slice(0, 4).map((img, i) => (
+                    <div key={i} style={{ padding: '4px', backgroundColor: '#fff', border: i === 1 ? '2px solid #000' : '1px solid #ccc', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                        <div style={{ width: '40px', height: '48px', overflow: 'hidden' }}>
+                            <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                    </div>
+                ))}
+            </InlineStack>
+        );
+
+        if (styleId === 'color_swatch' || styleId === 'square_color_swatch') return (
+            <InlineStack gap="200" wrap={false}>
+                {PREVIEW_COLORS.slice(0, 6).map((color, i) => (
+                    <div key={i} style={{
+                        width: '32px', height: '32px', borderRadius: styleId === 'square_color_swatch' ? '4px' : '50%', flexShrink: 0,
+                        background: color, border: '2px solid #fff', outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd', outlineOffset: '2px'
+                    }} />
+                ))}
+            </InlineStack>
+        );
+
+        if (styleId === 'pill_swatch') return (
+            <InlineStack gap="200" wrap={false}>
+                {['Beige', 'Purple', 'Orange'].map((text, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', flexShrink: 0, borderRadius: '20px', backgroundColor: '#fff', border: i === 1 ? '2px solid #000' : '1px solid #ccc' }}>
+                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: PREVIEW_COLORS[i] }} />
+                        <span style={{ fontSize: '12px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{text}</span>
+                    </div>
+                ))}
+            </InlineStack>
+        );
+
+        if (styleId === 'button' || styleId === 'pill_button') return (
+            <InlineStack gap="200" wrap={false}>
+                {['Beige', 'Dark blue', 'Green'].map((n, i) => (
+                    <div key={n} style={{ padding: '8px 16px', border: i === 1 ? '2px solid #000' : '1px solid #ccc', backgroundColor: i === 1 ? '#000' : '#fff', color: i === 1 ? '#fff' : '#000', fontSize: '13px', borderRadius: styleId === 'pill_button' ? '20px' : '4px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{n}</div>
+                ))}
+            </InlineStack>
+        );
+
+        if (styleId === 'dropdown') return (
+            <div style={{ width: '100%', padding: '10px 14px', border: '1px solid #8c9196', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
+                <span style={{ fontSize: '14px' }}>Beige Brown</span>
+                <Icon source={ChevronDownIcon} tone="base" />
+            </div>
+        );
+
+        if (styleId === 'image_dropdown') return (
+            <div style={{ width: '100%', padding: '6px 14px', border: '1px solid #8c9196', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <img src={PREVIEW_IMAGES[0]} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />
+                    <span style={{ fontSize: '14px' }}>Beige Brown</span>
+                </div>
+                <Icon source={ChevronDownIcon} tone="base" />
+            </div>
+        );
+
+        if (styleId === 'image_swatch_card' || styleId === 'color_swatch_card') return (
+            <InlineStack gap="200" wrap={false}>
+                {['Beige', 'Purple', 'Orange'].map((name, i) => (
+                    <div key={i} style={{ padding: '8px', border: i === 1 ? '1px solid #000' : '1px solid #ccc', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                        <div style={{ width: styleId === 'image_swatch_card' ? '40px' : '32px', height: styleId === 'image_swatch_card' ? '40px' : '32px', borderRadius: '50%', overflow: 'hidden', backgroundColor: PREVIEW_COLORS[i], border: '1px solid #ddd' }}>
+                            {styleId === 'image_swatch_card' && <img src={PREVIEW_IMAGES[i]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                        </div>
+                        <div style={{ fontSize: '10px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{name}</div>
+                    </div>
+                ))}
+            </InlineStack>
+        );
+
+        return null;
+    };
 
     return (
         <Page fullWidth>
@@ -415,55 +529,41 @@ export default function GroupDetail() {
                     <Grid>
                         {STYLE_OPTIONS.map((style) => (
                             <Grid.Cell key={style.id} columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                                <Box 
-                                    padding="400" 
-                                    borderColor={(selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? "border-info" : "border"} 
-                                    borderWidth="050" 
-                                    borderRadius="300"
+                                <div 
                                     onClick={() => handleStyleSelect(style.id)}
-                                    cursor="pointer"
-                                    shadow={(selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? "400" : "none"}
+                                    style={{ 
+                                        height: '100%', 
+                                        display: 'flex', 
+                                        flexDirection: 'column', 
+                                        backgroundColor: 'var(--p-color-bg-surface, #fff)', 
+                                        borderRadius: 'var(--p-border-radius-300, 8px)', 
+                                        boxShadow: (selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? 'var(--p-shadow-300, 0 4px 12px rgba(0,0,0,0.15))' : 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1))', 
+                                        overflow: 'hidden',
+                                        cursor: 'pointer',
+                                        border: (selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id ? '2px solid var(--p-color-border-info, #008060)' : '1px solid transparent',
+                                        transition: 'all 0.2s ease'
+                                    }}
                                 >
-                                    <BlockStack gap="200">
-                                        <InlineStack gap="200" blockAlign="center">
-                                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                {(selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#008060' }} />}
-                                            </div>
-                                            <BlockStack gap="050">
-                                                <Text variant="bodyMd" fontWeight="semibold">{style.label}</Text>
-                                                <Text variant="bodySm" tone="subdued">Display as {style.type}</Text>
-                                            </BlockStack>
-                                        </InlineStack>
-                                        <Box padding="200" background="bg-surface-secondary" borderRadius="200">
-                                            {/* Mocking the preview based on style type */}
-                                            <InlineStack gap="200" align="start">
-                                                {style.id === 'swatch_card' && (
-                                                    <InlineStack gap="200">
-                                                        {[1,2,3,4].map(n => <div key={n} style={{ width: '30px', height: '30px', borderRadius: '50%', background: ['#f5f5dc', '#dfcfe0', '#ff9800', '#008000'][n-1], border: '1px solid #ddd' }} />)}
-                                                    </InlineStack>
-                                                )}
-                                                {style.id.includes('image') && (
-                                                    <InlineStack gap="100">
-                                                        {[1,2,3].map(n => <div key={n} style={{ width: '40px', height: '50px', borderRadius: '4px', background: '#fff', border: '1px solid #ddd' }} />)}
-                                                    </InlineStack>
-                                                )}
-                                                {style.id.includes('button') && (
-                                                    <InlineStack gap="100">
-                                                        {['Beige', 'Blue'].map(n => <div key={n} style={{ padding: '4px 8px', borderRadius: style.id.includes('pill') ? '20px' : '4px', border: '1px solid #ddd', fontSize: '10px' }}>{n}</div>)}
-                                                    </InlineStack>
-                                                )}
-                                                {style.id.includes('color_swatch') && (
-                                                    <InlineStack gap="100">
-                                                        {[1,2,3,4,5].map(n => <div key={n} style={{ width: '15px', height: '15px', borderRadius: style.id.includes('square') ? '2px' : '50%', background: ['#f5f5dc', '#dfcfe0', '#ff9800', '#008000', '#ffc0cb'][n-1] }} />)}
-                                                    </InlineStack>
-                                                )}
-                                                {style.id.includes('dropdown') && (
-                                                     <div style={{ width: '100%', padding: '4px 8px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '10px', background: '#fff' }}>Beige Brown ▼</div>
-                                                )}
+                                    <Box padding="300">
+                                        <InlineStack align="space-between" blockAlign="center">
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    {(selectingFor === "productPage" ? group.selectorStyle : group.cardSelectorStyle) === style.id && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#008060' }} />}
+                                                </div>
+                                                <BlockStack gap="050">
+                                                    <Text variant="headingSm" as="h3">{style.label}</Text>
+                                                    <Text variant="bodySm" tone="subdued">Display as {style.type}</Text>
+                                                </BlockStack>
                                             </InlineStack>
-                                        </Box>
-                                    </BlockStack>
-                                </Box>
+                                        </InlineStack>
+                                    </Box>
+                                    <Divider />
+                                    <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
+                                        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflowX: 'auto', paddingBottom: '4px' }}>
+                                            {renderPreview(style.id)}
+                                        </div>
+                                    </div>
+                                </div>
                             </Grid.Cell>
                         ))}
                     </Grid>
