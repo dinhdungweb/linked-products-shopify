@@ -384,6 +384,96 @@ export default function GroupDetail() {
         setShowStyleModal(false);
     };
 
+    const renderSidebarPreview = (styleId, isCard = false) => {
+        const products = group.products.slice(0, 6);
+        if (products.length === 0) return <Text tone="subdued">Add products to see preview</Text>;
+
+        if (styleId === 'image_swatch' || styleId === 'slide_swatch' || styleId === 'polaroid_swatch') {
+            return (
+                <InlineStack gap="200" wrap={false}>
+                    {products.map((p, i) => (
+                        <div key={i} style={{ 
+                            width: isCard ? '24px' : '48px', 
+                            height: isCard ? '24px' : '48px', 
+                            flexShrink: 0, 
+                            border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
+                            borderRadius: styleId === 'polaroid_swatch' ? '0' : '4px',
+                            padding: styleId === 'polaroid_swatch' ? '2px' : '0',
+                            backgroundColor: '#fff',
+                            overflow: 'hidden' 
+                        }}>
+                            <img src={p.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                    ))}
+                </InlineStack>
+            );
+        }
+
+        if (styleId.includes('color_swatch') || styleId === 'swatch_card' || styleId === 'color_swatch_card') {
+            return (
+                <InlineStack gap="150" wrap={false}>
+                    {products.map((p, i) => (
+                        <div key={i} style={{
+                            width: isCard ? '16px' : '32px', 
+                            height: isCard ? '16px' : '32px', 
+                            borderRadius: styleId.includes('square') ? '2px' : '50%', 
+                            flexShrink: 0,
+                            background: p.customColor || '#f5f5dc', 
+                            border: '1px solid #ddd',
+                            outline: i === 0 ? '2px solid #5c6ac4' : 'none',
+                            outlineOffset: '2px'
+                        }} />
+                    ))}
+                </InlineStack>
+            );
+        }
+
+        if (styleId.includes('button') || styleId === 'pill_swatch') {
+            return (
+                <InlineStack gap="150" wrap={false}>
+                    {products.slice(0, 3).map((p, i) => (
+                        <div key={i} style={{ 
+                            padding: isCard ? '2px 6px' : '6px 12px', 
+                            border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
+                            backgroundColor: i === 0 ? '#000' : '#fff', 
+                            color: i === 0 ? '#fff' : '#000', 
+                            fontSize: isCard ? '10px' : '12px', 
+                            borderRadius: (styleId.includes('pill') || styleId === 'pill_swatch') ? '20px' : '4px',
+                            fontWeight: i === 0 ? 'bold' : 'normal',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                        }}>
+                            {styleId === 'pill_swatch' && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.customColor || '#ccc' }} />}
+                            {p.optionValue || "Value"}
+                        </div>
+                    ))}
+                </InlineStack>
+            );
+        }
+
+        if (styleId.includes('dropdown')) {
+            return (
+                <div style={{ width: '100%', padding: isCard ? '4px 8px' : '10px 14px', border: '1px solid #8c9196', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
+                    <InlineStack gap="200" blockAlign="center">
+                        {styleId === 'image_dropdown' && <img src={products[0].image} alt="" style={{ width: '20px', height: '20px', borderRadius: '2px' }} />}
+                        <span style={{ fontSize: isCard ? '12px' : '14px' }}>{products[0].optionValue || "Select..."}</span>
+                    </InlineStack>
+                    <Icon source={ChevronDownIcon} tone="base" />
+                </div>
+            );
+        }
+
+        // Fallback to text blocks
+        return (
+            <InlineStack gap="150" wrap={false}>
+                {products.slice(0, 4).map((p, i) => (
+                    <div key={i} style={{ padding: '4px 8px', border: i === 0 ? '2px solid #000' : '1px solid #ddd', borderRadius: '4px', fontSize: '12px' }}>{p.optionValue}</div>
+                ))}
+            </InlineStack>
+        );
+    };
+
     const STYLE_OPTIONS = [
         { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch' },
         { id: 'slide_swatch', label: 'Slide swatch (Mobile only)', type: 'Image Swatch' },
@@ -529,7 +619,7 @@ export default function GroupDetail() {
                     </Box>
                     <Grid>
                         {STYLE_OPTIONS.map((style) => (
-                            <Grid.Cell key={style.id} columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
+                            <Grid.Cell key={style.id} columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
                                 <div 
                                     onClick={() => handleStyleSelect(style.id)}
                                     style={{ 
@@ -840,37 +930,7 @@ export default function GroupDetail() {
                                 <Divider />
                                 <BlockStack gap="200">
                                     <Text variant="bodySm" tone="subdued" fontWeight="semibold">{group.optionName || "Color"}:</Text>
-                                    <InlineStack gap="300">
-                                        <Box 
-                                            width="52px" 
-                                            height="52px" 
-                                            borderRadius="100" 
-                                            background="bg-surface-secondary" 
-                                            borderColor="border-critical" 
-                                            borderWidth="050" 
-                                            padding="100"
-                                        >
-                                            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <div style={{ width: '80%', height: '3px', background: '#ccc', transform: 'rotate(-45deg)' }} />
-                                            </div>
-                                        </Box>
-                                        <Box width="52px" height="52px" borderRadius="100" background="bg-surface-secondary" borderColor="border" borderWidth="050" />
-                                        <Box 
-                                            width="52px" 
-                                            height="52px" 
-                                            borderRadius="100" 
-                                            background="bg-fill-info" 
-                                            borderColor="border" 
-                                            borderWidth="050"
-                                            display="flex"
-                                            alignItems="center"
-                                            justifyContent="center"
-                                        >
-                                            <div style={{ position: 'absolute', bottom: '-25px', width: 'max-content' }}>
-                                                <Badge size="small">3p Fulfill</Badge>
-                                            </div>
-                                        </Box>
-                                    </InlineStack>
+                                    {renderSidebarPreview(group.selectorStyle)}
                                     <Box paddingBlockStart="400" />
                                 </BlockStack>
                             </BlockStack>
@@ -900,23 +960,9 @@ export default function GroupDetail() {
                                 </InlineStack>
                                 <Text variant="bodySm" tone="subdued">Style: {group.cardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === group.cardSelectorStyle)?.label || group.cardSelectorStyle)}</Text>
                                 <Divider />
-                                <InlineStack gap="200" blockAlign="center">
-                                    <Box 
-                                        width="18px" 
-                                        height="18px" 
-                                        borderRadius="100" 
-                                        background="bg-surface-secondary" 
-                                        borderColor="border-critical" 
-                                        borderWidth="025" 
-                                        display="flex"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                    >
-                                         <div style={{ width: '80%', height: '1px', background: '#ccc', transform: 'rotate(-45deg)' }} />
-                                    </Box>
-                                    <Box width="18px" height="18px" borderRadius="100" background="bg-fill-warning" />
-                                    <Box width="18px" height="18px" borderRadius="100" background="bg-fill-info" />
-                                </InlineStack>
+                                <div style={{ border: '1px solid #eee', padding: '12px', borderRadius: '8px', background: '#fff' }}>
+                                     {renderSidebarPreview(group.cardSelectorStyle === "same" ? group.selectorStyle : group.cardSelectorStyle, true)}
+                                </div>
                             </BlockStack>
                         </Card>
                     </BlockStack>
