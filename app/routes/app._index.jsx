@@ -684,7 +684,7 @@ export default function Index() {
                 {/* FAQ Section */}
                 <Card>
                   <BlockStack gap="400">
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start', width: '100%' }}>
                       <div style={{ margin: 0, display: 'flex' }}>
                         <Icon source={QuestionCircleIcon} />
                       </div>
@@ -692,11 +692,13 @@ export default function Index() {
                     </div>
                     <BlockStack gap="200">
                        {/* FAQ 1 */}
-                       <div style={{ cursor: 'pointer' }} onClick={() => toggleFaq(0)}>
+                       <div style={{ cursor: 'pointer', width: '100%' }} onClick={() => toggleFaq(0)}>
                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                              <Text variant="bodyMd" fontWeight="semibold">Can I change the position of the options?</Text>
-                             <Icon source={openFaq === 0 ? MinusIcon : PlusIcon} size="extraSmall" />
+                             <div style={{ marginLeft: 'auto', display: 'flex' }}>
+                               <Icon source={openFaq === 0 ? MinusIcon : PlusIcon} size="extraSmall" />
+                             </div>
                            </div>
                          </Box>
                        </div>
@@ -707,11 +709,13 @@ export default function Index() {
                        )}
                        
                        {/* FAQ 2 */}
-                       <div style={{ cursor: 'pointer' }} onClick={() => toggleFaq(1)}>
+                       <div style={{ cursor: 'pointer', width: '100%' }} onClick={() => toggleFaq(1)}>
                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                              <Text variant="bodyMd" fontWeight="semibold">How do I show options on collection pages?</Text>
-                             <Icon source={openFaq === 1 ? MinusIcon : PlusIcon} size="extraSmall" />
+                             <div style={{ marginLeft: 'auto', display: 'flex' }}>
+                               <Icon source={openFaq === 1 ? MinusIcon : PlusIcon} size="extraSmall" />
+                             </div>
                            </div>
                          </Box>
                        </div>
@@ -722,11 +726,13 @@ export default function Index() {
                        )}
 
                        {/* FAQ 3 */}
-                       <div style={{ cursor: 'pointer' }} onClick={() => toggleFaq(2)}>
+                       <div style={{ cursor: 'pointer', width: '100%' }} onClick={() => toggleFaq(2)}>
                          <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                              <Text variant="bodyMd" fontWeight="semibold">Can a product belong to multiple groups?</Text>
-                             <Icon source={openFaq === 2 ? MinusIcon : PlusIcon} size="extraSmall" />
+                             <div style={{ marginLeft: 'auto', display: 'flex' }}>
+                               <Icon source={openFaq === 2 ? MinusIcon : PlusIcon} size="extraSmall" />
+                             </div>
                            </div>
                          </Box>
                        </div>
