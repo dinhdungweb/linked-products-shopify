@@ -13,7 +13,7 @@ import {
   Button,
   Grid,
 } from "@shopify/polaris";
-import { ImageIcon, TypeIcon, PaintBrushIcon, MenuIcon } from "@shopify/polaris-icons";
+import { ImageIcon, TextIcon, PaintBrushRoundIcon, MenuIcon } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 
 export default function OptionStylesPage() {
@@ -21,7 +21,7 @@ export default function OptionStylesPage() {
     {
       id: "block",
       title: "Text Block",
-      icon: TypeIcon,
+      icon: TextIcon,
       description: "Clean simple text blocks. Best for sizes or technical specifications.",
       preview: (
         <InlineStack gap="200">
@@ -40,7 +40,7 @@ export default function OptionStylesPage() {
     {
       id: "swatch",
       title: "Color Swatch",
-      icon: PaintBrushIcon,
+      icon: PaintBrushRoundIcon,
       description: "Round or square color swatches. Perfect for fashion and home decor.",
       preview: (
         <InlineStack gap="200">
