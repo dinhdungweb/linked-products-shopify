@@ -53,7 +53,7 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
 export const getOuterStyle = (isActive, settings, styleId) => {
   const b = settings.border;
   if (!b || b.outerWidth <= 0) return { display: 'inline-flex' };
-  const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && b.radius > 20);
+  const isRound = styleId.includes('round') || styleId.includes('circle') || (styleId === 'color_swatch' && b.radius > 20);
   return {
       padding: `${b.outerPadding || 0}px`,
       border: `${b.outerWidth || 1}px solid ${isActive ? (b.outerActiveColor || '#000') : (b.outerColor || '#ccc')}`,
@@ -65,7 +65,7 @@ export const getOuterStyle = (isActive, settings, styleId) => {
 export const getSwatchStyle = (isActive, settings, styleId) => {
   const b = settings.border;
   const s = settings.shadow;
-  const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && b.radius > 20);
+  const isRound = styleId.includes('round') || styleId.includes('circle') || (styleId === 'color_swatch' && b.radius > 20);
   
   return {
       position: 'relative',
@@ -122,7 +122,6 @@ export const renderPreviewContent = (styleId, settings) => {
       <div style={{ 
         width: '100%', 
         maxWidth: '300px', 
-        padding: isImageDropdown ? '6px 14px' : '10px 14px', 
         border: '1px solid #8c9196', 
         borderRadius: '4px', 
         display: 'flex', 
@@ -147,7 +146,7 @@ export const renderPreviewContent = (styleId, settings) => {
       flexWrap: isSlide ? 'nowrap' : 'wrap',
       overflowX: isSlide ? 'auto' : 'visible',
       justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start'),
-      padding: '16px', // Uniform padding to match Gallery
+      padding: '0', 
       width: '100%'
   };
 
@@ -155,7 +154,7 @@ export const renderPreviewContent = (styleId, settings) => {
       <div style={containerStyle}>
           {PREVIEW_PRODUCTS.map((p, i) => {
               const isActive = i === 1;
-              const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
+              const isRound = styleId.includes('round') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
               const isTwoColor = p.style === 'two';
               
               const renderSwatchInner = () => {

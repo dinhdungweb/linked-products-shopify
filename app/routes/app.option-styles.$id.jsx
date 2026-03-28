@@ -530,7 +530,7 @@ export default function StyleCustomizerPage() {
                                 <Text variant="bodyMd">Color: {activeProduct.name}</Text>
                             )}
                             
-                            <div style={{ backgroundColor: '#f4f6f8', borderRadius: '8px', minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                            <div style={{ backgroundColor: '#f4f6f8', borderRadius: '8px', minHeight: '200px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                                 {renderPreview()}
                             </div>
                         </BlockStack>
