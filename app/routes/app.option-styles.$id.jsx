@@ -106,14 +106,14 @@ export const action = async ({ request, params }) => {
   const shopId = shopJson.data.shop.id;
 
   const metafieldQuery = await admin.graphql(`
-    query getMetafield($ownerId: ID!) {
-      shop(id: $ownerId) {
+    query getMetafield {
+      shop {
         metafield(namespace: "linked_products", key: "style_customizations") {
           value
         }
       }
     }
-  `, { variables: { ownerId: shopId } });
+  `);
   
   const metafieldResult = await metafieldQuery.json();
   let allStyles = {};
