@@ -603,7 +603,7 @@ export async function action({ request, params }) {
                 },
             });
         }
-        await syncGroupMetafields(targetGroupId);
+        await syncGroupMetafields(admin, prisma, targetGroupId);
         
         if (groupId === "new") {
             const { redirect } = await import("@remix-run/node");
