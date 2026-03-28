@@ -618,14 +618,19 @@ export default function StyleCustomizerPage() {
           </Box>
         </div>
 
-        {/* Preview Pane */}
         <div style={{ flex: 1, position: 'sticky', top: '20px', overflow: 'visible' }}>
-          <Card>
-            <Box padding="400" overflow="visible">
+          <div style={{ 
+            backgroundColor: 'var(--p-color-bg-surface, #fff)', 
+            borderRadius: 'var(--p-border-radius-300, 8px)', 
+            boxShadow: 'var(--p-shadow-100, 0 1px 3px rgba(0,0,0,0.1))',
+            padding: '24px',
+            border: '1px solid #e1e3e5',
+            overflow: 'visible'
+          }}>
                 <BlockStack gap="400" overflow="visible">
                     <Text variant="headingMd">Preview</Text>
                     
-                    <BlockStack gap="400">
+                    <BlockStack gap="400" overflow="visible">
                         {settings.label.show && !styleId.includes('dropdown') && (
                             <div style={{ 
                                 marginBottom: `${settings.label.gap}px`,
@@ -634,7 +639,8 @@ export default function StyleCustomizerPage() {
                                 lineHeight: `${settings.label.lineHeight}px`,
                                 display: settings.label.layout === 'inline' ? 'flex' : 'block',
                                 gap: '8px',
-                                alignItems: 'baseline'
+                                alignItems: 'baseline',
+                                overflow: 'visible'
                             }}>
                                 <span>Color:</span>
                                 {settings.label.showSelectedVariant && (
@@ -647,16 +653,15 @@ export default function StyleCustomizerPage() {
                             padding: '16px 0', 
                             width: '100%', 
                             display: 'flex', 
-                            justifyContent: 'flex-start', // Đưa về góc trái
-                            alignItems: 'flex-start',     // Đưa lên phía trên
-                            overflow: 'visible'           // Cho phép menu mở tràn ra ngoài
+                            justifyContent: 'flex-start',
+                            alignItems: 'flex-start',
+                            overflow: 'visible'
                         }}>
                             {renderPreview()}
                         </div>
                     </BlockStack>
                 </BlockStack>
-            </Box>
-          </Card>
+          </div>
         </div>
       </div>
     </Page>
