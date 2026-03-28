@@ -338,8 +338,14 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         alignItems: 'center',
                         gap: '8px'
                     }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', ...getSwatchStyle(p) }} />
-                        <span style={{ fontSize: isCard ? '10px' : '12px' }}>{p.optionValue}</span>
+                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', ...getSwatchStyle(p), flexShrink: 0 }} />
+                        <span style={{ 
+                            fontSize: isCard ? '10px' : '12px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: isCard ? '80px' : '120px'
+                        }}>{p.optionValue}</span>
                     </div>
                 ))}
             </InlineStack>
@@ -359,7 +365,15 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         borderRadius: styleId === 'pill_button' ? '20px' : '4px',
                         fontWeight: i === 0 ? 'bold' : 'normal'
                     }}>
-                        {p.optionValue}
+                        <div style={{ 
+                            whiteSpace: 'nowrap', 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis', 
+                            maxWidth: '100%',
+                            textAlign: 'center'
+                        }}>
+                            {p.optionValue}
+                        </div>
                     </div>
                 ))}
             </InlineStack>
@@ -392,7 +406,15 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         }}>
                             {styleId.includes('image') && <img src={p.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                         </div>
-                        <div style={{ fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textAlign: 'center', width: '100%' }}>{p.optionValue}</div>
+                        <div style={{ 
+                            fontSize: '10px', 
+                            fontWeight: 'bold', 
+                            whiteSpace: 'nowrap', 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis',
+                            textAlign: 'center', 
+                            width: '100%' 
+                        }}>{p.optionValue}</div>
                     </div>
                 ))}
             </InlineStack>
@@ -415,7 +437,18 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
     return (
         <InlineStack gap="150" wrap={false}>
             {products.map((p, i) => (
-                <div key={i} style={{ padding: '8px 16px', border: i === 0 ? '2px solid #000' : '1px solid #ddd', borderRadius: '4px', fontSize: '12px', backgroundColor: i === 0 ? '#000' : '#fff', color: i === 0 ? '#fff' : '#333' }}>{p.optionValue}</div>
+                <div key={i} style={{ 
+                    padding: '8px 16px', 
+                    border: i === 0 ? '2px solid #000' : '1px solid #ddd', 
+                    borderRadius: '4px', 
+                    fontSize: '12px', 
+                    backgroundColor: i === 0 ? '#000' : '#fff', 
+                    color: i === 0 ? '#fff' : '#333',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '150px'
+                }}>{p.optionValue}</div>
             ))}
         </InlineStack>
     );

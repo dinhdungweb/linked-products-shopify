@@ -199,11 +199,24 @@
   border: 1px solid rgba(0,0,0,0.1);
 }
 
+.linked-option--pill-swatch .pill-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
 /* Button & Pill Button Styles */
 .linked-option--button {
   padding: 8px 16px !important;
   min-width: 60px;
+  max-width: 150px;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  text-align: center;
 }
 
 .linked-option--button.is-pill {
@@ -320,6 +333,11 @@
   font-size: var(--lp-block-font-size, 14px) !important;
   font-weight: 500;
   gap: 8px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-flex;
 }
 
 .linked-option--block.is-selected {
