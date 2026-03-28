@@ -301,6 +301,7 @@
   padding: 0;
   width: var(--lp-swatch-size);
   height: var(--lp-swatch-size);
+  border-radius: 50%;
 }
 
 .linked-option--image img {
