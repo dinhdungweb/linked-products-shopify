@@ -34,6 +34,14 @@ import {
   TextAlignRightIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { 
+  BASE_SETTINGS, 
+  DEFAULT_SETTINGS_BY_STYLE, 
+  renderPreviewContent, 
+  PREVIEW_PRODUCTS,
+  IMAGES,
+  COLORS
+} from "../utils/style-utils";
 
   // Removed redundant helpers, now using style-utils.jsx
 
