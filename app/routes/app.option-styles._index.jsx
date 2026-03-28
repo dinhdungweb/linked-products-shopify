@@ -78,8 +78,17 @@ export default function OptionStylesPage() {
           </InlineStack>
         </Box>
         <Divider />
-        <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: styleId.includes('dropdown') ? '180px' : '120px', overflow: 'visible' }}>
-          <div style={{ flex: '1 1 0%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'visible', paddingBottom: '4px' }}>
+        <div style={{ 
+          flex: 1, 
+          backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', 
+          padding: '16px', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          minHeight: '120px', 
+          overflow: 'visible',
+          borderRadius: '0 0 8px 8px' // Thêm bo góc dưới để không bị mất khung box
+        }}>
+          <div style={{ flex: '1 1 0%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'visible' }}>
             <PreviewRenderer styleId={styleId} settings={settings} />
           </div>
         </div>
@@ -105,7 +114,16 @@ export default function OptionStylesPage() {
 
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'visible', position: 'relative', zIndex: styleId.includes('dropdown') ? 20 : 1 }}>
-        <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: styleId.includes('dropdown') ? '180px' : '150px', overflow: 'visible' }}>
+        <div style={{ 
+          flex: 1, 
+          backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', 
+          padding: '16px', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          minHeight: '150px', 
+          overflow: 'visible',
+          borderRadius: '0 0 8px 8px'
+        }}>
           <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'visible' }}>
             <PreviewRenderer styleId={styleId} settings={settings} />
           </div>

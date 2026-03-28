@@ -129,7 +129,7 @@ export const PreviewRenderer = ({ styleId, settings }) => {
     const borderRadius = `${settings.border.radius}px`;
     
     return (
-      <div style={{ position: 'relative', width: '100%', maxWidth: '400px', margin: '0 auto' }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
         <div 
           onClick={() => setIsOpen(!isOpen)}
           style={{ 
