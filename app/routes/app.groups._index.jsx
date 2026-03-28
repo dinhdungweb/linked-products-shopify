@@ -345,7 +345,7 @@ export default function GroupsPage() {
                {!isSearchVisible ? (
                   <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
                ) : (
-                  <div style={{ flex: 1, marginRight: '16px' }}>
+                  <div style={{ flex: 1, marginRight: '16px', paddingLeft: '12px' }}>
                     <TextField
                       prefix={<Icon source={SearchIcon} tone="subdued" />}
                       suffix={<Button icon={XIcon} variant="tertiary" onClick={() => { setIsSearchVisible(false); setSearchValue(""); }} />}
