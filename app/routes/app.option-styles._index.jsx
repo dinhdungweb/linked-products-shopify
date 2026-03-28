@@ -42,9 +42,9 @@ export default function OptionStylesPage() {
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState('all');
 
-  const DEFAULT_SETTINGS = {
-    basic: { swatchSize: 26, gap: 6, hideActiveSwatch: false, activeSwatchFirst: false, padding: 0, twoColorStyle: "LT_RB", hoverEffect: "none" },
-    border: { radius: 8, width: 1, color: "#dbdfe2", activeColor: "#000000", hoverColor: "#000000", outerWidth: 0, outerRadius: 8, outerPadding: 4, outerColor: "#dbdfe2", outerActiveColor: "#000000", outerHoverColor: "#000000" },
+  const BASE_SETTINGS = {
+    basic: { swatchSize: 32, gap: 10, hideActiveSwatch: false, activeSwatchFirst: false, padding: 0, twoColorStyle: "LT_RB", hoverEffect: "none" },
+    border: { radius: 4, width: 1, color: "#dbdfe2", activeColor: "#000000", hoverColor: "#000000", outerWidth: 0, outerRadius: 4, outerPadding: 4, outerColor: "#dbdfe2", outerActiveColor: "#000000", outerHoverColor: "#000000" },
     label: { show: true, layout: "stack", gap: 8, fontSize: 14, fontWeight: "normal", lineHeight: 18, showSelectedVariant: true, selectedVariantFontWeight: "normal" },
     variantName: { show: true, fontSize: 12, fontWeight: "semibold", maxLines: 2 },
     price: { show: false },
@@ -53,6 +53,19 @@ export default function OptionStylesPage() {
     unavailable: { style: "cross_mark", allowRedirect: false, hideUnmatched: false },
     badge: { show: false, text: "NEW", position: "top-right", fontSize: 10, color: "#ffffff", bgColor: "#000000" },
     shadow: { show: false, color: "rgba(0,0,0,0.1)", blur: 4, spread: 0, offsetX: 0, offsetY: 2 },
+  };
+
+  const DEFAULT_SETTINGS_BY_STYLE = {
+    image_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 48 }, border: { ...BASE_SETTINGS.border, radius: 4 } },
+    slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 100 }, border: { ...BASE_SETTINGS.border, radius: 4 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' } },
+    polaroid_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, padding: 4 }, border: { ...BASE_SETTINGS.border, radius: 0 } },
+    color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32 }, border: { ...BASE_SETTINGS.border, radius: 50 }, label: { ...BASE_SETTINGS.label, show: false } },
+    square_color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32 }, border: { ...BASE_SETTINGS.border, radius: 4 }, label: { ...BASE_SETTINGS.label, show: false } },
+    pill_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 6 }, border: { ...BASE_SETTINGS.border, radius: 20 } },
+    button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, label: { ...BASE_SETTINGS.label, show: false } },
+    pill_button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, label: { ...BASE_SETTINGS.label, show: false } },
+    dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
+    image_dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
   };
 
   const previewItems = [
@@ -147,7 +160,7 @@ export default function OptionStylesPage() {
   };
 
   const renderPreview = (styleId) => {
-    const settings = styleSettings[styleId] || DEFAULT_SETTINGS;
+    const settings = styleSettings[styleId] || DEFAULT_SETTINGS_BY_STYLE[styleId] || BASE_SETTINGS;
     const isSlide = styleId.includes('slide');
     const isButton = styleId.includes('button');
     const isDropdown = styleId.includes('dropdown');
@@ -174,8 +187,8 @@ export default function OptionStylesPage() {
         borderRadius: `${b.radius}px`,
         backgroundColor: '#fff',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        minWidth: isSlide ? '70px' : `${settings.basic.swatchSize}px`,
-        minHeight: isSlide ? '100px' : `${settings.basic.swatchSize}px`,
+        minWidth: isSlide ? '100px' : `${settings.basic.swatchSize}px`,
+        minHeight: isSlide ? '140px' : `${settings.basic.swatchSize}px`,
       };
       if (s.show) {
         style.boxShadow = `${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.spread}px ${s.color}`;
@@ -192,7 +205,7 @@ export default function OptionStylesPage() {
 
     if (isDropdown) {
         return (
-            <div style={{ width: '100%', maxWidth: '200px', padding: '10px', border: '1px solid #ddd', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
+            <div style={{ width: '100%', maxWidth: '240px', padding: '10px', border: '1px solid #ddd', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
                 <span style={{ fontSize: '13px' }}>Beige Brown</span>
                 <Icon source={ChevronDownIcon} tone="base" />
             </div>
@@ -200,27 +213,28 @@ export default function OptionStylesPage() {
     }
 
     return (
-        <div style={{ display: 'flex', gap: `${settings.basic.gap}px`, overflowX: 'auto', width: '100%', padding: '4px' }}>
+        <div style={{ display: 'flex', gap: `${settings.basic.gap}px`, overflowX: 'auto', width: '100%', padding: '10px 4px' }}>
             {previewItems.slice(0, 6).map((p, i) => {
                 const isActive = i === 1;
-                const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle');
+                const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
+                
                 return (
                     <div key={i} style={getOuterStyle(isActive)}>
                         <div style={getSwatchStyle(isActive)}>
                             {renderBadge(isActive)}
                             {!isButton && (
                                 <div style={{ 
-                                    width: isSlide ? '60px' : `${settings.basic.swatchSize}px`, 
-                                    height: isSlide ? '60px' : `${settings.basic.swatchSize}px`, 
-                                    backgroundColor: '#eee', borderRadius: isRound ? '50%' : '2px', overflow: 'hidden'
+                                    width: isSlide ? '80px' : `${settings.basic.swatchSize}px`, 
+                                    height: isSlide ? '80px' : `${settings.basic.swatchSize}px`, 
+                                    backgroundColor: '#eee', borderRadius: isRound ? '50%' : `${settings.border.radius}px`, overflow: 'hidden'
                                 }}>
                                     <img src={p.color} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 </div>
                             )}
                             {(settings.label.show || isButton || isSlide) && (
                                 <div style={{ marginTop: '4px', textAlign: 'center' }}>
-                                    <div style={{ fontSize: '10px', fontWeight: (isActive || isButton) ? 'bold' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60px' }}>{p.name}</div>
-                                    {isSlide && <div style={{ fontSize: '9px', color: '#666' }}>$19.99</div>}
+                                    <div style={{ fontSize: '11px', fontWeight: (isActive || i === 1) ? 'bold' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: isSlide ? '90px' : '60px' }}>{p.name}</div>
+                                    {isSlide && <div style={{ fontSize: '10px', color: '#666' }}>$19.99</div>}
                                 </div>
                             )}
                         </div>
