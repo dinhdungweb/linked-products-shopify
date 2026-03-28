@@ -1,0 +1,192 @@
+import React from 'react';
+import { InlineStack, Text, Icon, Badge, Select } from "@shopify/polaris";
+import { ChevronDownIcon } from "@shopify/polaris-icons";
+
+export const IMAGES = [
+  "https://picsum.photos/id/1027/400/500",
+  "https://picsum.photos/id/1011/400/500",
+  "https://picsum.photos/id/1059/400/500",
+  "https://picsum.photos/id/1074/400/500",
+  "https://picsum.photos/id/1084/400/500",
+  "https://picsum.photos/id/1069/400/500",
+  "https://picsum.photos/id/1062/400/500",
+  "https://picsum.photos/id/1012/400/500"
+];
+
+export const COLORS = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
+
+export const BASE_SETTINGS = {
+  basic: { swatchSize: 32, gap: 10, hideActiveSwatch: false, activeSwatchFirst: false, padding: 0, twoColorStyle: "LT_RB", hoverEffect: "none" },
+  border: { radius: 4, width: 1, color: "#dbdfe2", activeColor: "#000000", hoverColor: "#000000", outerWidth: 0, outerRadius: 4, outerPadding: 4, outerColor: "#dbdfe2", outerActiveColor: "#000000", outerHoverColor: "#000000" },
+  label: { show: true, layout: "stack", gap: 8, fontSize: 14, fontWeight: "normal", lineHeight: 18, showSelectedVariant: true, selectedVariantFontWeight: "normal" },
+  variantName: { show: true, fontSize: 12, fontWeight: "semibold", maxLines: 2 },
+  price: { show: false },
+  text: { position: "right", gap: 8, width: 50 },
+  layout: { marginTop: 0, marginBottom: 10, align: "left", type: "stack", maxSwatches: 100 },
+  unavailable: { style: "cross_mark", allowRedirect: false, hideUnmatched: false },
+  badge: { show: false, text: "NEW", position: "top-right", fontSize: 10, color: "#ffffff", bgColor: "#000000" },
+  shadow: { show: false, color: "rgba(0,0,0,0.1)", blur: 4, spread: 0, offsetX: 0, offsetY: 2 },
+};
+
+export const DEFAULT_SETTINGS_BY_STYLE = {
+  image_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 48, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4 } },
+  slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 70, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, width: 1, color: "#ccc", activeColor: "#000", outerWidth: 0 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' } },
+  polaroid_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, padding: 4, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, shadow: { ...BASE_SETTINGS.shadow, show: true, color: "rgba(0,0,0,0.1)", blur: 3, offsetY: 1 } },
+  color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 50, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 50, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
+  square_color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 6, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
+  pill_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 6, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 } },
+  button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, label: { ...BASE_SETTINGS.label, show: false } },
+  pill_button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, label: { ...BASE_SETTINGS.label, show: false } },
+  dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
+  image_dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
+};
+
+export const getOuterStyle = (isActive, settings, styleId) => {
+  const b = settings.border;
+  if (!b || b.outerWidth <= 0) return { display: 'inline-flex' };
+  const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && b.radius > 20);
+  return {
+      padding: `${b.outerPadding || 0}px`,
+      border: `${b.outerWidth || 1}px solid ${isActive ? (b.outerActiveColor || '#000') : (b.outerColor || '#ccc')}`,
+      borderRadius: isRound ? '50%' : `${b.outerRadius || 0}px`,
+      display: 'inline-flex',
+  };
+};
+
+export const getSwatchStyle = (isActive, settings, styleId) => {
+  const b = settings.border;
+  const s = settings.shadow;
+  const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && b.radius > 20);
+  
+  return {
+      position: 'relative',
+      padding: `${settings.basic.padding || 0}px`,
+      border: `${b.width || 1}px solid ${isActive ? (b.activeColor || '#000') : (b.color || '#ccc')}`,
+      borderRadius: isRound ? '50%' : `${b.radius || 0}px`,
+      cursor: 'pointer',
+      backgroundColor: '#fff',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'all 0.2s ease',
+      boxShadow: s && s.show ? `${s.offsetX || 0}px ${s.offsetY || 0}px ${s.blur || 0}px ${s.spread || 0}px ${s.color || 'rgba(0,0,0,0.1)'}` : 'none'
+  };
+};
+
+export const renderBadge = (isActive, settings) => {
+  if (!settings.badge || !settings.badge.show) return null;
+  const b = settings.badge;
+  return (
+    <div style={{
+      position: 'absolute',
+      top: b.position.includes('top') ? '-8px' : 'auto',
+      bottom: b.position.includes('bottom') ? '-8px' : 'auto',
+      left: b.position.includes('left') ? '-8px' : 'auto',
+      right: b.position.includes('right') ? '-8px' : 'auto',
+      backgroundColor: b.bgColor || '#000',
+      color: b.color || '#fff',
+      fontSize: `${b.fontSize || 10}px`,
+      padding: '2px 6px',
+      borderRadius: '10px',
+      zIndex: 10,
+      fontWeight: 'bold',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+    }}>
+      {b.text || 'NEW'}
+    </div>
+  );
+};
+
+export const PREVIEW_PRODUCTS = [
+  { name: 'Beige Brown', color: IMAGES[0], style: 'one', price: '$12.88' },
+  { name: 'Black White', color: IMAGES[1], style: 'one', price: '$15.99' },
+  { name: 'Red Rose', color: IMAGES[2], style: 'one', price: '$19.99' },
+  { name: 'Teal Lily', color: IMAGES[3], style: 'one', price: '$24.99' },
+  { name: 'Yellow Bloom', color: IMAGES[4], style: 'one', price: '$18.50' },
+  { name: 'Purple Mini', color: IMAGES[5], style: 'one', price: '$22.00' }
+];
+
+export const renderPreviewContent = (styleId, settings) => {
+  const isSlide = styleId.includes('slide');
+  const isButton = styleId.includes('button');
+  const isDropdown = styleId.includes('dropdown');
+
+  if (isDropdown) {
+    const activeProduct = PREVIEW_PRODUCTS[1];
+    const isImageDropdown = styleId === 'image_dropdown';
+    
+    return (
+      <div style={{ 
+        width: '100%', 
+        maxWidth: '300px', 
+        padding: isImageDropdown ? '6px 14px' : '10px 14px', 
+        border: '1px solid #8c9196', 
+        borderRadius: '4px', 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        backgroundColor: '#fff' 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {isImageDropdown && (
+            <img src={PREVIEW_PRODUCTS[0].color} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />
+          )}
+          <span style={{ fontSize: '14px' }}>{activeProduct.name}</span>
+        </div>
+        <Icon source={ChevronDownIcon} tone="base" />
+      </div>
+    );
+  }
+
+  const containerStyle = { 
+      display: 'flex', 
+      gap: `${settings.basic.gap}px`, 
+      flexWrap: isSlide ? 'nowrap' : 'wrap',
+      overflowX: isSlide ? 'auto' : 'visible',
+      justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start'),
+      padding: '20px',
+      width: '100%'
+  };
+
+  return (
+      <div style={containerStyle}>
+          {PREVIEW_PRODUCTS.map((p, i) => {
+              const isActive = i === 1;
+              const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
+              
+              return (
+                  <div key={i} style={getOuterStyle(isActive, settings, styleId)}>
+                      <div style={{ 
+                          ...getSwatchStyle(isActive, settings, styleId), 
+                          padding: isButton ? '8px 16px' : `${settings.basic.padding}px`,
+                          minWidth: isSlide ? '70px' : `${settings.basic.swatchSize}px`,
+                          minHeight: isSlide ? '120px' : `${settings.basic.swatchSize}px`,
+                      }}>
+                          {isActive && renderBadge(isActive, settings)}
+                          {!isButton && (
+                              <div style={{ 
+                                  width: isSlide ? '62px' : `${settings.basic.swatchSize}px`, 
+                                  height: isSlide ? '80px' : `${settings.basic.swatchSize}px`, 
+                                  backgroundColor: '#eee',
+                                  borderRadius: isRound ? '50%' : `${settings.border.radius}px`,
+                                  border: '1px solid rgba(0,0,0,0.1)',
+                                  position: 'relative',
+                                  overflow: 'hidden'
+                              }}>
+                                  <img src={p.color} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              </div>
+                          )}
+                          {(settings.label.show || isButton || isSlide) && (
+                              <div style={{ marginTop: isButton ? 0 : '8px', textAlign: 'center' }}>
+                                  <Text variant="bodySm" fontWeight={isActive ? 'bold' : 'regular'}>{p.name}</Text>
+                                  {isSlide && <Text variant="bodyXs" tone="subdued">{p.price}</Text>}
+                              </div>
+                          )}
+                      </div>
+                  </div>
+              );
+          })}
+      </div>
+  );
+};

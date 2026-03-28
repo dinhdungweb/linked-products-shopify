@@ -18,6 +18,14 @@ import { LinkIcon, QuestionCircleIcon, PlusIcon, StoreIcon, MenuHorizontalIcon, 
 import { TitleBar } from "@shopify/app-bridge-react";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
+import { 
+  BASE_SETTINGS, 
+  DEFAULT_SETTINGS_BY_STYLE, 
+  renderPreviewContent, 
+  PREVIEW_PRODUCTS,
+  IMAGES,
+  COLORS
+} from "../utils/style-utils";
 
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
@@ -42,40 +50,9 @@ export default function OptionStylesPage() {
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState('all');
 
-  const BASE_SETTINGS = {
-    basic: { swatchSize: 32, gap: 10, hideActiveSwatch: false, activeSwatchFirst: false, padding: 0, twoColorStyle: "LT_RB", hoverEffect: "none" },
-    border: { radius: 4, width: 1, color: "#dbdfe2", activeColor: "#000000", hoverColor: "#000000", outerWidth: 0, outerRadius: 4, outerPadding: 4, outerColor: "#dbdfe2", outerActiveColor: "#000000", outerHoverColor: "#000000" },
-    label: { show: true, layout: "stack", gap: 8, fontSize: 14, fontWeight: "normal", lineHeight: 18, showSelectedVariant: true, selectedVariantFontWeight: "normal" },
-    variantName: { show: true, fontSize: 12, fontWeight: "semibold", maxLines: 2 },
-    price: { show: false },
-    text: { position: "right", gap: 8, width: 50 },
-    layout: { marginTop: 0, marginBottom: 10, align: "left", type: "stack", maxSwatches: 100 },
-    unavailable: { style: "cross_mark", allowRedirect: false, hideUnmatched: false },
-    badge: { show: false, text: "NEW", position: "top-right", fontSize: 10, color: "#ffffff", bgColor: "#000000" },
-    shadow: { show: false, color: "rgba(0,0,0,0.1)", blur: 4, spread: 0, offsetX: 0, offsetY: 2 },
-  };
+  // Cleaned up: settings moved to style-utils.jsx
 
-  const DEFAULT_SETTINGS_BY_STYLE = {
-    image_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 48, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4 } },
-    slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 70, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, outerWidth: 0 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' } },
-    polaroid_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, padding: 4, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, shadow: { ...BASE_SETTINGS.shadow, show: true } },
-    color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 50, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 50, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
-    square_color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 6, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
-    pill_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 6, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 } },
-    button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, label: { ...BASE_SETTINGS.label, show: false } },
-    pill_button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, label: { ...BASE_SETTINGS.label, show: false } },
-    dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
-    image_dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
-  };
-
-  const previewItems = [
-    { name: 'Beige Brown', color: 'https://picsum.photos/id/1027/100/100' },
-    { name: 'Black White', color: 'https://picsum.photos/id/1011/100/100' },
-    { name: 'Red Rose', color: 'https://picsum.photos/id/1059/100/100' },
-    { name: 'Teal Lily', color: 'https://picsum.photos/id/1074/100/100' },
-    { name: 'Yellow Bloom', color: 'https://picsum.photos/id/1084/100/100' },
-    { name: 'Purple Mini', color: 'https://picsum.photos/id/1069/100/100' }
-  ];
+ // previewItems replaced by PREVIEW_PRODUCTS
 
   const handleTabChange = useCallback((selectedTabIndex) => setSelectedTab(selectedTabIndex), []);
   const handleFilterChange = useCallback((value) => setSelectedFilter(value), []);
@@ -91,23 +68,11 @@ export default function OptionStylesPage() {
     { label: 'Not in use', value: 'not_in_use' },
   ];
 
-  const images = [
-    "https://picsum.photos/id/1027/400/500",
-    "https://picsum.photos/id/1011/400/500",
-    "https://picsum.photos/id/1059/400/500",
-    "https://picsum.photos/id/1074/400/500",
-    "https://picsum.photos/id/1084/400/500",
-    "https://picsum.photos/id/1069/400/500",
-    "https://picsum.photos/id/1062/400/500",
-    "https://picsum.photos/id/1012/400/500"
-  ];
-
-  const colors = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
-
+  // Assets moved to style-utils.jsx
   // --- ORIGINAL STATIC PREVIEWS ---
   const imageSwatchPreview = (
     <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
-      {images.slice(0, 6).map((img, i) => (
+      {IMAGES.slice(0, 6).map((img, i) => (
         <div key={i} style={{ width: '48px', height: '48px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', overflow: 'hidden' }}>
           <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
@@ -127,7 +92,7 @@ export default function OptionStylesPage() {
       ].map((item, i) => (
         <div key={i} style={{ width: '70px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff', overflow: 'hidden' }}>
           <div style={{ width: '100%', height: '80px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
-            <img src={images[i]} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }} />
+            <img src={IMAGES[i]} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ padding: '4px', textAlign: 'center' }}>
             <div style={{ fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
@@ -140,7 +105,7 @@ export default function OptionStylesPage() {
 
   const polaroidSwatchPreview = (
     <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
-      {images.slice(0, 6).map((img, i) => (
+      {IMAGES.slice(0, 6).map((img, i) => (
         <div key={i} style={{ padding: '4px', backgroundColor: '#fff', border: i === 1 ? '2px solid #000' : '1px solid #ccc', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div style={{ width: '40px', height: '48px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflow: 'hidden' }}>
             <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -153,7 +118,7 @@ export default function OptionStylesPage() {
   const colorSwatchPreview = (
     <div style={{ padding: '4px' }}>
       <InlineStack gap="200" align="start" blockAlign="start">
-        {colors.map((color, i) => (
+        {COLORS.map((color, i) => (
           <div key={i} style={{
             width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
             background: color,
@@ -169,7 +134,7 @@ export default function OptionStylesPage() {
   const squareColorSwatchPreview = (
     <div style={{ padding: '4px' }}>
       <InlineStack gap="200" align="start" blockAlign="start">
-        {colors.map((color, i) => (
+        {COLORS.map((color, i) => (
           <div key={i} style={{
             width: '32px', height: '32px', borderRadius: '4px', flexShrink: 0,
             background: color,
@@ -190,7 +155,7 @@ export default function OptionStylesPage() {
           borderRadius: '20px', backgroundColor: '#fff',
           border: i === 1 ? '2px solid #000' : '1px solid #ccc'
         }}>
-          <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: colors[i] || '#000' }} />
+          <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: COLORS[i] || '#000' }} />
           <span style={{ fontSize: '12px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{text}</span>
         </div>
       ))}
@@ -227,7 +192,7 @@ export default function OptionStylesPage() {
   const imageDropdownPreview = (
     <div style={{ width: '100%', maxWidth: '300px', padding: '6px 14px', border: '1px solid #8c9196', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <img src={images[0]} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />
+        <img src={IMAGES[0]} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />
         <span style={{ fontSize: '14px' }}>Beige Brown</span>
       </div>
       <Icon source={ChevronDownIcon} tone="base" />
@@ -291,89 +256,7 @@ export default function OptionStylesPage() {
 
   const renderPreview = (styleId) => {
     const settings = styleSettings[styleId] || DEFAULT_SETTINGS_BY_STYLE[styleId] || BASE_SETTINGS;
-    const isSlide = styleId.includes('slide');
-    const isButton = styleId.includes('button');
-    const isDropdown = styleId.includes('dropdown');
-
-    const getOuterStyle = (isActive) => {
-      const b = settings.border;
-      if (b.outerWidth <= 0) return {};
-      const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
-      return {
-          padding: `${b.outerPadding}px`,
-          border: `${b.outerWidth}px solid ${isActive ? b.outerActiveColor : b.outerColor}`,
-          borderRadius: isRound ? '50%' : `${b.outerRadius}px`,
-          display: 'inline-flex',
-          margin: '2px'
-      };
-    };
-
-    const getSwatchStyle = (isActive) => {
-      const b = settings.border;
-      const s = settings.shadow;
-      const style = {
-        position: 'relative',
-        padding: `${settings.basic.padding}px`,
-        border: `${b.width}px solid ${isActive ? b.activeColor : b.color}`,
-        borderRadius: `${b.radius}px`,
-        backgroundColor: '#fff',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        minWidth: isSlide ? '100px' : `${settings.basic.swatchSize}px`,
-        minHeight: isSlide ? '140px' : `${settings.basic.swatchSize}px`,
-      };
-      if (s.show) {
-        style.boxShadow = `${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.spread}px ${s.color}`;
-      }
-      return style;
-    };
-
-    const renderBadge = (isActive) => {
-        if (!settings.badge.show || !isActive) return null;
-        const b = settings.badge;
-        const posStyles = { 'top-left': { top: '-5px', left: '-5px' }, 'top-right': { top: '-5px', right: '-5px' }, 'bottom-left': { bottom: '-5px', left: '-5px' }, 'bottom-right': { bottom: '-5px', right: '-5px' } };
-        return <div style={{ position: 'absolute', ...posStyles[b.position], backgroundColor: b.bgColor, color: b.color, fontSize: `${b.fontSize - 2}px`, padding: '1px 4px', borderRadius: '4px', zIndex: 10, fontWeight: 'bold' }}>{b.text}</div>;
-    };
-
-    if (isDropdown) {
-        return (
-            <div style={{ width: '100%', maxWidth: '240px', padding: '10px', border: '1px solid #ddd', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
-                <span style={{ fontSize: '13px' }}>Beige Brown</span>
-                <Icon source={ChevronDownIcon} tone="base" />
-            </div>
-        );
-    }
-
-    return (
-        <div style={{ display: 'flex', gap: `${settings.basic.gap}px`, overflowX: 'auto', width: '100%', padding: '10px 4px' }}>
-            {previewItems.slice(0, 6).map((p, i) => {
-                const isActive = i === 1;
-                const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
-                
-                return (
-                    <div key={i} style={getOuterStyle(isActive)}>
-                        <div style={getSwatchStyle(isActive)}>
-                            {isActive && renderBadge(isActive)}
-                            {!isButton && (
-                                <div style={{ 
-                                    width: isSlide ? '62px' : `${settings.basic.swatchSize}px`, 
-                                    height: isSlide ? '80px' : `${settings.basic.swatchSize}px`, 
-                                    backgroundColor: '#eee', borderRadius: isRound ? '50%' : `${settings.border.radius}px`, overflow: 'hidden'
-                                }}>
-                                    <img src={p.color} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                </div>
-                            )}
-                            {(settings.label.show || isButton || isSlide) && (
-                                <div style={{ marginTop: '4px', textAlign: 'center' }}>
-                                    <div style={{ fontSize: '11px', fontWeight: (isActive || i === 1) ? 'bold' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: isSlide ? '90px' : '60px' }}>{p.name}</div>
-                                    {isSlide && <div style={{ fontSize: '10px', color: '#666' }}>$19.99</div>}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
+    return renderPreviewContent(styleId, settings);
   };
 
   const imageSwatchCardPreview = (
@@ -388,7 +271,7 @@ export default function OptionStylesPage() {
       ].map((item, i) => (
         <div key={i} style={{ padding: '8px', border: i === 1 ? '1px solid #000' : '1px solid #ccc', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={images[i]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={IMAGES[i]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '10px', fontWeight: 'bold' }}>{item.name}</div>
@@ -403,7 +286,7 @@ export default function OptionStylesPage() {
     <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
       {['Beige', 'Purple', 'Orange', 'Green', 'Yellow', 'Black', 'Red', 'Combo'].map((name, i) => (
         <div key={i} style={{ padding: '8px', border: i === 1 ? '1px solid #000' : '1px solid #ccc', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: colors[i] || '#000' }} />
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: COLORS[i] || '#000' }} />
           <div style={{ fontSize: '10px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{name}</div>
         </div>
       ))}

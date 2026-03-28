@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation, useParams } from "@remix-run/react";
+import { useLoaderData, useSubmit, useNavigation, useParams, Link } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -35,31 +35,7 @@ import {
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 
-const BASE_SETTINGS = {
-  basic: { swatchSize: 32, gap: 10, hideActiveSwatch: false, activeSwatchFirst: false, padding: 0, twoColorStyle: "LT_RB", hoverEffect: "none" },
-  border: { radius: 4, width: 1, color: "#dbdfe2", activeColor: "#000000", hoverColor: "#000000", outerWidth: 0, outerRadius: 4, outerPadding: 4, outerColor: "#dbdfe2", outerActiveColor: "#000000", outerHoverColor: "#000000" },
-  label: { show: true, layout: "stack", gap: 8, fontSize: 14, fontWeight: "normal", lineHeight: 18, showSelectedVariant: true, selectedVariantFontWeight: "normal" },
-  variantName: { show: true, fontSize: 12, fontWeight: "semibold", maxLines: 2 },
-  price: { show: false },
-  text: { position: "right", gap: 8, width: 50 },
-  layout: { marginTop: 0, marginBottom: 10, align: "left", type: "stack", maxSwatches: 100 },
-  unavailable: { style: "cross_mark", allowRedirect: false, hideUnmatched: false },
-  badge: { show: false, text: "NEW", position: "top-right", fontSize: 10, color: "#ffffff", bgColor: "#000000" },
-  shadow: { show: false, color: "rgba(0,0,0,0.1)", blur: 4, spread: 0, offsetX: 0, offsetY: 2 },
-};
-
-const DEFAULT_SETTINGS_BY_STYLE = {
-  image_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 48, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4 } },
-  slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 70, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, outerWidth: 0 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' } },
-  polaroid_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, padding: 4, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, shadow: { ...BASE_SETTINGS.shadow, show: true } },
-  color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 50, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 50, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
-  square_color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 6, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
-  pill_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 6, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 } },
-  button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, label: { ...BASE_SETTINGS.label, show: false } },
-  pill_button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, label: { ...BASE_SETTINGS.label, show: false } },
-  dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
-  image_dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
-};
+  // Removed redundant helpers, now using style-utils.jsx
 
 const STYLE_NAMES = {
   image_swatch: "Image swatch",
@@ -183,147 +159,10 @@ export default function StyleCustomizerPage() {
     }));
   };
 
-  const getSwatchStyle = (isActive) => {
-    const b = settings.border;
-    const s = settings.shadow;
-    
-    const style = {
-      position: 'relative',
-      padding: `${settings.basic.padding}px`,
-      border: `${b.width}px solid ${isActive ? b.activeColor : (isActive === 'hover' ? b.hoverColor : b.color)}`,
-      borderRadius: `${b.radius}px`,
-      cursor: 'pointer',
-      backgroundColor: '#fff',
-      transition: 'all 0.2s ease',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minWidth: `${settings.basic.swatchSize}px`,
-      minHeight: `${settings.basic.swatchSize}px`,
-    };
-
-    if (s.show) {
-      style.boxShadow = `${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.spread}px ${s.color}`;
-    }
-
-    return style;
-  };
-
-  const getOuterStyle = (isActive) => {
-    const b = settings.border;
-    if (b.outerWidth <= 0) return {};
-
-    return {
-        padding: `${b.outerPadding}px`,
-        border: `${b.outerWidth}px solid ${isActive ? b.outerActiveColor : (isActive === 'hover' ? b.outerHoverColor : b.outerColor)}`,
-        borderRadius: `${b.outerRadius}px`,
-        display: 'inline-flex',
-        margin: '4px'
-    };
-  };
-
-  const renderBadge = () => {
-    if (!settings.badge.show) return null;
-    const b = settings.badge;
-    const posStyles = {
-        'top-left': { top: '-8px', left: '-8px' },
-        'top-right': { top: '-8px', right: '-8px' },
-        'bottom-left': { bottom: '-8px', left: '-8px' },
-        'bottom-right': { bottom: '-8px', right: '-8px' },
-    };
-    return (
-        <div style={{
-            position: 'absolute',
-            ...posStyles[b.position],
-            backgroundColor: b.bgColor,
-            color: b.color,
-            fontSize: `${b.fontSize}px`,
-            padding: '2px 6px',
-            borderRadius: '10px',
-            zIndex: 10,
-            fontWeight: 'bold',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            whiteSpace: 'nowrap'
-        }}>
-            {b.text}
-        </div>
-    );
-  };
+  // Customizer logic
 
   const renderPreview = () => {
-    const isSlide = styleId.includes('slide');
-    const isButton = styleId.includes('button');
-    const isDropdown = styleId.includes('dropdown');
-
-    if (isDropdown) {
-        return (
-            <div style={{ width: '100%', maxWidth: '300px' }}>
-                <Select 
-                    label="Select Option" 
-                    options={previewProducts.map(p => ({ label: p.name, value: p.name }))}
-                    value={activeProduct.name}
-                />
-            </div>
-        );
-    }
-
-    const containerStyle = { 
-        display: 'flex', 
-        gap: `${settings.basic.gap}px`, 
-        flexWrap: isSlide ? 'nowrap' : 'wrap',
-        overflowX: isSlide ? 'auto' : 'visible',
-        justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start'),
-        padding: '20px',
-        width: '100%'
-    };
-
-    return (
-        <div style={containerStyle}>
-            {previewProducts.map((p, i) => {
-                const isActive = i === 1;
-                const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
-                
-                return (
-                    <div key={i} style={getOuterStyle(isActive)}>
-                        <div style={{ 
-                            ...getSwatchStyle(isActive), 
-                            padding: isButton ? '8px 16px' : `${settings.basic.padding}px`,
-                            minWidth: isSlide ? '70px' : `${settings.basic.swatchSize}px`,
-                            minHeight: isSlide ? '120px' : `${settings.basic.swatchSize}px`,
-                        }}>
-                            {isActive && renderBadge()}
-                            {!isButton && (
-                                <div style={{ 
-                                    width: isSlide ? '62px' : `${settings.basic.swatchSize}px`, 
-                                    height: isSlide ? '80px' : `${settings.basic.swatchSize}px`, 
-                                    backgroundColor: '#eee',
-                                    borderRadius: isRound ? '50%' : `${settings.border.radius}px`,
-                                    border: '1px solid rgba(0,0,0,0.1)',
-                                    position: 'relative',
-                                    overflow: 'hidden'
-                                }}>
-                                    <img src={p.color} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    {p.style === 'two' && (
-                                        <div style={{ 
-                                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                            background: `linear-gradient(to bottom right, transparent 50%, ${p.color2} 50%)`
-                                        }} />
-                                    )}
-                                </div>
-                            )}
-                            {(settings.label.show || isButton || isSlide) && (
-                                <div style={{ marginTop: isButton ? 0 : '8px', textAlign: 'center' }}>
-                                    <Text variant="bodySm" fontWeight={isActive ? 'bold' : 'regular'}>{p.name}</Text>
-                                    {isSlide && <Text variant="bodyXs" tone="subdued">$19.99</Text>}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
+    return renderPreviewContent(styleId, settings);
   };
 
   const handleSave = () => {
@@ -340,17 +179,9 @@ export default function StyleCustomizerPage() {
     }
   };
 
-  // Preview Data
-  const previewProducts = [
-    { name: 'Beige Brown', color: 'https://picsum.photos/id/1027/400/500', style: 'one' },
-    { name: 'Black White', color: 'https://picsum.photos/id/1011/400/500', style: 'one' },
-    { name: 'Red Rose', color: 'https://picsum.photos/id/1059/400/500', style: 'one' },
-    { name: 'Teal Lily', color: 'https://picsum.photos/id/1074/400/500', style: 'one' },
-    { name: 'Yellow Bloom', color: 'https://picsum.photos/id/1084/400/500', style: 'one' },
-    { name: 'Purple Mini', color: 'https://picsum.photos/id/1069/400/500', style: 'one' }
-  ];
+  // previewProducts replaced by PREVIEW_PRODUCTS from style-utils
 
-  const activeProduct = previewProducts[1]; // Purple
+  const activeProduct = PREVIEW_PRODUCTS[1]; // Purple
 
   return (
     <Page 
