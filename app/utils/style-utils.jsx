@@ -209,10 +209,11 @@ export const PreviewRenderer = ({ styleId, settings }) => {
                 const height = (size * ratioH / ratioW);
                 const radius = isRound ? '50%' : `${settings.border.radius}px`;
 
-                if (isColor) {
+                 if (isColor) {
                     return (
                         <div style={{ 
-                            width: `${size}px`, height: `${size}px`, 
+                            width: '100%', 
+                            aspectRatio: '1/1',
                             borderRadius: radius, 
                             background: isTwoColor ? `linear-gradient(to bottom right, ${p.colorHex} 50%, ${p.colorHex2} 50%)` : p.colorHex,
                             border: '1px solid rgba(0,0,0,0.05)'
@@ -243,7 +244,8 @@ export const PreviewRenderer = ({ styleId, settings }) => {
                 // Default: Image
                 return (
                     <div style={{ 
-                        width: `${size}px`, height: `${height}px`, 
+                        width: '100%', 
+                        aspectRatio: `${ratioW}/${ratioH}`,
                         backgroundColor: '#eee',
                         borderRadius: radius,
                         border: '1px solid rgba(0,0,0,0.1)',
