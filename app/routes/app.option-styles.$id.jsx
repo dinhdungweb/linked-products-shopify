@@ -643,7 +643,13 @@ export default function StyleCustomizerPage() {
                             </div>
                         )}
                         
-                        <div style={{ padding: '16px 0', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                        <div style={{ 
+                            padding: '16px 0', 
+                            width: '100%', 
+                            display: 'flex', 
+                            justifyContent: 'center',
+                            minHeight: styleId.includes('dropdown') ? '350px' : 'auto' // Đảm bảo đủ không gian cho menu mở ra
+                        }}>
                             {renderPreview()}
                         </div>
                     </BlockStack>
