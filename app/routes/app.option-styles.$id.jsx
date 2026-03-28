@@ -37,7 +37,7 @@ import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { 
   BASE_SETTINGS, 
   DEFAULT_SETTINGS_BY_STYLE, 
-  renderPreviewContent, 
+  PreviewRenderer, 
   PREVIEW_PRODUCTS,
   IMAGES,
   COLORS
@@ -170,7 +170,7 @@ export default function StyleCustomizerPage() {
   // Customizer logic
 
   const renderPreview = () => {
-    return renderPreviewContent(styleId, settings);
+    return <PreviewRenderer styleId={styleId} settings={settings} />;
   };
 
   const handleSave = () => {
@@ -224,9 +224,38 @@ export default function StyleCustomizerPage() {
                                 label={`Swatch size (${settings.basic.swatchSize}px)`} 
                                 value={settings.basic.swatchSize} 
                                 onChange={(v) => handleUpdate('basic', 'swatchSize', v)} 
-                                min={10} max={100}
+                                min={10} max={300}
                                 output
                             />
+                            
+                            {!(styleId === 'color_swatch' || styleId === 'square_color_swatch') && (
+                                <>
+                                    <BlockStack gap="200">
+                                        <Text variant="bodyMd">Aspect ratio</Text>
+                                        <ButtonGroup variant="segmented">
+                                            {['1:1', '3:4', '9:16', '16:9', '4:3'].map((ratio) => (
+                                                <Button 
+                                                    key={ratio}
+                                                    pressed={settings.basic.aspectRatio === ratio} 
+                                                    onClick={() => handleUpdate('basic', 'aspectRatio', ratio)}
+                                                >
+                                                    {ratio}
+                                                </Button>
+                                            ))}
+                                        </ButtonGroup>
+                                    </BlockStack>
+
+                                    <BlockStack gap="200">
+                                        <Text variant="bodyMd">Image Position (Vertical)</Text>
+                                        <ButtonGroup variant="segmented">
+                                            <Button pressed={settings.basic.imagePosition === "top"} onClick={() => handleUpdate('basic', 'imagePosition', "top")}>Top</Button>
+                                            <Button pressed={settings.basic.imagePosition === "center"} onClick={() => handleUpdate('basic', 'imagePosition', "center")}>Center</Button>
+                                            <Button pressed={settings.basic.imagePosition === "bottom"} onClick={() => handleUpdate('basic', 'imagePosition', "bottom")}>Bottom</Button>
+                                        </ButtonGroup>
+                                    </BlockStack>
+                                </>
+                            )}
+
                             <RangeSlider 
                                 label={`Gap (${settings.basic.gap}px)`} 
                                 value={settings.basic.gap} 

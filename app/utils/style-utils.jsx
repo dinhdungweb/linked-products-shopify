@@ -25,7 +25,7 @@ export const PREVIEW_PRODUCTS = [
 ];
 
 export const BASE_SETTINGS = {
-  basic: { swatchSize: 32, gap: 10, hideActiveSwatch: false, activeSwatchFirst: false, padding: 0, twoColorStyle: "LT_RB", hoverEffect: "none" },
+  basic: { swatchSize: 32, gap: 10, hideActiveSwatch: false, activeSwatchFirst: false, padding: 0, twoColorStyle: "LT_RB", hoverEffect: "none", aspectRatio: "1:1", imagePosition: "center" },
   border: { radius: 4, width: 1, color: "#dbdfe2", activeColor: "#000000", hoverColor: "#000000", outerWidth: 0, outerRadius: 4, outerPadding: 4, outerColor: "#dbdfe2", outerActiveColor: "#000000", outerHoverColor: "#000000" },
   label: { show: true, layout: "stack", gap: 8, fontSize: 14, fontWeight: "normal", lineHeight: 18, showSelectedVariant: true, selectedVariantFontWeight: "normal" },
   variantName: { show: true, fontSize: 12, fontWeight: "semibold", maxLines: 2 },
@@ -107,7 +107,9 @@ export const renderBadge = (isActive, settings) => {
   );
 };
 
-export const renderPreviewContent = (styleId, settings) => {
+export const PreviewRenderer = ({ styleId, settings }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+
   const isSlide = styleId.includes('slide');
   const isButton = styleId.includes('button');
   const isDropdown = styleId.includes('dropdown');
@@ -119,23 +121,57 @@ export const renderPreviewContent = (styleId, settings) => {
     const isImageDropdown = styleId === 'image_dropdown';
     
     return (
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '300px', 
-        border: '1px solid #8c9196', 
-        borderRadius: '4px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        backgroundColor: '#fff' 
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {isImageDropdown && (
-            <img src={PREVIEW_PRODUCTS[0].color} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />
-          )}
-          <span style={{ fontSize: '14px' }}>{activeProduct.name}</span>
+      <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start') }}>
+        <div 
+          onClick={() => setIsOpen(!isOpen)}
+          style={{ 
+            width: '100%', 
+            maxWidth: '300px', 
+            border: '1px solid #8c9196', 
+            borderRadius: '4px', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            backgroundColor: '#fff',
+            padding: '8px 12px',
+            cursor: 'pointer',
+            position: 'relative',
+            zIndex: 10
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {isImageDropdown && (
+              <img src={PREVIEW_PRODUCTS[0].color} alt="" style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+            )}
+            <Text variant="bodyMd">{activeProduct.name}</Text>
+          </div>
+          <Icon source={ChevronDownIcon} tone="base" />
         </div>
-        <Icon source={ChevronDownIcon} tone="base" />
+
+        {isOpen && (
+          <div style={{ 
+            position: 'absolute', 
+            top: '100%', 
+            left: settings.layout.align === 'center' ? 'calc(50% - 150px)' : (settings.layout.align === 'right' ? 'auto' : '0'),
+            right: settings.layout.align === 'right' ? '0' : 'auto',
+            width: '100%', 
+            maxWidth: '300px', 
+            marginTop: '4px',
+            backgroundColor: '#fff',
+            border: '1px solid #dbdfe2',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            zIndex: 100,
+            overflow: 'hidden'
+          }}>
+            {PREVIEW_PRODUCTS.map((p, index) => (
+              <div key={index} style={{ padding: '10px 14px', borderBottom: index === PREVIEW_PRODUCTS.length - 1 ? 'none' : '1px solid #f1f1f1', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                {isImageDropdown && <img src={p.color} alt="" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />}
+                <Text variant="bodySm">{p.name}</Text>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -154,19 +190,22 @@ export const renderPreviewContent = (styleId, settings) => {
       <div style={containerStyle}>
           {PREVIEW_PRODUCTS.map((p, i) => {
               const isActive = i === 1;
-              const isRound = styleId.includes('round') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
+              const aspectRatio = settings.basic.aspectRatio || "1:1";
+              const [ratioW, ratioH] = aspectRatio.split(':').map(Number);
+              
+              const isRound = (aspectRatio === "1:1") && (styleId.includes('round') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20));
               const isTwoColor = p.style === 'two';
               
               const renderSwatchInner = () => {
                 const isTwoColor = p.style === 'two';
-                const size = isSlide ? '62px' : `${settings.basic.swatchSize}px`;
-                const height = isSlide ? '80px' : `${settings.basic.swatchSize}px`;
+                const size = isSlide ? 62 : settings.basic.swatchSize;
+                const height = isSlide ? 80 : (size * ratioH / ratioW);
                 const radius = isRound ? '50%' : `${settings.border.radius}px`;
 
                 if (isColor) {
                     return (
                         <div style={{ 
-                            width: size, height: size, 
+                            width: `${size}px`, height: `${size}px`, 
                             borderRadius: radius, 
                             background: isTwoColor ? `linear-gradient(to bottom right, ${p.colorHex} 50%, ${p.colorHex2} 50%)` : p.colorHex,
                             border: '1px solid rgba(0,0,0,0.05)'
@@ -186,25 +225,37 @@ export const renderPreviewContent = (styleId, settings) => {
                 // Default: Image
                 return (
                     <div style={{ 
-                        width: size, height: height, 
+                        width: `${size}px`, height: `${height}px`, 
                         backgroundColor: '#eee',
                         borderRadius: radius,
                         border: '1px solid rgba(0,0,0,0.1)',
                         position: 'relative',
                         overflow: 'hidden'
                     }}>
-                        <img src={p.color} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img 
+                          src={p.color} 
+                          alt="" 
+                          style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'cover',
+                            objectPosition: settings.basic.imagePosition || 'center'
+                          }} 
+                        />
                     </div>
                 );
               };
+
+              const size = isSlide ? 62 : settings.basic.swatchSize;
+              const height = isSlide ? 80 : (size * ratioH / ratioW);
 
               return (
                   <div key={i} style={getOuterStyle(isActive, settings, styleId)}>
                       <div style={{ 
                           ...getSwatchStyle(isActive, settings, styleId), 
                           padding: isButton ? '8px 16px' : (isPillSwatch ? '6px 12px' : `${settings.basic.padding}px`),
-                          minWidth: isSlide ? '70px' : (isPillSwatch ? 'auto' : `${settings.basic.swatchSize}px`),
-                          minHeight: isSlide ? '120px' : (isPillSwatch ? 'auto' : `${settings.basic.swatchSize}px`),
+                          minWidth: isSlide ? '70px' : (isPillSwatch ? 'auto' : `${size}px`),
+                          minHeight: isSlide ? '120px' : (isPillSwatch ? 'auto' : `${height}px`),
                       }}>
                           {isActive && renderBadge(isActive, settings)}
                           {!isButton && renderSwatchInner()}
