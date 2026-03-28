@@ -62,14 +62,21 @@ export const getOuterStyle = (isActive, settings, styleId) => {
   };
 };
 
-export const getSwatchStyle = (isActive, settings, styleId) => {
+ export const getSwatchStyle = (isActive, settings, styleId) => {
   const b = settings.border;
   const s = settings.shadow;
   const isRound = styleId.includes('round') || styleId.includes('circle') || (styleId === 'color_swatch' && b.radius > 20);
+  const isButton = styleId.includes('button');
+  const isPillSwatch = styleId === 'pill_swatch';
+  
+  const padding = settings.basic.padding || 0;
+  const swatchSize = settings.basic.swatchSize;
   
   return {
       position: 'relative',
-      padding: `${settings.basic.padding || 0}px`,
+      boxSizing: 'border-box',
+      width: (isButton || isPillSwatch) ? 'auto' : `${swatchSize + (padding * 2)}px`,
+      padding: `${padding}px`,
       border: `${isActive ? (b.width + 1) : b.width || 1}px solid ${isActive ? (b.activeColor || '#000') : (b.color || '#ccc')}`,
       borderRadius: isRound ? '50%' : `${b.radius || 0}px`,
       cursor: 'pointer',
@@ -272,17 +279,21 @@ export const PreviewRenderer = ({ styleId, settings }) => {
                               <div style={{ 
                                   marginTop: isButton ? 0 : '8px', 
                                   textAlign: 'center',
+                                  width: '100%',
+                                  maxWidth: '100%',
                                   fontSize: `${settings.variantName?.fontSize}px`,
                                   fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'),
                                   display: '-webkit-box',
                                   WebkitLineClamp: settings.variantName?.maxLines || 1,
                                   WebkitBoxOrient: 'vertical',
                                   overflow: 'hidden',
-                                  lineHeight: '1.2'
+                                  textOverflow: 'ellipsis',
+                                  lineHeight: '1.2',
+                                  wordBreak: 'break-word'
                               }}>
                                   {isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}
                                   {isSlide && (
-                                      <div style={{ fontSize: '0.85em', opacity: 0.7, marginTop: '2px' }}>{p.price}</div>
+                                      <div style={{ fontSize: '0.86em', opacity: 0.7, marginTop: '2px' }}>{p.price}</div>
                                   )}
                               </div>
                           )}
