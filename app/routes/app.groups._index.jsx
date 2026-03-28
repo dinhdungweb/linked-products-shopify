@@ -176,6 +176,7 @@ export default function GroupsPage() {
   const handleTabChange = useCallback((selectedTabIndex) => setSelectedTab(selectedTabIndex), []);
 
   const [searchValue, setSearchValue] = useState("");
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
 
   const isLoading = navigation.state !== "idle";
@@ -252,11 +253,26 @@ export default function GroupsPage() {
     );
   };
 
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [isFilterActive, setIsFilterActive] = useState(false);
+  const toggleFilterActive = useCallback(() => setIsFilterActive((a) => !a), []);
+
   const filteredGroups = groups.filter((group) => {
-    if (selectedTab === 0) return true; // All
-    if (selectedTab === 1) return true; // Single option (currently all are single)
-    if (selectedTab === 2) return false; // Multi option (placeholder)
-    if (selectedTab === 3) return false; // Subcategory (placeholder)
+    // Tab filter
+    if (selectedTab === 2) return false;
+    if (selectedTab === 3) return false;
+
+    // Status filter
+    if (filterStatus !== "all" && group.status !== filterStatus) return false;
+
+    // Search filter
+    if (searchValue !== "") {
+      const searchLower = searchValue.toLowerCase();
+      const matchName = group.name && group.name.toLowerCase().includes(searchLower);
+      const matchOption = group.optionName && group.optionName.toLowerCase().includes(searchLower);
+      if (!matchName && !matchOption) return false;
+    }
+
     return true;
   });
 
@@ -323,12 +339,50 @@ export default function GroupsPage() {
 
       {/* Main Content Card */}
       <Card padding="0">
-        <Box padding="300">
+        <Box paddingInline="300" paddingBlock="100">
           <InlineStack align="space-between" blockAlign="center">
-            <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+               {!isSearchVisible ? (
+                  <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
+               ) : (
+                  <div style={{ flex: 1, maxWidth: '500px' }}>
+                    <TextField
+                      prefix={<Icon source={SearchIcon} tone="subdued" />}
+                      suffix={<Button icon={XIcon} variant="tertiary" onClick={() => { setIsSearchVisible(false); setSearchValue(""); }} />}
+                      value={searchValue}
+                      onChange={setSearchValue}
+                      placeholder="Search product groups..."
+                      autoComplete="off"
+                      label="Search"
+                      labelHidden
+                    />
+                  </div>
+               )}
+            </div>
             <InlineStack gap="100">
-               <Button icon={SearchIcon} variant="tertiary" />
-               <Button icon={FilterIcon} variant="tertiary" />
+               <Button 
+                icon={SearchIcon} 
+                variant={isSearchVisible ? "secondary" : "tertiary"} 
+                onClick={() => setIsSearchVisible(!isSearchVisible)}
+               />
+               <Popover
+                  active={isFilterActive}
+                  activator={
+                    <Button icon={FilterIcon} variant={filterStatus !== "all" ? "secondary" : "tertiary"} onClick={toggleFilterActive}>
+                      Filter {filterStatus !== "all" ? `(${filterStatus})` : ""}
+                    </Button>
+                  }
+                  onClose={toggleFilterActive}
+               >
+                  <ActionList
+                    actionRole="menuitem"
+                    items={[
+                      { content: 'All statuses', onAction: () => { setFilterStatus("all"); toggleFilterActive(); } },
+                      { content: 'Active', onAction: () => { setFilterStatus("active"); toggleFilterActive(); } },
+                      { content: 'Draft', onAction: () => { setFilterStatus("draft"); toggleFilterActive(); } },
+                    ]}
+                  />
+               </Popover>
             </InlineStack>
           </InlineStack>
         </Box>
