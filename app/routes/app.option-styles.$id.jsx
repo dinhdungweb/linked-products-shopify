@@ -619,10 +619,10 @@ export default function StyleCustomizerPage() {
         </div>
 
         {/* Preview Pane */}
-        <div style={{ flex: 1, position: 'sticky', top: '20px' }}>
+        <div style={{ flex: 1, position: 'sticky', top: '20px', overflow: 'visible' }}>
           <Card>
-            <Box padding="400">
-                <BlockStack gap="400">
+            <Box padding="400" overflow="visible">
+                <BlockStack gap="400" overflow="visible">
                     <Text variant="headingMd">Preview</Text>
                     
                     <BlockStack gap="400">
@@ -644,13 +644,12 @@ export default function StyleCustomizerPage() {
                         )}
                         
                         <div style={{ 
-                            padding: '24px 0', 
+                            padding: '16px 0', 
                             width: '100%', 
                             display: 'flex', 
-                            justifyContent: 'center',
-                            alignItems: 'flex-start', // Đưa dropdown lên phía trên
-                            overflow: 'visible',      // Cho phép menu mở tràn ra ngoài
-                            minHeight: '200px'        // Chiều cao vừa đủ để không quá trống trải
+                            justifyContent: 'flex-start', // Đưa về góc trái
+                            alignItems: 'flex-start',     // Đưa lên phía trên
+                            overflow: 'visible'           // Cho phép menu mở tràn ra ngoài
                         }}>
                             {renderPreview()}
                         </div>
