@@ -30,100 +30,7 @@ import {
 import { TitleBar } from "@shopify/app-bridge-react";
 // Server-only imports moved to loader/action to fix build error
 
-// Color conversion helpers moved outside for maximum stability
-function hexToHsb(hex) {
-    if (!hex || !hex.startsWith('#')) return { hue: 0, saturation: 0, brightness: 1 };
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h, s, v = max;
-    const d = max - min;
-    s = max === 0 ? 0 : d / max;
-    if (max === min) { h = 0; }
-    else {
-        switch (max) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-    }
-    return { hue: h * 360, saturation: s, brightness: v };
-}
-
-function hsbToHex(hsb) {
-    const { hue, saturation, brightness } = hsb;
-    const s = saturation;
-    const v = brightness;
-    const c = v * s;
-    const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
-    const m = v - c;
-    let r, g, b;
-    if (hue >= 0 && hue < 60) { r = c; g = x; b = 0; }
-    else if (hue >= 60 && hue < 120) { r = x; g = c; b = 0; }
-    else if (hue >= 120 && hue < 180) { r = 0; g = c; b = x; }
-    else if (hue >= 180 && hue < 240) { r = 0; g = x; b = c; }
-    else if (hue >= 240 && hue < 300) { r = x; g = 0; b = c; }
-    else { r = c; g = 0; b = x; }
-    const toHex = (n) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
-}
-
-// Stable ColorPickerPopover as a standalone component
-const ColorPickerPopover = ({ color, onChange, radius = '4px', label }) => {
-    const [active, setActive] = useState(false);
-    const toggleActive = useCallback(() => setActive((active) => !active), []);
-    const hsb = useMemo(() => hexToHsb(color || '#000000'), [color]);
-    
-    return (
-        <BlockStack gap="200">
-            {label && <Text variant="bodyMd">{label}</Text>}
-            <Popover
-                active={active}
-                activator={
-                    <div 
-                        onClick={toggleActive}
-                        style={{ 
-                            padding: '6px',
-                            border: '1px solid #dcdcdc',
-                            borderRadius: radius,
-                            cursor: 'pointer',
-                            background: '#fff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            minWidth: '120px'
-                        }}
-                    >
-                        <div style={{ 
-                            width: '24px', 
-                            height: '24px', 
-                            borderRadius: '2px', 
-                            background: color || '#000000',
-                            border: '1px solid rgba(0,0,0,0.1)'
-                        }} />
-                        <span style={{ fontSize: '13px', color: '#666', fontFamily: 'monospace' }}>{color || '#000000'}</span>
-                    </div>
-                }
-                onClose={toggleActive}
-            >
-                <Box padding="300">
-                    <BlockStack gap="300">
-                        <ColorPicker onChange={(newHsb) => onChange(hsbToHex(newHsb))} color={hsb} allowAlpha={false} />
-                        <TextField
-                            label="HEX"
-                            labelHidden
-                            value={color || '#000000'}
-                            onChange={onChange}
-                            autoComplete="off"
-                        />
-                    </BlockStack>
-                </Box>
-            </Popover>
-        </BlockStack>
-    );
-};
+// Server-only imports moved to loader/action to fix build error
 
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
@@ -412,8 +319,8 @@ export default function SettingsPage() {
                 </BlockStack>
              )}
 
-             {/* Tab 3: Translation */}
-             {selectedTab === 3 && (
+             {/* Tab 2: Translation */}
+             {selectedTab === 2 && (
                 <BlockStack gap="500">
                 <Layout.AnnotatedSection title="Storefront labels" description="Translate or customize labels displayed on your store.">
                     <Card>
