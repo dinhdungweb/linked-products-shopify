@@ -339,7 +339,19 @@ export default function GroupsPage() {
 
       {/* Main Content Card */}
       <Card padding="0">
-        <Box paddingInline="0" paddingBlock="0">
+        <style>
+          {`
+            .Polaris-Tabs__Tab {
+              padding-top: 4px !important;
+              padding-bottom: 4px !important;
+              min-height: unset !important;
+            }
+            .Polaris-Tabs__TabContainer {
+              line-height: 1 !important;
+            }
+          `}
+        </style>
+        <Box paddingInline="300" paddingBlock="100">
           <InlineStack align="space-between" blockAlign="center">
             <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                {!isSearchVisible ? (
