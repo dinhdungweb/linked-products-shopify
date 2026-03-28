@@ -219,9 +219,9 @@ export default function GroupsPage() {
     );
   };
 
-  const ProductThumbnailGroup = ({ productIds }) => {
+  const ProductThumbnailGroup = ({ productIds, totalCount }) => {
     const imagesToShow = productIds.slice(0, 4);
-    const remainingCount = productIds.length - imagesToShow.length;
+    const remainingCount = totalCount - imagesToShow.length;
 
     return (
       <InlineStack gap="100" blockAlign="center">
@@ -436,7 +436,10 @@ export default function GroupsPage() {
                   </Link>
                 </IndexTable.Cell>
                 <IndexTable.Cell>
-                  <ProductThumbnailGroup productIds={group.products} />
+                  <ProductThumbnailGroup 
+                    productIds={group.products} 
+                    totalCount={group._count.products} 
+                  />
                 </IndexTable.Cell>
                 <IndexTable.Cell>
                   <Text tone="subdued" variant="bodyMd">{group._count.products} products</Text>
