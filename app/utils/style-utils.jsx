@@ -246,16 +246,16 @@ export const PreviewRenderer = ({ styleId, settings }) => {
                 );
               };
 
-              const size = isSlide ? 62 : settings.basic.swatchSize;
-              const height = isSlide ? 80 : (size * ratioH / ratioW);
+              const size = settings.basic.swatchSize;
+              const height = (size * ratioH / ratioW);
 
               return (
                   <div key={i} style={getOuterStyle(isActive, settings, styleId)}>
                       <div style={{ 
                           ...getSwatchStyle(isActive, settings, styleId), 
                           padding: isButton ? '8px 16px' : (isPillSwatch ? '6px 12px' : `${settings.basic.padding}px`),
-                          minWidth: isSlide ? '70px' : (isPillSwatch ? 'auto' : `${size}px`),
-                          minHeight: isSlide ? '120px' : (isPillSwatch ? 'auto' : `${height}px`),
+                          minWidth: (isPillSwatch ? 'auto' : `${size}px`),
+                          minHeight: (isPillSwatch ? 'auto' : `${height}px`),
                       }}>
                           {isActive && renderBadge(isActive, settings)}
                           {!isButton && renderSwatchInner()}
