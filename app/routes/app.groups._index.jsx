@@ -24,6 +24,9 @@ import {
   Icon,
   Grid,
   Tabs,
+  Popover,
+  ActionList,
+  ButtonGroup,
 } from "@shopify/polaris";
 import { 
   XIcon, 
@@ -36,6 +39,11 @@ import {
   FilterIcon,
   QuestionCircleIcon,
   ChevronDownIcon,
+  ExternalSmallIcon,
+  DuplicateIcon,
+  MenuHorizontalIcon,
+  RefreshIcon,
+  DiamondIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 
@@ -44,13 +52,18 @@ export async function loader({ request }) {
   const { default: prisma } = await import("../db.server");
   const { getUsageInfo } = await import("../billing.server");
 
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
   const usageInfo = await getUsageInfo(shop);
 
   const groups = await prisma.productGroup.findMany({
     where: { shop: shop },
     include: {
+      products: {
+        take: 5,
+        orderBy: { position: "asc" },
+        select: { productId: true },
+      },
       _count: { select: { products: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -58,7 +71,40 @@ export async function loader({ request }) {
 
   const totalProducts = groups.reduce((acc, group) => acc + group._count.products, 0);
 
-  return json({ groups, shop: shop, usageInfo, totalProducts });
+  // Fetch product images for thumbnails
+  const allProductIds = [...new Set(groups.flatMap(g => g.products.map(p => p.productId)))];
+  
+  let productImages = {};
+  if (allProductIds.length > 0) {
+    try {
+      // Chunk IDs to avoid query complexity limits if there are huge amounts (though IndexTable usually shows 50)
+      const queryIds = allProductIds.slice(0, 200); 
+      const response = await admin.graphql(`
+        query getProductImages($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on Product {
+              id
+              featuredImage {
+                url
+              }
+            }
+          }
+        }
+      `, { variables: { ids: queryIds } });
+
+      const result = await response.json();
+      const nodes = result.data?.nodes || [];
+      nodes.forEach(node => {
+        if (node && node.featuredImage) {
+          productImages[node.id] = node.featuredImage.url;
+        }
+      });
+    } catch (e) {
+      console.error("Error fetching product images for index:", e);
+    }
+  }
+
+  return json({ groups, shop: shop, usageInfo, totalProducts, productImages });
 }
 
 // Action (copied from index for delete/import support here too)
@@ -120,7 +166,7 @@ export async function action({ request }) {
 }
 
 export default function GroupsPage() {
-  const { groups, usageInfo, totalProducts } = useLoaderData();
+  const { groups, usageInfo, totalProducts, productImages } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
@@ -129,8 +175,8 @@ export default function GroupsPage() {
   const [selectedTab, setSelectedTab] = useState(0);
   const handleTabChange = useCallback((selectedTabIndex) => setSelectedTab(selectedTabIndex), []);
 
-  const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [bannerVisible, setBannerVisible] = useState(true);
 
   const isLoading = navigation.state !== "idle";
 
@@ -144,155 +190,222 @@ export default function GroupsPage() {
   }, [submit]);
 
   const tabs = [
-    { id: 'all', content: 'All', accessibilityLabel: 'All product groups', panelID: 'all-groups-panel' },
-    { id: 'active', content: 'Active', panelID: 'active-groups-panel' },
-    { id: 'draft', content: 'Draft', panelID: 'draft-groups-panel' },
+    { id: 'all', content: 'All', panelID: 'all-groups' },
+    { id: 'single', content: 'Single option', panelID: 'single-option' },
+    { id: 'multi', content: 'Multi option', panelID: 'multi-option' },
+    { id: 'subcategory', content: 'Subcategory', panelID: 'subcategory' },
   ];
+
+  const ActionMenu = ({ groupId }) => {
+    const [active, setActive] = useState(false);
+    const toggleActive = useCallback(() => setActive((a) => !a), []);
+
+    return (
+      <Popover
+        active={active}
+        activator={<Button onClick={toggleActive} icon={MenuHorizontalIcon} variant="tertiary" />}
+        onClose={toggleActive}
+      >
+        <ActionList
+          actionRole="menuitem"
+          items={[
+            { content: 'Edit group', icon: ViewIcon, url: `/app/groups/${groupId}` },
+            { content: 'Set as draft', icon: XIcon },
+            { content: 'Delete', icon: DeleteIcon, destructive: true, onAction: () => handleDeleteGroup(groupId) },
+          ]}
+        />
+      </Popover>
+    );
+  };
+
+  const ProductThumbnailGroup = ({ productIds }) => {
+    const imagesToShow = productIds.slice(0, 4);
+    const remainingCount = productIds.length - imagesToShow.length;
+
+    return (
+      <InlineStack gap="100" blockAlign="center">
+        {imagesToShow.map((p, idx) => (
+          <div key={p.productId} style={{ 
+            width: '36px', 
+            height: '36px', 
+            borderRadius: '8px', 
+            overflow: 'hidden', 
+            border: '1px solid #e1e3e5',
+            backgroundColor: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            {productImages[p.productId] ? (
+              <img src={productImages[p.productId]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <Icon source={SearchIcon} tone="subdued" size="small" />
+            )}
+          </div>
+        ))}
+        {remainingCount > 0 && (
+          <div style={{ marginLeft: '4px' }}>
+            <Text variant="bodySm" tone="subdued">+{remainingCount}</Text>
+          </div>
+        )}
+      </InlineStack>
+    );
+  };
+
+  const filteredGroups = groups.filter((group) => {
+    if (selectedTab === 0) return true; // All
+    if (selectedTab === 1) return true; // Single option (currently all are single)
+    if (selectedTab === 2) return false; // Multi option (placeholder)
+    if (selectedTab === 3) return false; // Subcategory (placeholder)
+    return true;
+  });
 
   return (
     <Page fullWidth>
+      {/* Header Section */}
       <Box paddingBlockEnd="400">
-        <BlockStack gap="200">
-          <InlineStack align="space-between" blockAlign="center">
-            <Text variant="headingLg">Product groups</Text>
+        <BlockStack gap="400">
+          <InlineStack align="space-between" blockAlign="start">
+            <BlockStack gap="100">
+              <Text variant="headingXl" as="h1">Product groups</Text>
+              <Text variant="bodyMd" tone="subdued">Product groups combine multiple product listings into variant options.</Text>
+            </BlockStack>
             <InlineStack gap="200">
-              <Button icon={ExportIcon}>Export</Button>
-              <Button icon={ImportIcon}>Import</Button>
-              <Button variant="primary" url="/app/groups/new">Create group</Button>
+              <ButtonGroup>
+                <Button icon={ExportIcon}>Export</Button>
+                <Button icon={ImportIcon}>Import</Button>
+                <Button icon={RefreshIcon} disabled>Bulk update options</Button>
+              </ButtonGroup>
+              <Button variant="primary" icon={PlusIcon} url="/app/groups/new">Create group</Button>
             </InlineStack>
           </InlineStack>
-          <Text variant="bodyMd" tone="subdued">Manage your linked product variants and their display settings</Text>
+
+          {bannerVisible && (
+            <Banner tone="info" onDismiss={() => setBannerVisible(false)}>
+              <InlineStack gap="200" blockAlign="center">
+                <Text variant="bodyMd">App embed is enabled. Learn how to configure it.</Text>
+                <Button variant="plain">Learn more</Button>
+              </InlineStack>
+            </Banner>
+          )}
+
+          {/* Stats Row */}
+          <Box background="bg-surface" padding="400" borderRadius="300" borderColor="border" borderWidth="025">
+            <InlineStack align="space-between" blockAlign="center">
+              <Box flex="1">
+                <BlockStack gap="100">
+                  <Text variant="bodySm" fontWeight="bold" tone="subdued">Created product groups</Text>
+                  <Text variant="bodyMd">{groups.length} groups</Text>
+                </BlockStack>
+              </Box>
+              <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
+              <Box flex="1">
+                <BlockStack gap="100">
+                  <Text variant="bodySm" fontWeight="bold" tone="subdued">Remaining product groups</Text>
+                  <InlineStack gap="100" blockAlign="center">
+                    <Text variant="bodyMd" tone="subdued">{usageInfo.limit === Infinity ? "Unlimited" : Math.max(0, usageInfo.limit - groups.length)} groups</Text>
+                    <div style={{ color: '#8c9196' }}>•</div>
+                    <Button variant="plain" tone="info" size="micro">Upgrade</Button>
+                  </InlineStack>
+                </BlockStack>
+              </Box>
+              <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
+              <Box flex="1">
+                <BlockStack gap="100">
+                  <Text variant="bodySm" fontWeight="bold" tone="subdued">Total products</Text>
+                  <Text variant="bodyMd">{totalProducts} products</Text>
+                </BlockStack>
+              </Box>
+            </InlineStack>
+          </Box>
         </BlockStack>
       </Box>
 
-      <BlockStack gap="400">
-        {actionData?.message && <Banner tone="success"><p>{actionData.message}</p></Banner>}
-
-        <Grid>
-          <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-            <Card>
-              <BlockStack gap="100">
-                <Text variant="bodySm" tone="subdued" fontWeight="semibold">Total groups</Text>
-                <Text variant="headingLg">{groups.length}</Text>
-              </BlockStack>
-            </Card>
-          </Grid.Cell>
-          <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-            <Card>
-              <BlockStack gap="100">
-                <Text variant="bodySm" tone="subdued" fontWeight="semibold">Linked products</Text>
-                <Text variant="headingLg">{totalProducts}</Text>
-              </BlockStack>
-            </Card>
-          </Grid.Cell>
-          <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-            <Card>
-              <BlockStack gap="100">
-                <Text variant="bodySm" tone="subdued" fontWeight="semibold">Plan usage</Text>
-                <InlineStack gap="200" blockAlign="center">
-                  <Text variant="headingLg">{usageInfo.limit === Infinity ? "Unlimited" : `${groups.length}/${usageInfo.limit}`}</Text>
-                  <Badge tone="info" size="small">Pro</Badge>
-                </InlineStack>
-              </BlockStack>
-            </Card>
-          </Grid.Cell>
-        </Grid>
-
-        <Card padding="0">
-          <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
-          <Divider />
-          <Box padding="300">
-            <InlineStack align="space-between" blockAlign="center">
-              <div style={{ flex: 1, maxWidth: '400px' }}>
-                <TextField
-                  placeholder="Search groups"
-                  prefix={<Icon source={SearchIcon} />}
-                  value={searchValue}
-                  onChange={setSearchValue}
-                  autoComplete="off"
-                  label="Search"
-                  labelHidden
-                />
-              </div>
-              <InlineStack gap="200">
-                <Button icon={FilterIcon}>Filter</Button>
-              </InlineStack>
+      {/* Main Content Card */}
+      <Card padding="0">
+        <Box padding="300">
+          <InlineStack align="space-between" blockAlign="center">
+            <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
+            <InlineStack gap="100">
+               <Button icon={SearchIcon} variant="tertiary" />
+               <Button icon={FilterIcon} variant="tertiary" />
             </InlineStack>
-          </Box>
-          <Divider />
+          </InlineStack>
+        </Box>
+        <Divider />
 
-          {groups.length === 0 ? (
-            <Box padding="1000">
-              <EmptyState
-                heading="No product groups found"
-                action={{ content: 'Create group', url: '/app/groups/new', variant: 'primary' }}
-                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-              >
-                <p>Start by creating your first group to link products together.</p>
-              </EmptyState>
-            </Box>
-          ) : (
-            <IndexTable
-              resourceName={{ singular: "group", plural: "groups" }}
-              itemCount={groups.length}
-              headings={[
-                { title: "Group name" },
-                { title: "Option" },
-                { title: "Products" },
-                { title: "Status" },
-                { title: "Sync", alignment: "center" },
-                { title: "Actions", alignment: "end" },
-              ]}
-              selectable={false}
-            >
-              {groups.map((group, index) => (
-                <IndexTable.Row id={group.id} key={group.id} position={index}>
-                  <IndexTable.Cell>
-                    <Link to={`/app/groups/${group.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                      <Text variant="bodyMd" fontWeight="bold" truncate>{group.name || "Untitled Group"}</Text>
-                    </Link>
-                  </IndexTable.Cell>
-                  <IndexTable.Cell>
-                    <Badge tone="info" size="small">{group.optionName}</Badge>
-                  </IndexTable.Cell>
-                  <IndexTable.Cell>{group._count.products} products</IndexTable.Cell>
-                  <IndexTable.Cell>
-                    <Badge tone={group.status === "active" ? "success" : "attention"}>
+        {filteredGroups.length === 0 ? (
+          <EmptyState
+            heading="No product groups found"
+            action={{ content: 'Create group', url: '/app/groups/new', variant: 'primary' }}
+            image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+          >
+            <p>Start by creating your first group to link products together.</p>
+          </EmptyState>
+        ) : (
+          <IndexTable
+            resourceName={{ singular: "group", plural: "groups" }}
+            itemCount={filteredGroups.length}
+            headings={[
+              { title: "Product group" },
+              { title: "Products" },
+              { title: "Total products" },
+              { title: "Type" },
+              { title: "Option name" },
+              { title: "Status" },
+              { title: "Created" },
+              { title: "", alignment: 'end' },
+            ]}
+            selectable={false}
+          >
+            {filteredGroups.map((group, index) => (
+              <IndexTable.Row id={group.id} key={group.id} position={index}>
+                <IndexTable.Cell>
+                  <Link to={`/app/groups/${group.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <Text variant="bodyMd" fontWeight="semibold">{group.name || "Untitled Group"}</Text>
+                  </Link>
+                </IndexTable.Cell>
+                <IndexTable.Cell>
+                  <ProductThumbnailGroup productIds={group.products} />
+                </IndexTable.Cell>
+                <IndexTable.Cell>
+                  <Text tone="subdued" variant="bodyMd">{group._count.products} products</Text>
+                </IndexTable.Cell>
+                <IndexTable.Cell>
+                  <Text tone="subdued" variant="bodyMd">Single option</Text>
+                </IndexTable.Cell>
+                <IndexTable.Cell>
+                  <Text variant="bodyMd">{group.optionName}</Text>
+                </IndexTable.Cell>
+                <IndexTable.Cell>
+                  <Badge tone={group.status === "active" ? "success" : "attention"}>
+                    <InlineStack gap="100" blockAlign="center">
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: group.status === "active" ? '#008060' : '#8c9196' }} />
                       {group.status === "active" ? "Active" : "Draft"}
-                    </Badge>
-                  </IndexTable.Cell>
-                  <IndexTable.Cell>
-                     <InlineStack align="center">
-                        <Icon source={ImportIcon} tone={group.syncStatus === "synced" ? "success" : "subdued"} />
-                     </InlineStack>
-                  </IndexTable.Cell>
-                  <IndexTable.Cell>
-                    <InlineStack gap="100" align="end">
-                      <Tooltip content="Edit">
-                        <Button icon={ViewIcon} url={`/app/groups/${group.id}`} variant="tertiary" />
-                      </Tooltip>
-                      <Tooltip content="Delete">
-                        <Button 
-                          icon={DeleteIcon} 
-                          tone="critical" 
-                          variant="tertiary" 
-                          onClick={() => handleDeleteGroup(group.id)} 
-                          loading={isLoading && navigation.formData?.get("groupId") === group.id}
-                        />
-                      </Tooltip>
                     </InlineStack>
-                  </IndexTable.Cell>
-                </IndexTable.Row>
-              ))}
-            </IndexTable>
-          )}
-        </Card>
-      </BlockStack>
+                  </Badge>
+                </IndexTable.Cell>
+                <IndexTable.Cell>
+                  <Text tone="subdued" variant="bodyMd">{new Date(group.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
+                </IndexTable.Cell>
+                <IndexTable.Cell>
+                   <InlineStack align="end" gap="100">
+                      <Button icon={DuplicateIcon} variant="tertiary" />
+                      <Button icon={RefreshIcon} variant="tertiary" />
+                      <ActionMenu groupId={group.id} />
+                   </InlineStack>
+                </IndexTable.Cell>
+              </IndexTable.Row>
+            ))}
+          </IndexTable>
+        )}
+      </Card>
 
+      {/* Footer Footer */}
       <Box paddingBlock="800">
         <InlineStack align="center" gap="100">
-          <Text variant="bodySm" tone="subdued">Need help? </Text>
-          <Link to="/app/help">Contact support</Link>
+          <Icon source={QuestionCircleIcon} tone="subdued" />
+          <Button variant="plain" url="/app/help">Help Center</Button>
         </InlineStack>
       </Box>
     </Page>
