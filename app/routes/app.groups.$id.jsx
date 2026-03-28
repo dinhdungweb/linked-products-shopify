@@ -749,11 +749,8 @@ const ColorPickerPopover = ({ color, onChange, radius = '50%' }) => {
     };
 
     const handleHexChange = (newHex) => {
-        if (/^#[0-9A-F]{6}$/i.test(newHex)) {
-            onChange(newHex.toUpperCase());
-        } else if (newHex.startsWith('#') && newHex.length <= 7) {
-            // Allow typing
-        }
+        // Luôn cho phép cập nhật nháp để người dùng gõ được (ví dụ: #, #f, #ff...)
+        onChange(newHex);
     };
 
     return (
@@ -763,24 +760,25 @@ const ColorPickerPopover = ({ color, onChange, radius = '50%' }) => {
                 <div
                     onClick={toggleActive}
                     style={{ 
-                        width: '34px', 
-                        height: '34px', 
-                        minWidth: '34px',
-                        background: '#f4f4f4',
+                        padding: '6px',
                         border: '1px solid #dcdcdc',
                         borderRadius: radius,
                         cursor: 'pointer',
-                        overflow: 'hidden',
-                        flexShrink: 0
+                        background: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        minWidth: '110px'
                     }}
                 >
                     <div style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        borderRadius: radius, 
+                        width: '22px', 
+                        height: '22px', 
+                        borderRadius: '2px', 
                         background: color || '#000000',
                         border: '1px solid rgba(0,0,0,0.1)'
                     }} />
+                    <span style={{ fontSize: '12px', color: '#666', fontFamily: 'monospace' }}>{color || '#000000'}</span>
                 </div>
             }
             onClose={toggleActive}

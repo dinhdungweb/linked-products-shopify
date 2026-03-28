@@ -17,6 +17,8 @@ import {
   Grid,
   Icon,
   Banner,
+  Popover,
+  ColorPicker,
 } from "@shopify/polaris";
 import {
   SettingsIcon,
@@ -28,6 +30,97 @@ import {
 import { TitleBar } from "@shopify/app-bridge-react";
 import prisma from "../db.server";
 import { authenticate } from "../shopify.server";
+
+// Color conversion helpers
+function hexToHsb(hex) {
+    if (!hex || !hex.startsWith('#')) return { hue: 0, saturation: 0, brightness: 1 };
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, v = max;
+    const d = max - min;
+    s = max === 0 ? 0 : d / max;
+    if (max === min) { h = 0; }
+    else {
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    return { hue: h * 360, saturation: s, brightness: v };
+}
+
+function hsbToHex(hsb) {
+    const { hue, saturation, brightness } = hsb;
+    const s = saturation;
+    const v = brightness;
+    const c = v * s;
+    const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+    const m = v - c;
+    let r, g, b;
+    if (hue >= 0 && hue < 60) { r = c; g = x; b = 0; }
+    else if (hue >= 60 && hue < 120) { r = x; g = c; b = 0; }
+    else if (hue >= 120 && hue < 180) { r = 0; g = c; b = x; }
+    else if (hue >= 180 && hue < 240) { r = 0; g = x; b = c; }
+    else if (hue >= 240 && hue < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+    const toHex = (n) => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+}
+
+const ColorPickerPopover = ({ color, onChange, radius = '4px' }) => {
+    const [active, setActive] = useState(false);
+    const toggleActive = useCallback(() => setActive((active) => !active), []);
+    const hsb = hexToHsb(color || '#000000');
+    
+    return (
+        <Popover
+            active={active}
+            activator={
+                <div 
+                    onClick={toggleActive}
+                    style={{ 
+                        padding: '6px',
+                        border: '1px solid #dcdcdc',
+                        borderRadius: radius,
+                        cursor: 'pointer',
+                        background: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        minWidth: '120px'
+                    }}
+                >
+                    <div style={{ 
+                        width: '24px', 
+                        height: '24px', 
+                        borderRadius: '2px', 
+                        background: color || '#000000',
+                        border: '1px solid rgba(0,0,0,0.1)'
+                    }} />
+                    <span style={{ fontSize: '13px', color: '#666', fontFamily: 'monospace' }}>{color || '#000000'}</span>
+                </div>
+            }
+            onClose={toggleActive}
+        >
+            <Box padding="300">
+                <BlockStack gap="300">
+                    <ColorPicker onChange={(newHsb) => onChange(hsbToHex(newHsb))} color={hsb} allowAlpha={false} />
+                    <TextField
+                        label="HEX"
+                        labelHidden
+                        value={color || '#000000'}
+                        onChange={onChange}
+                        autoComplete="off"
+                    />
+                </BlockStack>
+            </Box>
+        </Popover>
+    );
+};
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -69,16 +162,16 @@ export const action = async ({ request }) => {
     selectOptionLabel: data.selectOptionLabel,
     soldOutLabel: data.soldOutLabel,
     unavailableLabel: data.unavailableLabel,
-    swatchSize: parseInt(data.swatchSize),
-    itemsGap: parseInt(data.itemsGap),
-    borderRadius: parseInt(data.borderRadius),
-    borderWidth: parseInt(data.borderWidth),
+    swatchSize: parseInt(data.swatchSize) || 50,
+    itemsGap: parseInt(data.itemsGap) || 8,
+    borderRadius: parseInt(data.borderRadius) || 8,
+    borderWidth: parseInt(data.borderWidth) || 1,
     borderColor: data.borderColor,
     selectedBorderColor: data.selectedBorderColor,
     showOptionName: data.showOptionName === "true",
-    blockPaddingX: parseInt(data.blockPaddingX),
-    blockPaddingY: parseInt(data.blockPaddingY),
-    blockFontSize: parseInt(data.blockFontSize),
+    blockPaddingX: parseInt(data.blockPaddingX) || 12,
+    blockPaddingY: parseInt(data.blockPaddingY) || 8,
+    blockFontSize: parseInt(data.blockFontSize) || 14,
     blockBgColor: data.blockBgColor,
     blockTextColor: data.blockTextColor,
     selectedBgColor: data.selectedBgColor,
@@ -132,25 +225,28 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState(initialSettings);
 
   const handleSettingChange = (key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    setSettings(prev => {
+        // Tránh lưu NaN vào state nếu người dùng xóa trắng ô nhập liệu số
+        // Nhưng vẫn cho phép giá trị rỗng trong TextField để người dùng gõ được
+        return { ...prev, [key]: value };
+    });
   };
 
   const handleSave = () => {
     const formData = new FormData();
     Object.keys(settings).forEach(key => {
-      formData.append(key, settings[key]);
+      // Chuyển đổi NaN hoặc rỗng thành giá trị mặc định hợp lý trước khi gửi lên server
+      let value = settings[key];
+      if (typeof value === 'number' && isNaN(value)) value = 0;
+      if (value === "") {
+          if (key.includes('Size') || key.includes('Gap') || key.includes('Radius') || key.includes('Width') || key.includes('Padding')) value = 0;
+      }
+      formData.append(key, value);
     });
     submit(formData, { method: "post" });
     setShowBanner(true);
     setTimeout(() => setShowBanner(false), 3000);
   };
-
-  useEffect(() => {
-    if (navigation.state === "idle" && showBanner === false && initialSettings !== settings) {
-      // Logic to show success banner after save can be more robust, 
-      // but for now let's just use the action return if needed.
-    }
-  }, [navigation.state]);
 
   const tabs = [
     {
@@ -208,8 +304,8 @@ export default function SettingsPage() {
                 <TextField
                   label="Swatch/Image size (px)"
                   type="number"
-                  value={settings.swatchSize.toString()}
-                  onChange={(v) => handleSettingChange("swatchSize", parseInt(v))}
+                  value={settings.swatchSize?.toString() || ""}
+                  onChange={(v) => handleSettingChange("swatchSize", v === "" ? "" : parseInt(v))}
                   autoComplete="off"
                 />
               </Grid.Cell>
@@ -217,8 +313,8 @@ export default function SettingsPage() {
                 <TextField
                   label="Gap between items (px)"
                   type="number"
-                  value={settings.itemsGap.toString()}
-                  onChange={(v) => handleSettingChange("itemsGap", parseInt(v))}
+                  value={settings.itemsGap?.toString() || ""}
+                  onChange={(v) => handleSettingChange("itemsGap", v === "" ? "" : parseInt(v))}
                   autoComplete="off"
                 />
               </Grid.Cell>
@@ -238,8 +334,8 @@ export default function SettingsPage() {
                 <TextField
                   label="Border radius (px)"
                   type="number"
-                  value={settings.borderRadius.toString()}
-                  onChange={(v) => handleSettingChange("borderRadius", parseInt(v))}
+                  value={settings.borderRadius?.toString() || ""}
+                  onChange={(v) => handleSettingChange("borderRadius", v === "" ? "" : parseInt(v))}
                   autoComplete="off"
                 />
               </Grid.Cell>
@@ -247,37 +343,39 @@ export default function SettingsPage() {
                 <TextField
                   label="Border width (px)"
                   type="number"
-                  value={settings.borderWidth.toString()}
-                  onChange={(v) => handleSettingChange("borderWidth", parseInt(v))}
+                  value={settings.borderWidth?.toString() || ""}
+                  onChange={(v) => handleSettingChange("borderWidth", v === "" ? "" : parseInt(v))}
                   autoComplete="off"
                 />
               </Grid.Cell>
               <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
-                <Checkbox
-                  label="Show option name label"
-                  checked={settings.showOptionName}
-                  onChange={(v) => handleSettingChange("showOptionName", v)}
-                />
+                <div style={{ paddingTop: '24px' }}>
+                    <Checkbox
+                    label="Show option name label"
+                    checked={settings.showOptionName}
+                    onChange={(v) => handleSettingChange("showOptionName", v)}
+                    />
+                </div>
               </Grid.Cell>
             </Grid>
             <Grid>
               <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                <TextField
-                  label="Default border color"
-                  value={settings.borderColor}
-                  onChange={(v) => handleSettingChange("borderColor", v)}
-                  autoComplete="off"
-                  prefix={<div style={{ width: '20px', height: '20px', backgroundColor: settings.borderColor, border: '1px solid #ccc' }} />}
-                />
+                <BlockStack gap="200">
+                    <Text variant="bodyMd">Default border color</Text>
+                    <ColorPickerPopover 
+                        color={settings.borderColor} 
+                        onChange={(v) => handleSettingChange("borderColor", v)} 
+                    />
+                </BlockStack>
               </Grid.Cell>
               <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                <TextField
-                  label="Selected border color"
-                  value={settings.selectedBorderColor}
-                  onChange={(v) => handleSettingChange("selectedBorderColor", v)}
-                  autoComplete="off"
-                  prefix={<div style={{ width: '20px', height: '20px', backgroundColor: settings.selectedBorderColor, border: '1px solid #ccc' }} />}
-                />
+                <BlockStack gap="200">
+                    <Text variant="bodyMd">Selected border color</Text>
+                    <ColorPickerPopover 
+                        color={settings.selectedBorderColor} 
+                        onChange={(v) => handleSettingChange("selectedBorderColor", v)} 
+                    />
+                </BlockStack>
               </Grid.Cell>
             </Grid>
           </BlockStack>
@@ -292,27 +390,39 @@ export default function SettingsPage() {
           <BlockStack gap="400">
             <Grid>
               <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-                <TextField label="Padding X" type="number" value={settings.blockPaddingX.toString()} onChange={(v) => handleSettingChange("blockPaddingX", parseInt(v))} autoComplete="off" />
+                <TextField label="Padding X" type="number" value={settings.blockPaddingX?.toString() || ""} onChange={(v) => handleSettingChange("blockPaddingX", v === "" ? "" : parseInt(v))} autoComplete="off" />
               </Grid.Cell>
               <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-                <TextField label="Padding Y" type="number" value={settings.blockPaddingY.toString()} onChange={(v) => handleSettingChange("blockPaddingY", parseInt(v))} autoComplete="off" />
+                <TextField label="Padding Y" type="number" value={settings.blockPaddingY?.toString() || ""} onChange={(v) => handleSettingChange("blockPaddingY", v === "" ? "" : parseInt(v))} autoComplete="off" />
               </Grid.Cell>
               <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-                <TextField label="Font size" type="number" value={settings.blockFontSize.toString()} onChange={(v) => handleSettingChange("blockFontSize", parseInt(v))} autoComplete="off" />
+                <TextField label="Font size" type="number" value={settings.blockFontSize?.toString() || ""} onChange={(v) => handleSettingChange("blockFontSize", v === "" ? "" : parseInt(v))} autoComplete="off" />
               </Grid.Cell>
             </Grid>
             <Grid>
               <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                <TextField label="BG color" value={settings.blockBgColor} onChange={(v) => handleSettingChange("blockBgColor", v)} autoComplete="off" />
+                <BlockStack gap="200">
+                    <Text variant="bodyMd">BG color</Text>
+                    <ColorPickerPopover color={settings.blockBgColor} onChange={(v) => handleSettingChange("blockBgColor", v)} />
+                </BlockStack>
               </Grid.Cell>
               <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                <TextField label="Text color" value={settings.blockTextColor} onChange={(v) => handleSettingChange("blockTextColor", v)} autoComplete="off" />
+                <BlockStack gap="200">
+                    <Text variant="bodyMd">Text color</Text>
+                    <ColorPickerPopover color={settings.blockTextColor} onChange={(v) => handleSettingChange("blockTextColor", v)} />
+                </BlockStack>
               </Grid.Cell>
               <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                <TextField label="Selected BG" value={settings.selectedBgColor} onChange={(v) => handleSettingChange("selectedBgColor", v)} autoComplete="off" />
+                <BlockStack gap="200">
+                    <Text variant="bodyMd">Selected BG</Text>
+                    <ColorPickerPopover color={settings.selectedBgColor} onChange={(v) => handleSettingChange("selectedBgColor", v)} />
+                </BlockStack>
               </Grid.Cell>
               <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                <TextField label="Selected Text" value={settings.selectedTextColor} onChange={(v) => handleSettingChange("selectedTextColor", v)} autoComplete="off" />
+                <BlockStack gap="200">
+                    <Text variant="bodyMd">Selected Text</Text>
+                    <ColorPickerPopover color={settings.selectedTextColor} onChange={(v) => handleSettingChange("selectedTextColor", v)} />
+                </BlockStack>
               </Grid.Cell>
             </Grid>
           </BlockStack>
@@ -541,4 +651,3 @@ export default function SettingsPage() {
     </Page>
   );
 }
-
