@@ -49,14 +49,14 @@ const DEFAULT_SETTINGS = {
     radius: 8,
     width: 1,
     color: "#dbdfe2",
-    activeColor: "#4f5354",
-    hoverColor: "#4f5354",
-    outerWidth: 1,
-    outerRadius: 3,
-    outerPadding: 6,
-    outerColor: "#CFCFCF",
-    outerActiveColor: "#6A6A6A",
-    outerHoverColor: "#6A6A6A",
+    activeColor: "#000000",
+    hoverColor: "#000000",
+    outerWidth: 0,
+    outerRadius: 8,
+    outerPadding: 4,
+    outerColor: "#dbdfe2",
+    outerActiveColor: "#000000",
+    outerHoverColor: "#000000",
   },
   label: {
     show: true,
@@ -423,13 +423,12 @@ export default function StyleCustomizerPage() {
 
   // Preview Data
   const previewProducts = [
-    { name: "Beige", color: "#f5f5dc", image: "https://picsum.photos/id/1027/100/100" },
-    { name: "Purple", color: "#a020f0", image: "https://picsum.photos/id/1011/100/100" },
-    { name: "Orange", color: "#ffa500", image: "https://picsum.photos/id/1059/100/100" },
-    { name: "Green", color: "#008000", image: "https://picsum.photos/id/1074/100/100" },
-    { name: "Dark red", color: "#8b0000", image: "https://picsum.photos/id/1084/100/100" },
-    { name: "Yellow", color: "#ffff00", image: "https://picsum.photos/id/1069/100/100", style: "two", color2: "#ff0000" },
-    { name: "Black", color: "#000000", image: "https://picsum.photos/id/1062/100/100" },
+    { name: 'Beige Brown', color: 'https://picsum.photos/id/1027/400/500', style: 'one' },
+    { name: 'Black White', color: 'https://picsum.photos/id/1011/400/500', style: 'one' },
+    { name: 'Red Rose', color: 'https://picsum.photos/id/1059/400/500', style: 'one' },
+    { name: 'Teal Lily', color: 'https://picsum.photos/id/1074/400/500', style: 'one' },
+    { name: 'Yellow Bloom', color: 'https://picsum.photos/id/1084/400/500', style: 'one' },
+    { name: 'Purple Mini', color: 'https://picsum.photos/id/1069/400/500', style: 'one' }
   ];
 
   const activeProduct = previewProducts[1]; // Purple
