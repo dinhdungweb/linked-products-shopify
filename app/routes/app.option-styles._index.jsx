@@ -155,7 +155,7 @@ export default function OptionStylesPage() {
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
               {renderStyleCard("image_swatch", "Image swatch")}
             </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 12, xl: 12 }}>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
               {renderStyleCard("slide_swatch", "Slide swatch (Mobile only)")}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
