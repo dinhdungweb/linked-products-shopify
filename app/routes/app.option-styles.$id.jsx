@@ -48,8 +48,15 @@ const DEFAULT_SETTINGS = {
   border: {
     radius: 8,
     width: 1,
-    color: "#e5e5e5",
-    selectedColor: "#000000",
+    color: "#dbdfe2",
+    activeColor: "#4f5354",
+    hoverColor: "#4f5354",
+    outerWidth: 1,
+    outerRadius: 3,
+    outerPadding: 6,
+    outerColor: "#CFCFCF",
+    outerActiveColor: "#6A6A6A",
+    outerHoverColor: "#6A6A6A",
   },
   label: {
     show: true,
@@ -89,9 +96,19 @@ const DEFAULT_SETTINGS = {
   },
   badge: {
     show: false,
+    text: "NEW",
+    position: "top-right", // top-left, top-right, bottom-left, bottom-right
+    fontSize: 10,
+    color: "#ffffff",
+    bgColor: "#000000",
   },
   shadow: {
     show: false,
+    color: "rgba(0,0,0,0.1)",
+    blur: 4,
+    spread: 0,
+    offsetX: 0,
+    offsetY: 2,
   },
 };
 
@@ -210,8 +227,184 @@ export default function StyleCustomizerPage() {
   const handleUpdate = (section, key, value) => {
     setSettings(prev => ({
       ...prev,
-      [section]: { ...prev[section], [key]: value }
+      [section]: {
+        ...prev[section],
+        [key]: value
+      }
     }));
+  };
+
+  const getSwatchStyle = (isActive) => {
+    const b = settings.border;
+    const s = settings.shadow;
+    
+    const style = {
+      position: 'relative',
+      padding: `${settings.basic.padding}px`,
+      border: `${b.width}px solid ${isActive ? b.activeColor : (isActive === 'hover' ? b.hoverColor : b.color)}`,
+      borderRadius: `${b.radius}px`,
+      cursor: 'pointer',
+      backgroundColor: '#fff',
+      transition: 'all 0.2s ease',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: `${settings.basic.swatchSize}px`,
+      minHeight: `${settings.basic.swatchSize}px`,
+    };
+
+    if (s.show) {
+      style.boxShadow = `${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.spread}px ${s.color}`;
+    }
+
+    return style;
+  };
+
+  const getOuterStyle = (isActive) => {
+    const b = settings.border;
+    if (b.outerWidth <= 0) return {};
+
+    return {
+        padding: `${b.outerPadding}px`,
+        border: `${b.outerWidth}px solid ${isActive ? b.outerActiveColor : (isActive === 'hover' ? b.outerHoverColor : b.outerColor)}`,
+        borderRadius: `${b.outerRadius}px`,
+        display: 'inline-flex',
+        margin: '4px'
+    };
+  };
+
+  const renderBadge = () => {
+    if (!settings.badge.show) return null;
+    const b = settings.badge;
+    const posStyles = {
+        'top-left': { top: '-8px', left: '-8px' },
+        'top-right': { top: '-8px', right: '-8px' },
+        'bottom-left': { bottom: '-8px', left: '-8px' },
+        'bottom-right': { bottom: '-8px', right: '-8px' },
+    };
+    return (
+        <div style={{
+            position: 'absolute',
+            ...posStyles[b.position],
+            backgroundColor: b.bgColor,
+            color: b.color,
+            fontSize: `${b.fontSize}px`,
+            padding: '2px 6px',
+            borderRadius: '10px',
+            zIndex: 10,
+            fontWeight: 'bold',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            whiteSpace: 'nowrap'
+        }}>
+            {b.text}
+        </div>
+    );
+  };
+
+  const renderPreview = () => {
+    const isSlide = styleId.includes('slide');
+    const isButton = styleId.includes('button');
+    const isDropdown = styleId.includes('dropdown');
+
+    if (isDropdown) {
+        return (
+            <div style={{ width: '100%', maxWidth: '300px' }}>
+                <Select 
+                    label="Select Option" 
+                    options={previewProducts.map(p => ({ label: p.name, value: p.name }))}
+                    value={activeProduct.name}
+                />
+            </div>
+        );
+    }
+
+    if (isSlide) {
+        return (
+            <div style={{ 
+                display: 'flex', 
+                gap: `${settings.basic.gap}px`, 
+                overflowX: 'auto',
+                padding: '20px 10px',
+                width: '100%'
+            }}>
+                {previewProducts.map((p, i) => {
+                    const isActive = i === 1;
+                    return (
+                        <div key={i} style={getOuterStyle(isActive)}>
+                            <div style={{ ...getSwatchStyle(isActive), width: '120px', minHeight: '160px', padding: '10px' }}>
+                                {isActive && renderBadge()}
+                                <div style={{ 
+                                    width: '100px', height: '100px', 
+                                    backgroundColor: p.color, 
+                                    borderRadius: `${settings.border.radius}px`,
+                                    marginBottom: '8px',
+                                    overflow: 'hidden'
+                                }}>
+                                    {p.style === 'two' && (
+                                        <div style={{ 
+                                            width: '100%', height: '100%',
+                                            background: `linear-gradient(to bottom right, transparent 50%, ${p.color2} 50%)`
+                                        }} />
+                                    )}
+                                </div>
+                                <BlockStack gap="100" align="center">
+                                    <Text variant="bodySm" fontWeight="bold">{p.name}</Text>
+                                    <Text variant="bodyXs" tone="subdued">$19.99</Text>
+                                </BlockStack>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ 
+            display: 'flex', 
+            gap: `${settings.basic.gap}px`, 
+            flexWrap: 'wrap',
+            justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start'),
+            padding: '20px'
+        }}>
+            {previewProducts.map((p, i) => {
+                const isActive = i === 1;
+                const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle');
+                
+                return (
+                    <div key={i} style={getOuterStyle(isActive)}>
+                        <div style={{ ...getSwatchStyle(isActive), padding: isButton ? '8px 16px' : `${settings.basic.padding}px` }}>
+                            {isActive && renderBadge()}
+                            {!isButton && (
+                                <div style={{ 
+                                    width: `${settings.basic.swatchSize}px`, 
+                                    height: `${settings.basic.swatchSize}px`, 
+                                    backgroundColor: p.color,
+                                    borderRadius: isRound ? '50%' : '2px',
+                                    border: '1px solid rgba(0,0,0,0.1)',
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                }}>
+                                    {p.style === 'two' && (
+                                        <div style={{ 
+                                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                            background: `linear-gradient(to bottom right, transparent 50%, ${p.color2} 50%)`
+                                        }} />
+                                    )}
+                                </div>
+                            )}
+                            {(settings.label.show || isButton) && (
+                                <div style={{ marginTop: isButton ? 0 : '4px' }}>
+                                    <Text variant="bodySm">{p.name}</Text>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
   };
 
   const handleSave = () => {
@@ -327,7 +520,7 @@ export default function StyleCustomizerPage() {
             </Box>
             <Divider />
 
-            {/* Border Settings (Placeholder for logic) */}
+            {/* Border Settings */}
             <Box padding="0">
                 <div onClick={() => toggleSection('border')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text variant="headingSm">Border settings</Text>
@@ -336,8 +529,28 @@ export default function StyleCustomizerPage() {
                 <Collapsible open={openSections.border}>
                     <Box padding="400" paddingBlockStart="0">
                          <BlockStack gap="400">
-                            <RangeSlider label={`Border radius (${settings.border.radius}px)`} value={settings.border.radius} onChange={(v) => handleUpdate('border', 'radius', v)} min={0} max={50} output />
-                            <RangeSlider label={`Border width (${settings.border.width}px)`} value={settings.border.width} onChange={(v) => handleUpdate('border', 'width', v)} min={0} max={10} output />
+                            <RangeSlider label={`Border thickness (${settings.border.width}px)`} value={settings.border.width} onChange={(v) => handleUpdate('border', 'width', v)} min={0} max={4} output />
+                            <RangeSlider label={`Border radius (${settings.border.radius}px)`} value={settings.border.radius} onChange={(v) => handleUpdate('border', 'radius', v)} min={0} max={100} output />
+                            
+                            <Text variant="bodyMd" fontWeight="semibold">Border color</Text>
+                            <Grid>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 4}}><TextField label="Default" value={settings.border.color} onChange={(v) => handleUpdate('border', 'color', v)} autoComplete="off" /></Grid.Cell>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 4}}><TextField label="Active" value={settings.border.activeColor} onChange={(v) => handleUpdate('border', 'activeColor', v)} autoComplete="off" /></Grid.Cell>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 4}}><TextField label="Hover" value={settings.border.hoverColor} onChange={(v) => handleUpdate('border', 'hoverColor', v)} autoComplete="off" /></Grid.Cell>
+                            </Grid>
+
+                            <Divider />
+
+                            <RangeSlider label={`Outer border thickness (${settings.border.outerWidth}px)`} value={settings.border.outerWidth} onChange={(v) => handleUpdate('border', 'outerWidth', v)} min={0} max={4} output />
+                            <RangeSlider label={`Outer border radius (${settings.border.outerRadius}px)`} value={settings.border.outerRadius} onChange={(v) => handleUpdate('border', 'outerRadius', v)} min={0} max={100} output />
+                            <RangeSlider label={`Outer padding (${settings.border.outerPadding}px)`} value={settings.border.outerPadding} onChange={(v) => handleUpdate('border', 'outerPadding', v)} min={0} max={30} output />
+                            
+                            <Text variant="bodyMd" fontWeight="semibold">Outer border color</Text>
+                            <Grid>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 4}}><TextField label="Default" value={settings.border.outerColor} onChange={(v) => handleUpdate('border', 'outerColor', v)} autoComplete="off" /></Grid.Cell>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 4}}><TextField label="Active" value={settings.border.outerActiveColor} onChange={(v) => handleUpdate('border', 'outerActiveColor', v)} autoComplete="off" /></Grid.Cell>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 4}}><TextField label="Hover" value={settings.border.outerHoverColor} onChange={(v) => handleUpdate('border', 'outerHoverColor', v)} autoComplete="off" /></Grid.Cell>
+                            </Grid>
                          </BlockStack>
                     </Box>
                 </Collapsible>
@@ -469,37 +682,66 @@ export default function StyleCustomizerPage() {
             </Box>
             <Divider />
 
-            {/* Unavailable settings */}
+            {/* Badge settings */}
             <Box padding="0">
-                <div onClick={() => toggleSection('unavailable')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="headingSm">Unavailable settings</Text>
-                    <Icon source={openSections.unavailable ? ChevronUpIcon : ChevronDownIcon} />
+                <div onClick={() => toggleSection('badge')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text variant="headingSm">Badge settings</Text>
+                    <Icon source={openSections.badge ? ChevronUpIcon : ChevronDownIcon} />
                 </div>
-                <Collapsible open={openSections.unavailable}>
+                <Collapsible open={openSections.badge}>
                     <Box padding="400" paddingBlockStart="0">
                         <BlockStack gap="400">
-                            <Select 
-                                label="Unavailable style" 
-                                options={[{ label: 'Cross mark', value: 'cross_mark' }, { label: 'Opaque', value: 'opaque' }, { label: 'Hide', value: 'hide' }]}
-                                value={settings.unavailable.style}
-                                onChange={(v) => handleUpdate('unavailable', 'style', v)}
-                            />
                             <InlineStack align="space-between">
-                                <Text variant="bodyMd">Allow redirect when product is out of stock</Text>
-                                <Checkbox label="" labelHidden checked={settings.unavailable.allowRedirect} onChange={(v) => handleUpdate('unavailable', 'allowRedirect', v)} />
+                                <Text variant="bodyMd">Show badge</Text>
+                                <Checkbox label="" labelHidden checked={settings.badge.show} onChange={(v) => handleUpdate('badge', 'show', v)} />
                             </InlineStack>
-                            <InlineStack align="space-between" blockAlign="center">
-                                <InlineStack gap="100">
-                                    <Text variant="bodyMd">Hide unmatched variant (Only valid for multi option groups)</Text>
-                                    <Icon source={InfoIcon} tone="subdued" />
-                                </InlineStack>
-                                <Checkbox label="" labelHidden checked={settings.unavailable.hideUnmatched} onChange={(v) => handleUpdate('unavailable', 'hideUnmatched', v)} />
-                            </InlineStack>
+                            <TextField label="Badge text" value={settings.badge.text} onChange={(v) => handleUpdate('badge', 'text', v)} autoComplete="off" />
+                            <Select 
+                                label="Position" 
+                                options={[
+                                    { label: 'Top Left', value: 'top-left' },
+                                    { label: 'Top Right', value: 'top-right' },
+                                    { label: 'Bottom Left', value: 'bottom-left' },
+                                    { label: 'Bottom Right', value: 'bottom-right' }
+                                ]}
+                                value={settings.badge.position}
+                                onChange={(v) => handleUpdate('badge', 'position', v)}
+                            />
+                            <RangeSlider label={`Font size (${settings.badge.fontSize}px)`} value={settings.badge.fontSize} onChange={(v) => handleUpdate('badge', 'fontSize', v)} min={8} max={20} output />
+                            <Grid>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 6}}><TextField label="Text color" value={settings.badge.color} onChange={(v) => handleUpdate('badge', 'color', v)} autoComplete="off" /></Grid.Cell>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 6}}><TextField label="BG color" value={settings.badge.bgColor} onChange={(v) => handleUpdate('badge', 'bgColor', v)} autoComplete="off" /></Grid.Cell>
+                            </Grid>
                         </BlockStack>
                     </Box>
                 </Collapsible>
             </Box>
-            
+            <Divider />
+
+            {/* Shadow settings */}
+            <Box padding="0">
+                <div onClick={() => toggleSection('shadow')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text variant="headingSm">Shadow settings</Text>
+                    <Icon source={openSections.shadow ? ChevronUpIcon : ChevronDownIcon} />
+                </div>
+                <Collapsible open={openSections.shadow}>
+                    <Box padding="400" paddingBlockStart="0">
+                        <BlockStack gap="400">
+                             <InlineStack align="space-between">
+                                <Text variant="bodyMd">Show shadow</Text>
+                                <Checkbox label="" labelHidden checked={settings.shadow.show} onChange={(v) => handleUpdate('shadow', 'show', v)} />
+                            </InlineStack>
+                            <TextField label="Shadow color" value={settings.shadow.color} onChange={(v) => handleUpdate('shadow', 'color', v)} autoComplete="off" />
+                            <Grid>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 6}}><RangeSlider label="OffsetX" value={settings.shadow.offsetX} onChange={(v) => handleUpdate('shadow', 'offsetX', v)} min={-20} max={20} output /></Grid.Cell>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 6}}><RangeSlider label="OffsetY" value={settings.shadow.offsetY} onChange={(v) => handleUpdate('shadow', 'offsetY', v)} min={-20} max={20} output /></Grid.Cell>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 6}}><RangeSlider label="Blur" value={settings.shadow.blur} onChange={(v) => handleUpdate('shadow', 'blur', v)} min={0} max={50} output /></Grid.Cell>
+                                <Grid.Cell columnSpan={{xs: 6, sm: 6}}><RangeSlider label="Spread" value={settings.shadow.spread} onChange={(v) => handleUpdate('shadow', 'spread', v)} min={-10} max={20} output /></Grid.Cell>
+                            </Grid>
+                        </BlockStack>
+                    </Box>
+                </Collapsible>
+            </Box>
           </Card>
           
           {/* Footer Actions */}
@@ -527,51 +769,11 @@ export default function StyleCustomizerPage() {
                     
                     <Box padding="600" background="bg-surface-secondary" borderRadius="400" borderWidth="025" borderColor="border">
                         <BlockStack gap="400">
-                            {settings.label.show && (
+                            {settings.label.show && !styleId.includes('dropdown') && (
                                 <Text variant="bodyMd">Color: {activeProduct.name}</Text>
                             )}
                             
-                            <div style={{ 
-                                display: 'flex', 
-                                gap: `${settings.basic.gap}px`, 
-                                flexWrap: 'wrap',
-                                justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start')
-                            }}>
-                                {previewProducts.map((p, i) => (
-                                    <div key={i} style={{ 
-                                        padding: `${settings.basic.padding}px`,
-                                        border: i === 1 ? `${settings.border.width}px solid ${settings.border.selectedColor}` : `${settings.border.width}px solid ${settings.border.color}`,
-                                        borderRadius: `${settings.border.radius}px`,
-                                        cursor: 'pointer',
-                                        backgroundColor: '#fff',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        gap: '4px',
-                                        minWidth: `${settings.basic.swatchSize}px`
-                                    }}>
-                                        <div style={{ 
-                                            width: `${settings.basic.swatchSize}px`, 
-                                            height: `${settings.basic.swatchSize}px`, 
-                                            backgroundColor: p.color,
-                                            borderRadius: styleId.includes('round') || styleId.includes('color_swatch') ? '50%' : '2px',
-                                            border: '1px solid rgba(0,0,0,0.1)',
-                                            position: 'relative',
-                                            overflow: 'hidden'
-                                        }}>
-                                          {p.style === 'two' && (
-                                            <div style={{ 
-                                                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                                background: `linear-gradient(to bottom right, transparent 50%, ${p.color2} 50%)`
-                                            }} />
-                                          )}
-                                        </div>
-                                        {settings.label.layout === 'stack' && (
-                                            <Text variant="bodyXs" tone="subdued">{p.name}</Text>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                            {renderPreview()}
                         </BlockStack>
                     </Box>
                 </BlockStack>
