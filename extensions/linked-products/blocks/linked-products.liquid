@@ -25,6 +25,7 @@
   {%- assign lp_swatch_size = active_style_settings.basic.swatchSize | default: app_settings.swatchSize | default: 50 -%}
   {%- assign lp_items_gap = active_style_settings.basic.gap | default: app_settings.itemsGap | default: 8 -%}
   {%- assign lp_padding = active_style_settings.basic.padding | default: 0 -%}
+  {%- assign lp_two_color_style = active_style_settings.basic.twoColorStyle | default: 'LT_RB' -%}
   
   {%- assign lp_border_radius = active_style_settings.border.radius | default: app_settings.borderRadius | default: 8 -%}
   {%- assign lp_border_width = active_style_settings.border.width | default: app_settings.borderWidth | default: 1 -%}
@@ -166,7 +167,8 @@
                     custom_image: item.image,
                     custom_color: item.color,
                     custom_color2: item.color2,
-                    item_style: item.style
+                    item_style: item.style,
+                    two_color_style: lp_two_color_style
                 -%}
                 {%- assign current_rendered = true -%}
               {%- else -%}
@@ -186,7 +188,8 @@
                       custom_image: item.image,
                       custom_color: item.color,
                       custom_color2: item.color2,
-                      item_style: item.style
+                      item_style: item.style,
+                      two_color_style: lp_two_color_style
                   -%}
                 {%- endif -%}
               {%- endif -%}

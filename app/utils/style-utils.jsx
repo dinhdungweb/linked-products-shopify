@@ -210,12 +210,20 @@ export const PreviewRenderer = ({ styleId, settings }) => {
                 const radius = isRound ? '50%' : `${settings.border.radius}px`;
 
                  if (isColor) {
+                    const directions = {
+                        L_R: "to right",
+                        LT_RB: "to bottom right",
+                        T_B: "to bottom",
+                        LB_RT: "to top right"
+                    };
+                    const direction = directions[settings.basic.twoColorStyle] || "to bottom right";
+
                     return (
                         <div style={{ 
                             width: '100%', 
                             aspectRatio: '1/1',
                             borderRadius: radius, 
-                            background: isTwoColor ? `linear-gradient(to bottom right, ${p.colorHex} 50%, ${p.colorHex2} 50%)` : p.colorHex,
+                            background: isTwoColor ? `linear-gradient(${direction}, ${p.colorHex} 50%, ${p.colorHex2} 50%)` : p.colorHex,
                             border: '1px solid rgba(0,0,0,0.05)'
                         }} />
                     );

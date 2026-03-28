@@ -9,10 +9,16 @@
   - style: 'swatch', 'variant_image', 'block'
 {%- endcomment -%}
 
-<!--
-  © 2026 Bluepeaks Studio. All rights reserved.
-  This file is part of the Variants Linked Products Shopify App.
--->
+{%- assign gradient_direction = 'to bottom right' -%}
+{%- if two_color_style == 'L_R' -%}
+  {%- assign gradient_direction = 'to right' -%}
+{%- elsif two_color_style == 'LT_RB' -%}
+  {%- assign gradient_direction = 'to bottom right' -%}
+{%- elsif two_color_style == 'T_B' -%}
+  {%- assign gradient_direction = 'to bottom' -%}
+{%- elsif two_color_style == 'LB_RT' -%}
+  {%- assign gradient_direction = 'to top right' -%}
+{%- endif -%}
 
 {%- assign url = product_obj.url -%}
 {%- assign image = custom_image | default: product_obj.featured_image -%}
@@ -168,7 +174,7 @@
        class="linked-option linked-option--swatch {% if style == 'square_color_swatch' %}is-square{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
        title="{{ value }}">
       {%- if has_color -%}
-        <span class="swatch-bg swatch-bg--color" style="{% if item_style == 'two' %}background: linear-gradient(to right, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
+        <span class="swatch-bg swatch-bg--color" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
       {%- elsif final_image_url != blank -%}
         <span class="swatch-bg" style="background-image: url({{ final_image_url }});"></span>
       {%- else -%}
@@ -181,7 +187,7 @@
        class="linked-option linked-option--pill-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
        title="{{ value }}">
       {%- if has_color -%}
-        <span class="pill-dot" style="{% if item_style == 'two' %}background: linear-gradient(to right, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
+        <span class="pill-dot" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
       {%- endif -%}
       {%- if settings.variantName.show != false -%}
         <span class="pill-label">{{ value }}</span>
@@ -219,7 +225,7 @@
        class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
        title="{{ value }}">
       <div class="card-media is-color" 
-           style="{% if item_style == 'two' %}background: linear-gradient(to right, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: #f4f4f4;{% endif %}">
+           style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: #f4f4f4;{% endif %}">
         {%- if has_color or final_image_url != blank -%}
           <span class="swatch-anchor"></span>
         {%- else -%}
@@ -241,7 +247,7 @@
     <a href="{{ url }}" 
        class="linked-option linked-option--block {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
        title="{% if is_unavailable %}{{ value }} (Sold out){% else %}{{ value }}{% endif %}">
-        <span class="color-dot" style="{% if item_style == 'two' %}background: linear-gradient(to right, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
+        <span class="color-dot" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
       {{ value }}
     </a>
 
