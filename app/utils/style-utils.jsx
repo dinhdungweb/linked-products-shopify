@@ -53,7 +53,7 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
 export const getOuterStyle = (isActive, settings, styleId) => {
   const b = settings.border;
   if (!b || b.outerWidth <= 0) return { display: 'inline-flex' };
-  const isRound = styleId.includes('round') || styleId.includes('circle') || (styleId === 'color_swatch' && b.radius > 20);
+  const isRound = styleId.includes('round') || styleId.includes('circle');
   return {
       padding: `${b.outerPadding || 0}px`,
       border: `${b.outerWidth || 1}px solid ${isActive ? (b.outerActiveColor || '#000') : (b.outerColor || '#ccc')}`,
@@ -65,7 +65,7 @@ export const getOuterStyle = (isActive, settings, styleId) => {
  export const getSwatchStyle = (isActive, settings, styleId) => {
   const b = settings.border;
   const s = settings.shadow;
-  const isRound = styleId.includes('round') || styleId.includes('circle') || (styleId === 'color_swatch' && b.radius > 20);
+  const isRound = styleId.includes('round') || styleId.includes('circle');
   const isButton = styleId.includes('button');
   const isPillSwatch = styleId === 'pill_swatch';
   
@@ -200,7 +200,7 @@ export const PreviewRenderer = ({ styleId, settings }) => {
               const aspectRatio = settings.basic.aspectRatio || "1:1";
               const [ratioW, ratioH] = aspectRatio.split(':').map(Number);
               
-              const isRound = (aspectRatio === "1:1") && (styleId.includes('round') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20));
+              const isRound = (aspectRatio === "1:1") && (styleId.includes('round') || styleId.includes('circle'));
               const isTwoColor = p.style === 'two';
               
               const renderSwatchInner = () => {
