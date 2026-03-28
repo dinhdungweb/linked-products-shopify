@@ -48,7 +48,7 @@ export default function OptionStylesPage() {
 
   const colors = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
 
-  const renderStyleCard = (title, previewNode) => (
+  const renderStyleCard = (styleId, title, previewNode) => (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'hidden' }}>
       <Box padding="300">
         <InlineStack align="space-between" blockAlign="center">
@@ -57,7 +57,7 @@ export default function OptionStylesPage() {
             <Badge tone="new">Not in use</Badge>
           </InlineStack>
           <InlineStack gap="100" blockAlign="center">
-            <Button icon={LinkIcon} size="micro">Customize</Button>
+            <Button icon={LinkIcon} size="micro" url={`/app/option-styles/${styleId}`}>Customize</Button>
             <Button variant="plain" icon={MenuHorizontalIcon} accessibilityLabel="Actions" />
           </InlineStack>
         </InlineStack>
@@ -305,34 +305,34 @@ export default function OptionStylesPage() {
 
           <Grid>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("Image swatch", imageSwatchPreview)}
+              {renderStyleCard("image_swatch", "Image swatch", imageSwatchPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("Slide swatch (Mobile only)", slideSwatchPreview)}
+              {renderStyleCard("slide_swatch", "Slide swatch (Mobile only)", slideSwatchPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("Polaroid swatch", polaroidSwatchPreview)}
+              {renderStyleCard("polaroid_swatch", "Polaroid swatch", polaroidSwatchPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("Color swatch", colorSwatchPreview)}
+              {renderStyleCard("color_swatch", "Color swatch", colorSwatchPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("Square color swatch", squareColorSwatchPreview)}
+              {renderStyleCard("square_color_swatch", "Square color swatch", squareColorSwatchPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("Color swatch in pill button", colorPillPreview)}
+              {renderStyleCard("pill_swatch", "Color swatch in pill button", colorPillPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("Button", buttonPreview)}
+              {renderStyleCard("button", "Button", buttonPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("Pill button", pillButtonPreview)}
+              {renderStyleCard("pill_button", "Pill button", pillButtonPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("Dropdown", dropdownPreview)}
+              {renderStyleCard("dropdown", "Dropdown", dropdownPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("Image swatch in dropdown", imageDropdownPreview)}
+              {renderStyleCard("image_dropdown", "Image swatch in dropdown", imageDropdownPreview)}
             </Grid.Cell>
           </Grid>
         </BlockStack>

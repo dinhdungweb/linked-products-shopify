@@ -137,3 +137,15 @@ model AppSetting {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }
+// Option Style Settings - Cấu hình hiển thị theo từng loại style
+model OptionStyleSetting {
+  id             String    @id @default(cuid())
+  shop           String
+  styleId        String    // e.g. 'image_swatch', 'color_swatch'
+  settings       Json      // Lưu trữ cấu hình dưới dạng JSON
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([shop, styleId])
+  @@index([shop])
+}

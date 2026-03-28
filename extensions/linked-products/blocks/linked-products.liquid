@@ -11,14 +11,51 @@
   {%- assign current_handle = product.handle -%}
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
   {%- assign app_settings = shop.metafields.linked_products.settings.value -%}
+  {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
   
-  {%- comment -%}Fallback values for global settings{%- endcomment -%}
-  {%- assign lp_swatch_size = app_settings.swatchSize | default: 50 -%}
-  {%- assign lp_items_gap = app_settings.itemsGap | default: 8 -%}
-  {%- assign lp_border_radius = app_settings.borderRadius | default: 8 -%}
-  {%- assign lp_border_color = app_settings.borderColor | default: '#e5e5e5' -%}
-  {%- assign lp_selected_border_color = app_settings.selectedBorderColor | default: '#000000' -%}
-  {%- assign lp_border_width = app_settings.borderWidth | default: 1 -%}
+  {%- comment -%}Dynamic settings: prefer metafield from admin, fallback to global app settings{%- endcomment -%}
+  {%- assign meta_selector_style = product.metafields.linked_products.selector_style.value -%}
+  {%- assign meta_option_name = product.metafields.linked_products.option_name.value -%}
+  {%- assign active_selector_style = meta_selector_style | default: 'block' -%}
+  {%- assign active_option_name = meta_option_name | default: 'Color' -%}
+
+  {%- assign active_style_settings = style_customizations[active_selector_style] -%}
+  
+  {%- comment -%}Extract values from the new Per-Style JSON structure, with fallbacks to legacy global settings{%- endcomment -%}
+  {%- assign lp_swatch_size = active_style_settings.basic.swatchSize | default: app_settings.swatchSize | default: 50 -%}
+  {%- assign lp_items_gap = active_style_settings.basic.gap | default: app_settings.itemsGap | default: 8 -%}
+  {%- assign lp_padding = active_style_settings.basic.padding | default: 0 -%}
+  
+  {%- assign lp_border_radius = active_style_settings.border.radius | default: app_settings.borderRadius | default: 8 -%}
+  {%- assign lp_border_width = active_style_settings.border.width | default: app_settings.borderWidth | default: 1 -%}
+  {%- assign lp_border_color = active_style_settings.border.color | default: app_settings.borderColor | default: '#e5e5e5' -%}
+  {%- assign lp_selected_border_color = active_style_settings.border.selectedColor | default: app_settings.selectedBorderColor | default: '#000000' -%}
+  
+  {%- assign lp_show_label = true -%}
+  {%- if active_style_settings != blank -%}
+     {%- if active_style_settings.label.show == false -%}
+        {%- assign lp_show_label = false -%}
+     {%- endif -%}
+  {%- elsif app_settings.showOptionName == false -%}
+     {%- assign lp_show_label = false -%}
+  {%- endif -%}
+
+  {%- assign lp_label_layout = active_style_settings.label.layout | default: 'stack' -%}
+  {%- assign lp_label_gap = active_style_settings.label.gap | default: 8 -%}
+  {%- assign lp_label_font_size = active_style_settings.label.fontSize | default: 14 -%}
+  {%- assign lp_label_font_weight = active_style_settings.label.fontWeight | default: 'normal' -%}
+  
+  {%- assign lp_layout_margin_top = active_style_settings.layout.marginTop | default: 0 -%}
+  {%- assign lp_layout_margin_bottom = active_style_settings.layout.marginBottom | default: 10 -%}
+  {%- assign lp_layout_align = active_style_settings.layout.align | default: 'left' -%}
+  {%- if lp_layout_align == 'left' -%}
+    {%- assign lp_justify_content = 'flex-start' -%}
+  {%- elsif lp_layout_align == 'center' -%}
+    {%- assign lp_justify_content = 'center' -%}
+  {%- elsif lp_layout_align == 'right' -%}
+    {%- assign lp_justify_content = 'flex-end' -%}
+  {%- endif -%}
+
   {%- assign lp_block_padding_x = app_settings.blockPaddingX | default: 12 -%}
   {%- assign lp_block_padding_y = app_settings.blockPaddingY | default: 8 -%}
   {%- assign lp_block_font_size = app_settings.blockFontSize | default: 14 -%}
@@ -26,10 +63,6 @@
   {%- assign lp_block_text = app_settings.blockTextColor | default: '#000000' -%}
   {%- assign lp_selected_bg = app_settings.selectedBgColor | default: '#dddddd' -%}
   {%- assign lp_selected_text = app_settings.selectedTextColor | default: '#000000' -%}
-  {%- assign lp_show_option_name = true -%}
-  {%- if app_settings.showOptionName == false -%}
-    {%- assign lp_show_option_name = false -%}
-  {%- endif -%}
 
   {{ 'linked-products.css' | asset_url | stylesheet_tag }}
 
@@ -42,10 +75,17 @@
   <div class="linked-products-picker" style="
     --lp-swatch-size: {{ lp_swatch_size }}px;
     --lp-items-gap: {{ lp_items_gap }}px;
+    --lp-swatch-padding: {{ lp_padding }}px;
     --lp-border-radius: {{ lp_border_radius }}px;
     --lp-border-color: {{ lp_border_color }};
     --lp-selected-border-color: {{ lp_selected_border_color }};
     --lp-border-width: {{ lp_border_width }}px;
+    --lp-margin-top: {{ lp_layout_margin_top }}px;
+    --lp-margin-bottom: {{ lp_layout_margin_bottom }}px;
+    --lp-justify: {{ lp_justify_content }};
+    --lp-label-gap: {{ lp_label_gap }}px;
+    --lp-label-size: {{ lp_label_font_size }}px;
+    --lp-label-weight: {{ lp_label_font_weight }};
     --lp-block-padding-x: {{ lp_block_padding_x }}px;
     --lp-block-padding-y: {{ lp_block_padding_y }}px;
     --lp-block-font-size: {{ lp_block_font_size }}px;
@@ -55,13 +95,13 @@
     --lp-selected-text: {{ lp_selected_text }};
   ">
     <div class="variant-picker">
-      <fieldset class="variant-picker__option">
-        {%- if lp_show_option_name and active_option_name != blank -%}
-          <div class="variant-picker__option-info">
-            <div class="h-stack gap-2">
+      <fieldset class="variant-picker__option" style="text-align: {{ lp_layout_align }};">
+        {%- if lp_show_label and active_option_name != blank -%}
+          <div class="variant-picker__option-info" style="margin-bottom: {{ lp_label_gap }}px; justify-content: {{ lp_justify_content }};">
+            <div class="h-stack gap-2" style="flex-direction: {% if lp_label_layout == 'stack' %}column{% else %}row{% endif %}; align-items: {% if lp_layout_align == 'center' %}center{% elsif lp_layout_align == 'right' %}flex-end{% else %}flex-start{% endif %};">
               {%- assign select_label = app_settings.selectOptionLabel | default: 'Select {option}' | replace: '{option}', active_option_name -%}
-              <legend class="text-subdued">{{ select_label }}:</legend>
-              <span class="selected-value">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
+              <legend class="text-subdued" style="font-size: {{ lp_label_font_size }}px; font-weight: {{ lp_label_font_weight }};">{{ select_label }}:</legend>
+              <span class="selected-value" style="font-size: {{ lp_label_font_size }}px;">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
             </div>
           </div>
         {%- endif -%}
@@ -110,7 +150,7 @@
               });
           </script>
         {%- else -%}
-          <div class="variant-picker__option-values wrap" style="gap: var(--lp-items-gap);">
+          <div class="variant-picker__option-values wrap" style="gap: var(--lp-items-gap); justify-content: var(--lp-justify);">
             {%- assign current_rendered = false -%}
             
             {%- for item in linked_handles_raw -%}

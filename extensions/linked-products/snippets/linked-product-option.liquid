@@ -143,8 +143,12 @@
         {%- endif -%}
       </div>
       <div class="slide-info">
-        <span class="slide-title">{{ value }}</span>
-        <span class="slide-price">{{ product_obj.price | money }}</span>
+        {%- if settings.variantName.show != false -%}
+          <span class="slide-title">{{ value }}</span>
+        {%- endif -%}
+        {%- if settings.price.show -%}
+          <span class="slide-price">{{ product_obj.price | money }}</span>
+        {%- endif -%}
       </div>
     </a>
 
@@ -179,7 +183,9 @@
       {%- if has_color -%}
         <span class="pill-dot" style="{% if item_style == 'two' %}background: linear-gradient(to right, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
       {%- endif -%}
-      <span class="pill-label">{{ value }}</span>
+      {%- if settings.variantName.show != false -%}
+        <span class="pill-label">{{ value }}</span>
+      {%- endif -%}
     </a>
 
   {%- when 'button', 'pill_button' -%}
@@ -200,7 +206,12 @@
           <span class="no-image">{{ value | slice: 0, 1 }}</span>
         {%- endif -%}
       </div>
-      <span class="card-label">{{ value }}</span>
+      {%- if settings.variantName.show != false -%}
+        <span class="card-label">{{ value }}</span>
+      {%- endif -%}
+      {%- if settings.price.show -%}
+        <span class="slide-price" style="font-size: 10px;">{{ product_obj.price | money }}</span>
+      {%- endif -%}
     </a>
 
   {%- when 'color_swatch_card' -%}
@@ -215,7 +226,9 @@
           <span style="font-size: 10px; color: #999;">{{ value | slice: 0, 1 }}</span>
         {%- endif -%}
       </div>
-      <span class="card-label">{{ value }}</span>
+      {%- if settings.variantName.show != false -%}
+        <span class="card-label">{{ value }}</span>
+      {%- endif -%}
     </a>
     <!-- Debug: Style is color_swatch_card, has_color: {{ has_color }}, custom_color: {{ custom_color }} -->
 

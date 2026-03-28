@@ -28,8 +28,7 @@ import {
   AlertCircleIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
-import prisma from "../db.server";
-import { authenticate } from "../shopify.server";
+// Server-only imports moved to loader/action to fix build error
 
 // Color conversion helpers moved outside for maximum stability
 function hexToHsb(hex) {
@@ -128,6 +127,7 @@ const ColorPickerPopover = ({ color, onChange, radius = '4px', label }) => {
 
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
+  const { default: prisma } = await import("../db.server");
   const { session } = await authenticate.admin(request);
   const shop = session.shop;
 
@@ -146,6 +146,7 @@ export const loader = async ({ request }) => {
 
 export const action = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
+  const { default: prisma } = await import("../db.server");
   const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
   const formData = await request.formData();
@@ -264,16 +265,6 @@ export default function SettingsPage() {
         </InlineStack>
       ),
       panelID: "settings-panel",
-    },
-    {
-      id: "visual-styles",
-      content: (
-        <InlineStack gap="200" align="start" blockAlign="center">
-          <Icon source={CheckCircleIcon} />
-          <span>Visual Styles</span>
-        </InlineStack>
-      ),
-      panelID: "visual-styles-panel",
     },
     {
       id: "theme-setup",
@@ -404,88 +395,8 @@ export default function SettingsPage() {
                 </BlockStack>
              )}
 
-             {/* Tab 1: Visual Styles */}
+             {/* Tab 1: Theme Setup */}
              {selectedTab === 1 && (
-                <BlockStack gap="500">
-                    <Layout.AnnotatedSection title="Swatch & Image Sizes">
-                        <Card>
-                        <BlockStack gap="400">
-                            <Grid>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                                <TextField id="swatchSize" label="Swatch/Image size (px)" type="number" value={settings.swatchSize?.toString() || ""} onChange={(v) => handleSettingChange("swatchSize", v === "" ? "" : parseInt(v))} autoComplete="off" />
-                            </Grid.Cell>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                                <TextField id="itemsGap" label="Gap between items (px)" type="number" value={settings.itemsGap?.toString() || ""} onChange={(v) => handleSettingChange("itemsGap", v === "" ? "" : parseInt(v))} autoComplete="off" />
-                            </Grid.Cell>
-                            </Grid>
-                        </BlockStack>
-                        </Card>
-                    </Layout.AnnotatedSection>
-
-                    <Layout.AnnotatedSection title="Borders & Radius">
-                        <Card>
-                        <BlockStack gap="400">
-                            <Grid>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
-                                <TextField id="borderRadius" label="Border radius (px)" type="number" value={settings.borderRadius?.toString() || ""} onChange={(v) => handleSettingChange("borderRadius", v === "" ? "" : parseInt(v))} autoComplete="off" />
-                            </Grid.Cell>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
-                                <TextField id="borderWidth" label="Border width (px)" type="number" value={settings.borderWidth?.toString() || ""} onChange={(v) => handleSettingChange("borderWidth", v === "" ? "" : parseInt(v))} autoComplete="off" />
-                            </Grid.Cell>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
-                                <div style={{ paddingTop: '24px' }}>
-                                    <Checkbox label="Show option name label" checked={settings.showOptionName} onChange={(v) => handleSettingChange("showOptionName", v)} />
-                                </div>
-                            </Grid.Cell>
-                            </Grid>
-                            <Grid>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                                <ColorPickerPopover label="Default border color" color={settings.borderColor} onChange={(v) => handleSettingChange("borderColor", v)} />
-                            </Grid.Cell>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                                <ColorPickerPopover label="Selected border color" color={settings.selectedBorderColor} onChange={(v) => handleSettingChange("selectedBorderColor", v)} />
-                            </Grid.Cell>
-                            </Grid>
-                        </BlockStack>
-                        </Card>
-                    </Layout.AnnotatedSection>
-
-                    <Layout.AnnotatedSection title="Text Block Styles">
-                        <Card>
-                        <BlockStack gap="400">
-                            <Grid>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-                                <TextField id="blockPaddingX" label="Padding X" type="number" value={settings.blockPaddingX?.toString() || ""} onChange={(v) => handleSettingChange("blockPaddingX", v === "" ? "" : parseInt(v))} autoComplete="off" />
-                            </Grid.Cell>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-                                <TextField id="blockPaddingY" label="Padding Y" type="number" value={settings.blockPaddingY?.toString() || ""} onChange={(v) => handleSettingChange("blockPaddingY", v === "" ? "" : parseInt(v))} autoComplete="off" />
-                            </Grid.Cell>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-                                <TextField id="blockFontSize" label="Font size" type="number" value={settings.blockFontSize?.toString() || ""} onChange={(v) => handleSettingChange("blockFontSize", v === "" ? "" : parseInt(v))} autoComplete="off" />
-                            </Grid.Cell>
-                            </Grid>
-                            <Grid>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                                <ColorPickerPopover label="BG color" color={settings.blockBgColor} onChange={(v) => handleSettingChange("blockBgColor", v)} />
-                            </Grid.Cell>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                                <ColorPickerPopover label="Text color" color={settings.blockTextColor} onChange={(v) => handleSettingChange("blockTextColor", v)} />
-                            </Grid.Cell>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                                <ColorPickerPopover label="Selected BG" color={settings.selectedBgColor} onChange={(v) => handleSettingChange("selectedBgColor", v)} />
-                            </Grid.Cell>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                                <ColorPickerPopover label="Selected Text" color={settings.selectedTextColor} onChange={(v) => handleSettingChange("selectedTextColor", v)} />
-                            </Grid.Cell>
-                            </Grid>
-                        </BlockStack>
-                        </Card>
-                    </Layout.AnnotatedSection>
-                </BlockStack>
-             )}
-
-             {/* Tab 2: Theme Setup */}
-             {selectedTab === 2 && (
                 <BlockStack gap="500">
                     <Layout.AnnotatedSection title="App Embed" description="The app must be enabled in your theme settings to display linked options.">
                         <Card>
