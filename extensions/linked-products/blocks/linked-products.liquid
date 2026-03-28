@@ -13,32 +13,27 @@
   {%- assign app_settings = shop.metafields.linked_products.settings.value -%}
   {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
   
-  {%- comment -%}Dynamic settings: prefer metafield from admin, fallback to global app settings{%- endcomment -%}
+  {%- comment -%}Dynamic settings: prefer per-style customizations, fallback to hardcoded defaults (matches App BASE_SETTINGS){%- endcomment -%}
   {%- assign meta_selector_style = product.metafields.linked_products.selector_style.value -%}
   {%- assign meta_option_name = product.metafields.linked_products.option_name.value -%}
   {%- assign active_selector_style = meta_selector_style | default: 'block' -%}
-  {%- assign active_option_name = meta_option_name | default: 'Color' -%}
+  {%- assign active_option_name = meta_option_name| default: 'Color' -%}
 
   {%- assign active_style_settings = style_customizations[active_selector_style] -%}
   
-  {%- comment -%}Extract values from the new Per-Style JSON structure, with fallbacks to legacy global settings{%- endcomment -%}
-  {%- assign lp_swatch_size = active_style_settings.basic.swatchSize | default: app_settings.swatchSize | default: 50 -%}
-  {%- assign lp_items_gap = active_style_settings.basic.gap | default: app_settings.itemsGap | default: 8 -%}
+  {%- assign lp_swatch_size = active_style_settings.basic.swatchSize | default: 50 -%}
+  {%- assign lp_items_gap = active_style_settings.basic.gap | default: 8 -%}
   {%- assign lp_padding = active_style_settings.basic.padding | default: 0 -%}
   {%- assign lp_two_color_style = active_style_settings.basic.twoColorStyle | default: 'LT_RB' -%}
   
-  {%- assign lp_border_radius = active_style_settings.border.radius | default: app_settings.borderRadius | default: 8 -%}
-  {%- assign lp_border_width = active_style_settings.border.width | default: app_settings.borderWidth | default: 1 -%}
-  {%- assign lp_border_color = active_style_settings.border.color | default: app_settings.borderColor | default: '#e5e5e5' -%}
-  {%- assign lp_selected_border_color = active_style_settings.border.selectedColor | default: app_settings.selectedBorderColor | default: '#000000' -%}
+  {%- assign lp_border_radius = active_style_settings.border.radius | default: 4 -%}
+  {%- assign lp_border_width = active_style_settings.border.width | default: 1 -%}
+  {%- assign lp_border_color = active_style_settings.border.color | default: '#dbdfe2' -%}
+  {%- assign lp_selected_border_color = active_style_settings.border.activeColor | default: '#000000' -%}
   
   {%- assign lp_show_label = true -%}
-  {%- if active_style_settings != blank -%}
-     {%- if active_style_settings.label.show == false -%}
-        {%- assign lp_show_label = false -%}
-     {%- endif -%}
-  {%- elsif app_settings.showOptionName == false -%}
-     {%- assign lp_show_label = false -%}
+  {%- if active_style_settings.label.show == false -%}
+    {%- assign lp_show_label = false -%}
   {%- endif -%}
 
   {%- assign lp_label_layout = active_style_settings.label.layout | default: 'stack' -%}
@@ -62,13 +57,10 @@
   {%- assign lp_aspect_ratio = active_style_settings.basic.aspectRatio | replace: ':', '/' | default: '1/1' -%}
   {%- assign lp_image_position = active_style_settings.basic.imagePosition | default: 'center' -%}
 
-  {%- assign lp_block_padding_x = app_settings.blockPaddingX | default: 12 -%}
-  {%- assign lp_block_padding_y = app_settings.blockPaddingY | default: 8 -%}
-  {%- assign lp_block_font_size = app_settings.blockFontSize | default: 14 -%}
-  {%- assign lp_block_bg = app_settings.blockBgColor | default: '#ffffff' -%}
-  {%- assign lp_block_text = app_settings.blockTextColor | default: '#000000' -%}
-  {%- assign lp_selected_bg = app_settings.selectedBgColor | default: '#dddddd' -%}
-  {%- assign lp_selected_text = app_settings.selectedTextColor | default: '#000000' -%}
+  {%- assign lp_is_slide = false -%}
+  {%- if active_selector_style contains 'slide' -%}
+    {%- assign lp_is_slide = true -%}
+  {%- endif -%}
 
   {{ 'linked-products.css' | asset_url | stylesheet_tag }}
 
@@ -90,20 +82,13 @@
     --lp-price-font-size: {{ lp_price_font_size }}px;
     --lp-aspect-ratio: {{ lp_aspect_ratio }};
     --lp-image-position: {{ lp_image_position }};
-    --lp-block-padding-x: {{ lp_block_padding_x }}px;
-    --lp-block-padding-y: {{ lp_block_padding_y }}px;
-    --lp-block-font-size: {{ lp_block_font_size }}px;
-    --lp-block-bg: {{ lp_block_bg }};
-    --lp-block-text: {{ lp_block_text }};
-    --lp-selected-bg: {{ lp_selected_bg }};
-    --lp-selected-text: {{ lp_selected_text }};
   ">
     <div class="variant-picker">
       <fieldset class="variant-picker__option" style="text-align: {{ lp_layout_align }};">
         {%- if lp_show_label and active_option_name != blank -%}
           <div class="variant-picker__option-info" style="margin-bottom: {{ lp_label_gap }}px; justify-content: {{ lp_justify_content }};">
             <div class="h-stack gap-2" style="flex-direction: {% if lp_label_layout == 'stack' %}column{% else %}row{% endif %}; align-items: {% if lp_layout_align == 'center' %}center{% elsif lp_layout_align == 'right' %}flex-end{% else %}flex-start{% endif %};">
-              {%- assign select_label = app_settings.selectOptionLabel | default: 'Select {option}' | replace: '{option}', active_option_name -%}
+              {%- assign select_label = active_option_name -%}
               <legend class="text-subdued" style="font-size: {{ lp_label_font_size }}px; font-weight: {{ lp_label_font_weight }};">{{ select_label }}:</legend>
               <span class="selected-value" style="font-size: {{ lp_label_font_size }}px;">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
             </div>
@@ -138,7 +123,7 @@
                             {%- endif -%}
                             <span class="lp-dropdown__text">{{ value }}</span>
                             {%- if linked_prod.available == false -%}
-                                <span class="lp-dropdown__sold-out">({{ app_settings.soldOutLabel | default: 'Sold out' }})</span>
+                                <span class="lp-dropdown__sold-out">(Sold out)</span>
                             {%- endif -%}
                         </a>
                       {%- endif -%}
@@ -154,7 +139,7 @@
               });
           </script>
         {%- else -%}
-          <div class="variant-picker__option-values wrap" style="gap: var(--lp-items-gap); justify-content: var(--lp-justify);">
+          <div class="variant-picker__option-values {% unless lp_is_slide %}wrap{% endunless %} {% if lp_is_slide %}is-slide{% endif %}" style="gap: var(--lp-items-gap); justify-content: var(--lp-justify);">
             {%- assign current_rendered = false -%}
             
             {%- for item in linked_handles_raw -%}
