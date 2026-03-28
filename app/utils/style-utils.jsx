@@ -116,8 +116,17 @@ export const renderBadge = (isActive, settings) => {
   );
 };
 
-export const PreviewRenderer = ({ styleId, settings }) => {
+ export const PreviewRenderer = ({ styleId, settings, products }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  
+  const displayProducts = (products || PREVIEW_PRODUCTS).map(p => ({
+    name: p.optionValue || p.name || '',
+    color: p.customImageUrl || p.image || p.color || '',
+    colorHex: p.customColor || p.colorHex || '#ffffff',
+    colorHex2: p.customColor2 || p.colorHex2 || '#f5f5f5',
+    style: p.style || 'one',
+    price: p.price || (p.variants?.[0]?.price ? `$${p.variants[0].price}` : '$12.88')
+  }));
 
   const isSlide = styleId.includes('slide');
   const isButton = styleId.includes('button');
@@ -126,7 +135,7 @@ export const PreviewRenderer = ({ styleId, settings }) => {
   const isPillSwatch = styleId === 'pill_swatch';
 
   if (isDropdown) {
-    const activeProduct = PREVIEW_PRODUCTS[1]; // Giả lập biến thể đang chọn
+    const activeProduct = displayProducts[0] || PREVIEW_PRODUCTS[1]; // Giả lập biến thể đang chọn
     const isImageDropdown = styleId === 'image_dropdown';
     const borderRadius = `${settings.border.radius}px`;
     
@@ -194,7 +203,7 @@ export const PreviewRenderer = ({ styleId, settings }) => {
             maxHeight: '300px',
             overflowY: 'auto'
           }}>
-            {PREVIEW_PRODUCTS.map((p, index) => (
+            {displayProducts.map((p, index) => (
               <div 
                 key={index} 
                 style={{ 
@@ -241,7 +250,7 @@ export const PreviewRenderer = ({ styleId, settings }) => {
 
   return (
       <div style={containerStyle}>
-          {PREVIEW_PRODUCTS.map((p, i) => {
+          {displayProducts.map((p, i) => {
               const isActive = i === 1;
               const aspectRatio = settings.basic.aspectRatio || "1:1";
               const [ratioW, ratioH] = aspectRatio.split(':').map(Number);

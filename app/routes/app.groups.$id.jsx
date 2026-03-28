@@ -1402,7 +1402,11 @@ export default function GroupDetail() {
                                 <Divider />
                                 <BlockStack gap="200">
                                     <Text variant="bodySm" tone="subdued" fontWeight="semibold">{localOptionName || "Color"}:</Text>
-                                    {renderSidebarPreview(localSelectorStyle, false, localProducts)}
+                                    <PreviewRenderer 
+                                        styleId={localSelectorStyle} 
+                                        settings={styleSettings[localSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localSelectorStyle] || BASE_SETTINGS} 
+                                        products={localProducts} 
+                                    />
                                     <Box paddingBlockStart="400" />
                                 </BlockStack>
                             </BlockStack>
@@ -1428,11 +1432,10 @@ export default function GroupDetail() {
                                     <Button variant="plain" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button>
                                 </InlineStack>
                                 <Divider />
-                                <LivePreview 
-                                    style={previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localCardSelectorStyle} 
-                                    optionName={localOptionName} 
-                                    products={localProducts}
-                                    inventoryBehavior={localInventoryBehavior}
+                                <PreviewRenderer 
+                                    styleId={previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localCardSelectorStyle} 
+                                    settings={styleSettings[previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localCardSelectorStyle] || BASE_SETTINGS} 
+                                    products={localProducts} 
                                 />
                                 <Box paddingBlockStart="400">
                                     <InlineStack align="space-between">
