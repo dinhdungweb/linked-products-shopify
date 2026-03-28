@@ -225,7 +225,7 @@
   padding: 10px 8px !important;
   gap: 8px;
   background: #fff;
-  min-width: 80px;
+  width: 80px;
   align-items: center;
 }
 
