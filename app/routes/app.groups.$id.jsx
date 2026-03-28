@@ -1178,6 +1178,7 @@ export default function GroupDetail() {
                         <Card>
                             <BlockStack gap="400">
                                 <TextField
+                                    id="groupName"
                                     label="Product group name (optional)"
                                     value={localGroupName}
                                     onChange={setLocalGroupName}
@@ -1187,6 +1188,7 @@ export default function GroupDetail() {
                                     suffix={<Text tone="subdued">{localGroupName.length}/255</Text>}
                                 />
                                 <TextField
+                                    id="optionName"
                                     label="Option name"
                                     value={localOptionName}
                                     onChange={setLocalOptionName}
@@ -1243,6 +1245,7 @@ export default function GroupDetail() {
                                                             <InlineStack gap="200" blockAlign="end">
                                                                 <div style={{ width: '180px' }}>
                                                                     <TextField
+                                                                        id={`ov-${product.productId}`}
                                                                         label="Option value"
                                                                         placeholder="Option value"
                                                                         value={product.optionValue || ""}

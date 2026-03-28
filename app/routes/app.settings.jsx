@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
 import {
@@ -31,7 +31,7 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import prisma from "../db.server";
 import { authenticate } from "../shopify.server";
 
-// Color conversion helpers
+// Color conversion helpers moved outside for maximum stability
 function hexToHsb(hex) {
     if (!hex || !hex.startsWith('#')) return { hue: 0, saturation: 0, brightness: 1 };
     const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -71,58 +71,63 @@ function hsbToHex(hsb) {
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
 }
 
-const ColorPickerPopover = ({ color, onChange, radius = '4px' }) => {
+// Stable ColorPickerPopover as a standalone component
+const ColorPickerPopover = ({ color, onChange, radius = '4px', label }) => {
     const [active, setActive] = useState(false);
     const toggleActive = useCallback(() => setActive((active) => !active), []);
-    const hsb = hexToHsb(color || '#000000');
+    const hsb = useMemo(() => hexToHsb(color || '#000000'), [color]);
     
     return (
-        <Popover
-            active={active}
-            activator={
-                <div 
-                    onClick={toggleActive}
-                    style={{ 
-                        padding: '6px',
-                        border: '1px solid #dcdcdc',
-                        borderRadius: radius,
-                        cursor: 'pointer',
-                        background: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        minWidth: '120px'
-                    }}
-                >
-                    <div style={{ 
-                        width: '24px', 
-                        height: '24px', 
-                        borderRadius: '2px', 
-                        background: color || '#000000',
-                        border: '1px solid rgba(0,0,0,0.1)'
-                    }} />
-                    <span style={{ fontSize: '13px', color: '#666', fontFamily: 'monospace' }}>{color || '#000000'}</span>
-                </div>
-            }
-            onClose={toggleActive}
-        >
-            <Box padding="300">
-                <BlockStack gap="300">
-                    <ColorPicker onChange={(newHsb) => onChange(hsbToHex(newHsb))} color={hsb} allowAlpha={false} />
-                    <TextField
-                        label="HEX"
-                        labelHidden
-                        value={color || '#000000'}
-                        onChange={onChange}
-                        autoComplete="off"
-                    />
-                </BlockStack>
-            </Box>
-        </Popover>
+        <BlockStack gap="200">
+            {label && <Text variant="bodyMd">{label}</Text>}
+            <Popover
+                active={active}
+                activator={
+                    <div 
+                        onClick={toggleActive}
+                        style={{ 
+                            padding: '6px',
+                            border: '1px solid #dcdcdc',
+                            borderRadius: radius,
+                            cursor: 'pointer',
+                            background: '#fff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            minWidth: '120px'
+                        }}
+                    >
+                        <div style={{ 
+                            width: '24px', 
+                            height: '24px', 
+                            borderRadius: '2px', 
+                            background: color || '#000000',
+                            border: '1px solid rgba(0,0,0,0.1)'
+                        }} />
+                        <span style={{ fontSize: '13px', color: '#666', fontFamily: 'monospace' }}>{color || '#000000'}</span>
+                    </div>
+                }
+                onClose={toggleActive}
+            >
+                <Box padding="300">
+                    <BlockStack gap="300">
+                        <ColorPicker onChange={(newHsb) => onChange(hsbToHex(newHsb))} color={hsb} allowAlpha={false} />
+                        <TextField
+                            label="HEX"
+                            labelHidden
+                            value={color || '#000000'}
+                            onChange={onChange}
+                            autoComplete="off"
+                        />
+                    </BlockStack>
+                </Box>
+            </Popover>
+        </BlockStack>
     );
 };
 
 export const loader = async ({ request }) => {
+  const { authenticate } = await import("../shopify.server");
   const { session } = await authenticate.admin(request);
   const shop = session.shop;
 
@@ -140,6 +145,7 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
+  const { authenticate } = await import("../shopify.server");
   const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
   const formData = await request.formData();
@@ -221,34 +227,34 @@ export default function SettingsPage() {
   const [selectedTab, setSelectedTab] = useState(0);
   const [showBanner, setShowBanner] = useState(false);
 
-  // Settings State
+  // Settings State initialized only once or when loader data changes
   const [settings, setSettings] = useState(initialSettings);
 
-  const handleSettingChange = (key, value) => {
-    setSettings(prev => {
-        // Tránh lưu NaN vào state nếu người dùng xóa trắng ô nhập liệu số
-        // Nhưng vẫn cho phép giá trị rỗng trong TextField để người dùng gõ được
-        return { ...prev, [key]: value };
-    });
-  };
+  // SYNC settings if loader data changes (e.g. after save)
+  useEffect(() => {
+    setSettings(initialSettings);
+  }, [initialSettings]);
 
-  const handleSave = () => {
+  const handleSettingChange = useCallback((key, value) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleSave = useCallback(() => {
     const formData = new FormData();
     Object.keys(settings).forEach(key => {
-      // Chuyển đổi NaN hoặc rỗng thành giá trị mặc định hợp lý trước khi gửi lên server
       let value = settings[key];
+      // Cleanup values before saving
       if (typeof value === 'number' && isNaN(value)) value = 0;
-      if (value === "") {
-          if (key.includes('Size') || key.includes('Gap') || key.includes('Radius') || key.includes('Width') || key.includes('Padding')) value = 0;
-      }
+      if (value === "" && (key.includes('Size') || key.includes('Gap') || key.includes('Radius') || key.includes('Width') || key.includes('Padding'))) value = 0;
       formData.append(key, value);
     });
     submit(formData, { method: "post" });
     setShowBanner(true);
     setTimeout(() => setShowBanner(false), 3000);
-  };
+  }, [settings, submit]);
 
-  const tabs = [
+  // Stable Tabs Array
+  const tabs = useMemo(() => [
     {
       id: "settings",
       content: (
@@ -289,334 +295,9 @@ export default function SettingsPage() {
       ),
       panelID: "translation-panel",
     },
-  ];
+  ], []);
 
-  const renderVisualStylesTab = () => (
-    <BlockStack gap="500">
-      <Layout.AnnotatedSection
-        title="Swatch & Image Sizes"
-        description="Control the dimensions and spacing of your swatches."
-      >
-        <Card>
-          <BlockStack gap="400">
-            <Grid>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                <TextField
-                  label="Swatch/Image size (px)"
-                  type="number"
-                  value={settings.swatchSize?.toString() || ""}
-                  onChange={(v) => handleSettingChange("swatchSize", v === "" ? "" : parseInt(v))}
-                  autoComplete="off"
-                />
-              </Grid.Cell>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                <TextField
-                  label="Gap between items (px)"
-                  type="number"
-                  value={settings.itemsGap?.toString() || ""}
-                  onChange={(v) => handleSettingChange("itemsGap", v === "" ? "" : parseInt(v))}
-                  autoComplete="off"
-                />
-              </Grid.Cell>
-            </Grid>
-          </BlockStack>
-        </Card>
-      </Layout.AnnotatedSection>
-
-      <Layout.AnnotatedSection
-        title="Borders & Radius"
-        description="Configure how the borders and corners look."
-      >
-        <Card>
-          <BlockStack gap="400">
-            <Grid>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
-                <TextField
-                  label="Border radius (px)"
-                  type="number"
-                  value={settings.borderRadius?.toString() || ""}
-                  onChange={(v) => handleSettingChange("borderRadius", v === "" ? "" : parseInt(v))}
-                  autoComplete="off"
-                />
-              </Grid.Cell>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
-                <TextField
-                  label="Border width (px)"
-                  type="number"
-                  value={settings.borderWidth?.toString() || ""}
-                  onChange={(v) => handleSettingChange("borderWidth", v === "" ? "" : parseInt(v))}
-                  autoComplete="off"
-                />
-              </Grid.Cell>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
-                <div style={{ paddingTop: '24px' }}>
-                    <Checkbox
-                    label="Show option name label"
-                    checked={settings.showOptionName}
-                    onChange={(v) => handleSettingChange("showOptionName", v)}
-                    />
-                </div>
-              </Grid.Cell>
-            </Grid>
-            <Grid>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                <BlockStack gap="200">
-                    <Text variant="bodyMd">Default border color</Text>
-                    <ColorPickerPopover 
-                        color={settings.borderColor} 
-                        onChange={(v) => handleSettingChange("borderColor", v)} 
-                    />
-                </BlockStack>
-              </Grid.Cell>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                <BlockStack gap="200">
-                    <Text variant="bodyMd">Selected border color</Text>
-                    <ColorPickerPopover 
-                        color={settings.selectedBorderColor} 
-                        onChange={(v) => handleSettingChange("selectedBorderColor", v)} 
-                    />
-                </BlockStack>
-              </Grid.Cell>
-            </Grid>
-          </BlockStack>
-        </Card>
-      </Layout.AnnotatedSection>
-
-      <Layout.AnnotatedSection
-        title="Text Block Styles"
-        description="Settings for the 'Text Block' swatch style."
-      >
-        <Card>
-          <BlockStack gap="400">
-            <Grid>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-                <TextField label="Padding X" type="number" value={settings.blockPaddingX?.toString() || ""} onChange={(v) => handleSettingChange("blockPaddingX", v === "" ? "" : parseInt(v))} autoComplete="off" />
-              </Grid.Cell>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-                <TextField label="Padding Y" type="number" value={settings.blockPaddingY?.toString() || ""} onChange={(v) => handleSettingChange("blockPaddingY", v === "" ? "" : parseInt(v))} autoComplete="off" />
-              </Grid.Cell>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
-                <TextField label="Font size" type="number" value={settings.blockFontSize?.toString() || ""} onChange={(v) => handleSettingChange("blockFontSize", v === "" ? "" : parseInt(v))} autoComplete="off" />
-              </Grid.Cell>
-            </Grid>
-            <Grid>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                <BlockStack gap="200">
-                    <Text variant="bodyMd">BG color</Text>
-                    <ColorPickerPopover color={settings.blockBgColor} onChange={(v) => handleSettingChange("blockBgColor", v)} />
-                </BlockStack>
-              </Grid.Cell>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                <BlockStack gap="200">
-                    <Text variant="bodyMd">Text color</Text>
-                    <ColorPickerPopover color={settings.blockTextColor} onChange={(v) => handleSettingChange("blockTextColor", v)} />
-                </BlockStack>
-              </Grid.Cell>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                <BlockStack gap="200">
-                    <Text variant="bodyMd">Selected BG</Text>
-                    <ColorPickerPopover color={settings.selectedBgColor} onChange={(v) => handleSettingChange("selectedBgColor", v)} />
-                </BlockStack>
-              </Grid.Cell>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                <BlockStack gap="200">
-                    <Text variant="bodyMd">Selected Text</Text>
-                    <ColorPickerPopover color={settings.selectedTextColor} onChange={(v) => handleSettingChange("selectedTextColor", v)} />
-                </BlockStack>
-              </Grid.Cell>
-            </Grid>
-          </BlockStack>
-        </Card>
-      </Layout.AnnotatedSection>
-    </BlockStack>
-  );
-
-  const renderSettingsTab = () => (
-    <BlockStack gap="500">
-      {/* App Status */}
-      <Layout.AnnotatedSection
-        title="App status"
-        description="Globally turn on or turn off linked options."
-      >
-        <Card>
-          <InlineStack align="space-between" blockAlign="center">
-            <InlineStack gap="200" blockAlign="center">
-               <Text variant="bodyMd">App enabled</Text>
-               <Badge tone={settings.appEnabled ? "success" : "attention"}>
-                 {settings.appEnabled ? "On" : "Off"}
-               </Badge>
-            </InlineStack>
-            <Button 
-              tone={settings.appEnabled ? "critical" : "primary"} 
-              variant="secondary"
-              onClick={() => handleSettingChange("appEnabled", !settings.appEnabled)}
-            >
-              {settings.appEnabled ? "Turn off" : "Turn on"}
-            </Button>
-          </InlineStack>
-        </Card>
-      </Layout.AnnotatedSection>
-
-      {/* Show options on product cards */}
-      <Layout.AnnotatedSection
-        title="Show options on product cards"
-        description="Product cards include those on collection pages, featured products, recommended products, and more."
-      >
-        <Card>
-          <BlockStack gap="400">
-            <Checkbox
-              label="Show options on product cards in collections and grids"
-              checked={settings.showOnProductCards}
-              onChange={(value) => handleSettingChange("showOnProductCards", value)}
-              helpText={
-                 <Text variant="bodySm" tone="subdued">
-                   Customize option styles in <a href="/app/option-styles">Option styles {'>'} Customize options on product cards</a>
-                 </Text>
-              }
-            />
-            
-            {settings.showOnProductCards && (
-              <Box paddingInlineStart="600">
-                <BlockStack gap="200">
-                  <Text variant="bodyMd">Apply to these pages</Text>
-                  <Grid>
-                    <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                      <Checkbox label="Collection" checked={settings.applyToCollection} onChange={(v) => handleSettingChange("applyToCollection", v)} />
-                    </Grid.Cell>
-                    <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                      <Checkbox label="Search" checked={settings.applyToSearch} onChange={(v) => handleSettingChange("applyToSearch", v)} />
-                    </Grid.Cell>
-                    <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
-                      <Checkbox label="Home" checked={settings.applyToHome} onChange={(v) => handleSettingChange("applyToHome", v)} />
-                    </Grid.Cell>
-                  </Grid>
-                </BlockStack>
-              </Box>
-            )}
-
-            <Checkbox
-              label="Hide multi-option groups on product cards"
-              checked={settings.hideMultiOptionOnCards}
-              onChange={(v) => handleSettingChange("hideMultiOptionOnCards", v)}
-            />
-          </BlockStack>
-        </Card>
-      </Layout.AnnotatedSection>
-
-      <Layout.AnnotatedSection
-        title="Hide inaccessible storefront products"
-        description="Automatically hides products that aren't accessible to customers, helping prevent 404 errors and broken links."
-      >
-        <Card>
-          <BlockStack gap="300">
-             <Checkbox
-               label="Hide inaccessible products"
-               checked={settings.hideInaccessible}
-               onChange={(v) => handleSettingChange("hideInaccessible", v)}
-               helpText="Automatically hides draft, archived, or unpublished products from groups."
-             />
-             <Checkbox
-               label="Remove archived products"
-               checked={settings.removeArchived}
-               onChange={(v) => handleSettingChange("removeArchived", v)}
-               helpText="Automatically removes archived products from groups."
-             />
-          </BlockStack>
-        </Card>
-      </Layout.AnnotatedSection>
-
-      <Layout.AnnotatedSection
-        title="Notification email"
-        description="Email address for receiving app notifications."
-      >
-        <Card>
-          <TextField
-            label="Notification email address"
-            value={settings.notificationEmail || ""}
-            onChange={(v) => handleSettingChange("notificationEmail", v)}
-            placeholder="support@example.com"
-            autoComplete="email"
-            helpText="Used to receive app notifications such as import/export results."
-          />
-        </Card>
-      </Layout.AnnotatedSection>
-
-      <Layout.AnnotatedSection
-        title="Customize CSS"
-        description="Customize CSS to control the app block style."
-      >
-        <Card>
-          <BlockStack gap="400">
-            <TextField
-              label="Custom CSS for product page"
-              value={settings.customCssProduct}
-              onChange={(v) => handleSettingChange("customCssProduct", v)}
-              multiline={4}
-              autoComplete="off"
-            />
-            <TextField
-              label="Custom CSS for collection page"
-              value={settings.customCssCollection}
-              onChange={(v) => handleSettingChange("customCssCollection", v)}
-              multiline={6}
-              autoComplete="off"
-            />
-          </BlockStack>
-        </Card>
-      </Layout.AnnotatedSection>
-    </BlockStack>
-  );
-
-  const renderThemeSetupTab = () => (
-    <BlockStack gap="500">
-      <Layout.AnnotatedSection
-        title="App Embed"
-        description="The app must be enabled in your theme settings to display linked options."
-      >
-        <Card>
-          <BlockStack gap="400">
-            <Box padding="400" background="bg-surface-info-secondary" borderRadius="200">
-              <InlineStack gap="300" blockAlign="center">
-                <Icon source={AlertCircleIcon} tone="info" />
-                <Text variant="bodyMd" fontWeight="semibold">Required Action</Text>
-              </InlineStack>
-              <Box paddingBlockStart="200">
-                <Text variant="bodyMd">You must enable the app embed in your Shopify Theme Editor for the app to work.</Text>
-              </Box>
-            </Box>
-            
-            <Button primary url="https://admin.shopify.com/store/current/themes/current/editor?context=apps" target="_blank">
-              Open Theme Editor
-            </Button>
-          </BlockStack>
-        </Card>
-      </Layout.AnnotatedSection>
-    </BlockStack>
-  );
-
-  const renderTranslationTab = () => (
-    <BlockStack gap="500">
-      <Layout.AnnotatedSection
-        title="Storefront labels"
-        description="Translate or customize labels displayed on your store."
-      >
-        <Card>
-          <BlockStack gap="400">
-            <TextField
-              label="Select option label"
-              value={settings.selectOptionLabel}
-              onChange={(v) => handleSettingChange("selectOptionLabel", v)}
-              helpText="Use {option} as a placeholder for the option name (e.g. Color)."
-              autoComplete="off"
-            />
-            <TextField label="Sold out label" value={settings.soldOutLabel} onChange={(v) => handleSettingChange("soldOutLabel", v)} autoComplete="off" />
-            <TextField label="Unavailable label" value={settings.unavailableLabel} onChange={(v) => handleSettingChange("unavailableLabel", v)} autoComplete="off" />
-          </BlockStack>
-        </Card>
-      </Layout.AnnotatedSection>
-    </BlockStack>
-  );
-
+  // Panel rendering moved directly into the component's main body or controlled by stable structure
   return (
     <Page>
       <TitleBar title="Settings" />
@@ -641,10 +322,199 @@ export default function SettingsPage() {
                  </Banner>
                </Box>
              )}
-             {selectedTab === 0 && renderSettingsTab()}
-             {selectedTab === 1 && renderVisualStylesTab()}
-             {selectedTab === 2 && renderThemeSetupTab()}
-             {selectedTab === 3 && renderTranslationTab()}
+
+             {/* Tab 0: General Settings */}
+             {selectedTab === 0 && (
+                <BlockStack gap="500">
+                    <Layout.AnnotatedSection title="App status" description="Globally turn on or turn off linked options.">
+                        <Card>
+                        <InlineStack align="space-between" blockAlign="center">
+                            <InlineStack gap="200" blockAlign="center">
+                            <Text variant="bodyMd">App enabled</Text>
+                            <Badge tone={settings.appEnabled ? "success" : "attention"}>{settings.appEnabled ? "On" : "Off"}</Badge>
+                            </InlineStack>
+                            <Button 
+                            tone={settings.appEnabled ? "critical" : "primary"} 
+                            variant="secondary"
+                            onClick={() => handleSettingChange("appEnabled", !settings.appEnabled)}
+                            >
+                            {settings.appEnabled ? "Turn off" : "Turn on"}
+                            </Button>
+                        </InlineStack>
+                        </Card>
+                    </Layout.AnnotatedSection>
+
+                    <Layout.AnnotatedSection title="Show options on product cards" description="Product cards include those on collection pages, featured products, recommended products, and more.">
+                        <Card>
+                        <BlockStack gap="400">
+                            <Checkbox
+                            label="Show options on product cards in collections and grids"
+                            checked={settings.showOnProductCards}
+                            onChange={(value) => handleSettingChange("showOnProductCards", value)}
+                            helpText={
+                                <Text variant="bodySm" tone="subdued">
+                                Customize option styles in <a href="/app/option-styles">Option styles {'>'} Customize options on product cards</a>
+                                </Text>
+                            }
+                            />
+                            {settings.showOnProductCards && (
+                            <Box paddingInlineStart="600">
+                                <BlockStack gap="200">
+                                <Text variant="bodyMd">Apply to these pages</Text>
+                                <Grid>
+                                    <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                                    <Checkbox label="Collection" checked={settings.applyToCollection} onChange={(v) => handleSettingChange("applyToCollection", v)} />
+                                    </Grid.Cell>
+                                    <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                                    <Checkbox label="Search" checked={settings.applyToSearch} onChange={(v) => handleSettingChange("applyToSearch", v)} />
+                                    </Grid.Cell>
+                                    <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                                    <Checkbox label="Home" checked={settings.applyToHome} onChange={(v) => handleSettingChange("applyToHome", v)} />
+                                    </Grid.Cell>
+                                </Grid>
+                                </BlockStack>
+                            </Box>
+                            )}
+                            <Checkbox label="Hide multi-option groups on product cards" checked={settings.hideMultiOptionOnCards} onChange={(v) => handleSettingChange("hideMultiOptionOnCards", v)} />
+                        </BlockStack>
+                        </Card>
+                    </Layout.AnnotatedSection>
+
+                    <Layout.AnnotatedSection title="Hide inaccessible storefront products">
+                        <Card>
+                        <BlockStack gap="300">
+                            <Checkbox label="Hide inaccessible products" checked={settings.hideInaccessible} onChange={(v) => handleSettingChange("hideInaccessible", v)} helpText="Automatically hides draft, archived, or unpublished products from groups." />
+                            <Checkbox label="Remove archived products" checked={settings.removeArchived} onChange={(v) => handleSettingChange("removeArchived", v)} helpText="Automatically removes archived products from groups." />
+                        </BlockStack>
+                        </Card>
+                    </Layout.AnnotatedSection>
+
+                    <Layout.AnnotatedSection title="Notification email">
+                        <Card><TextField label="Notification email address" value={settings.notificationEmail || ""} onChange={(v) => handleSettingChange("notificationEmail", v)} placeholder="support@example.com" autoComplete="email" /></Card>
+                    </Layout.AnnotatedSection>
+
+                    <Layout.AnnotatedSection title="Customize CSS">
+                        <Card>
+                        <BlockStack gap="400">
+                            <TextField label="Custom CSS for product page" value={settings.customCssProduct} onChange={(v) => handleSettingChange("customCssProduct", v)} multiline={4} autoComplete="off" />
+                            <TextField label="Custom CSS for collection page" value={settings.customCssCollection} onChange={(v) => handleSettingChange("customCssCollection", v)} multiline={6} autoComplete="off" />
+                        </BlockStack>
+                        </Card>
+                    </Layout.AnnotatedSection>
+                </BlockStack>
+             )}
+
+             {/* Tab 1: Visual Styles */}
+             {selectedTab === 1 && (
+                <BlockStack gap="500">
+                    <Layout.AnnotatedSection title="Swatch & Image Sizes">
+                        <Card>
+                        <BlockStack gap="400">
+                            <Grid>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
+                                <TextField id="swatchSize" label="Swatch/Image size (px)" type="number" value={settings.swatchSize?.toString() || ""} onChange={(v) => handleSettingChange("swatchSize", v === "" ? "" : parseInt(v))} autoComplete="off" />
+                            </Grid.Cell>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
+                                <TextField id="itemsGap" label="Gap between items (px)" type="number" value={settings.itemsGap?.toString() || ""} onChange={(v) => handleSettingChange("itemsGap", v === "" ? "" : parseInt(v))} autoComplete="off" />
+                            </Grid.Cell>
+                            </Grid>
+                        </BlockStack>
+                        </Card>
+                    </Layout.AnnotatedSection>
+
+                    <Layout.AnnotatedSection title="Borders & Radius">
+                        <Card>
+                        <BlockStack gap="400">
+                            <Grid>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
+                                <TextField id="borderRadius" label="Border radius (px)" type="number" value={settings.borderRadius?.toString() || ""} onChange={(v) => handleSettingChange("borderRadius", v === "" ? "" : parseInt(v))} autoComplete="off" />
+                            </Grid.Cell>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
+                                <TextField id="borderWidth" label="Border width (px)" type="number" value={settings.borderWidth?.toString() || ""} onChange={(v) => handleSettingChange("borderWidth", v === "" ? "" : parseInt(v))} autoComplete="off" />
+                            </Grid.Cell>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4 }}>
+                                <div style={{ paddingTop: '24px' }}>
+                                    <Checkbox label="Show option name label" checked={settings.showOptionName} onChange={(v) => handleSettingChange("showOptionName", v)} />
+                                </div>
+                            </Grid.Cell>
+                            </Grid>
+                            <Grid>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
+                                <ColorPickerPopover label="Default border color" color={settings.borderColor} onChange={(v) => handleSettingChange("borderColor", v)} />
+                            </Grid.Cell>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
+                                <ColorPickerPopover label="Selected border color" color={settings.selectedBorderColor} onChange={(v) => handleSettingChange("selectedBorderColor", v)} />
+                            </Grid.Cell>
+                            </Grid>
+                        </BlockStack>
+                        </Card>
+                    </Layout.AnnotatedSection>
+
+                    <Layout.AnnotatedSection title="Text Block Styles">
+                        <Card>
+                        <BlockStack gap="400">
+                            <Grid>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
+                                <TextField id="blockPaddingX" label="Padding X" type="number" value={settings.blockPaddingX?.toString() || ""} onChange={(v) => handleSettingChange("blockPaddingX", v === "" ? "" : parseInt(v))} autoComplete="off" />
+                            </Grid.Cell>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
+                                <TextField id="blockPaddingY" label="Padding Y" type="number" value={settings.blockPaddingY?.toString() || ""} onChange={(v) => handleSettingChange("blockPaddingY", v === "" ? "" : parseInt(v))} autoComplete="off" />
+                            </Grid.Cell>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4 }}>
+                                <TextField id="blockFontSize" label="Font size" type="number" value={settings.blockFontSize?.toString() || ""} onChange={(v) => handleSettingChange("blockFontSize", v === "" ? "" : parseInt(v))} autoComplete="off" />
+                            </Grid.Cell>
+                            </Grid>
+                            <Grid>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                                <ColorPickerPopover label="BG color" color={settings.blockBgColor} onChange={(v) => handleSettingChange("blockBgColor", v)} />
+                            </Grid.Cell>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                                <ColorPickerPopover label="Text color" color={settings.blockTextColor} onChange={(v) => handleSettingChange("blockTextColor", v)} />
+                            </Grid.Cell>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                                <ColorPickerPopover label="Selected BG" color={settings.selectedBgColor} onChange={(v) => handleSettingChange("selectedBgColor", v)} />
+                            </Grid.Cell>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3 }}>
+                                <ColorPickerPopover label="Selected Text" color={settings.selectedTextColor} onChange={(v) => handleSettingChange("selectedTextColor", v)} />
+                            </Grid.Cell>
+                            </Grid>
+                        </BlockStack>
+                        </Card>
+                    </Layout.AnnotatedSection>
+                </BlockStack>
+             )}
+
+             {/* Tab 2: Theme Setup */}
+             {selectedTab === 2 && (
+                <BlockStack gap="500">
+                    <Layout.AnnotatedSection title="App Embed" description="The app must be enabled in your theme settings to display linked options.">
+                        <Card>
+                        <BlockStack gap="400">
+                            <Box padding="400" background="bg-surface-info-secondary" borderRadius="200">
+                            <InlineStack gap="300" blockAlign="center"><Icon source={AlertCircleIcon} tone="info" /><Text variant="bodyMd" fontWeight="semibold">Required Action</Text></InlineStack>
+                            <Box paddingBlockStart="200"><Text variant="bodyMd">You must enable the app embed in your Shopify Theme Editor for the app to work.</Text></Box>
+                            </Box>
+                            <Button primary url="https://admin.shopify.com/store/current/themes/current/editor?context=apps" target="_blank">Open Theme Editor</Button>
+                        </BlockStack>
+                        </Card>
+                    </Layout.AnnotatedSection>
+                </BlockStack>
+             )}
+
+             {/* Tab 3: Translation */}
+             {selectedTab === 3 && (
+                <BlockStack gap="500">
+                <Layout.AnnotatedSection title="Storefront labels" description="Translate or customize labels displayed on your store.">
+                    <Card>
+                    <BlockStack gap="400">
+                        <TextField label="Select option label" value={settings.selectOptionLabel} onChange={(v) => handleSettingChange("selectOptionLabel", v)} helpText="Use {option} as a placeholder for the option name (e.g. Color)." autoComplete="off" />
+                        <TextField label="Sold out label" value={settings.soldOutLabel} onChange={(v) => handleSettingChange("soldOutLabel", v)} autoComplete="off" />
+                        <TextField label="Unavailable label" value={settings.unavailableLabel} onChange={(v) => handleSettingChange("unavailableLabel", v)} autoComplete="off" />
+                    </BlockStack>
+                    </Card>
+                </Layout.AnnotatedSection>
+                </BlockStack>
+             )}
           </Box>
         </Tabs>
       </BlockStack>
