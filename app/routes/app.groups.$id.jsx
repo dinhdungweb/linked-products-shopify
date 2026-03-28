@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect } from "react";
 import { json } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation, useActionData } from "@remix-run/react";
+import { useLoaderData, useSubmit, useNavigation, useActionData, useRevalidator } from "@remix-run/react";
 import {
     Page,
     Layout,
@@ -37,6 +37,11 @@ import {
     ChevronDownIcon,
 } from "@shopify/polaris-icons";
 import { syncGroupMetafields } from "../sync.server";
+import { 
+    BASE_SETTINGS, 
+    DEFAULT_SETTINGS_BY_STYLE, 
+    PreviewRenderer 
+} from "../utils/style-utils";
 
 const STYLE_OPTIONS = [
     { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch', category: 'Image Swatch' },
@@ -549,7 +554,18 @@ export async function loader({ request, params }) {
         });
     }
 
-    return { group: { ...group, products: productDetails }, shop: session.shop };
+    const styleSettings = await prisma.optionStyleSetting.findMany({
+        where: { shop },
+    });
+
+    return { 
+        group: { ...group, products: productDetails }, 
+        shop: session.shop,
+        styleSettings: styleSettings.reduce((acc, curr) => {
+            acc[curr.styleId] = curr.settings;
+            return acc;
+        }, {})
+    };
 }
 
 // Action - Add/remove products, sync metafields
@@ -885,11 +901,12 @@ const ImagePickerPopover = ({ imageUrl, onChange, productImages = [], radius = '
 }
 
 export default function GroupDetail() {
-    const { group, shop } = useLoaderData();
+    const { group, shop, styleSettings } = useLoaderData();
     const actionData = useActionData();
     const submit = useSubmit();
     const navigation = useNavigation();
     const shopify = useAppBridge();
+    const revalidator = useRevalidator();
 
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
@@ -1040,7 +1057,17 @@ export default function GroupDetail() {
                 <Modal.Section>
                     <Box paddingBlockEnd="400">
                          <Banner icon={MagicIcon} tone="info">
-                            <p>Choose a style to start with. You can customize it later.</p>
+                            <InlineStack align="space-between" blockAlign="center">
+                                <p>Choose a style to start with. You can customize it later.</p>
+                                <Button 
+                                    size="slim" 
+                                    onClick={() => revalidator.revalidate()} 
+                                    loading={revalidator.state === "loading"}
+                                    icon={MagicIcon}
+                                >
+                                    Refresh latest styles
+                                </Button>
+                            </InlineStack>
                          </Banner>
                     </Box>
                     <div style={{ width: '100%' }}>
@@ -1083,8 +1110,11 @@ export default function GroupDetail() {
                                                     </Box>
                                                     <Divider />
                                                     <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
-                                                        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflowX: 'auto', paddingBottom: '4px' }}>
-                                                            {renderPreview(style.id)}
+                                                        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'visible', paddingBottom: '4px' }}>
+                                                            <PreviewRenderer 
+                                                                styleId={style.id} 
+                                                                settings={styleSettings[style.id] || DEFAULT_SETTINGS_BY_STYLE[style.id] || BASE_SETTINGS} 
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>

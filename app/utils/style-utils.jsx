@@ -48,6 +48,8 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
   pill_button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, label: { ...BASE_SETTINGS.label, show: false } },
   dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
   image_dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
+  image_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, gap: 8, padding: 8 }, variantName: { ...BASE_SETTINGS.variantName, show: true, fontSize: 10 } },
+  color_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8, padding: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, variantName: { ...BASE_SETTINGS.variantName, show: true, fontSize: 10 } },
 };
 
 export const getOuterStyle = (isActive, settings, styleId) => {
