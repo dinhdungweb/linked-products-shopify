@@ -56,14 +56,14 @@ export default function OptionStylesPage() {
   };
 
   const DEFAULT_SETTINGS_BY_STYLE = {
-    image_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 48 }, border: { ...BASE_SETTINGS.border, radius: 4 } },
-    slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 100 }, border: { ...BASE_SETTINGS.border, radius: 4 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' } },
-    polaroid_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, padding: 4 }, border: { ...BASE_SETTINGS.border, radius: 0 } },
-    color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32 }, border: { ...BASE_SETTINGS.border, radius: 50 }, label: { ...BASE_SETTINGS.label, show: false } },
-    square_color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32 }, border: { ...BASE_SETTINGS.border, radius: 4 }, label: { ...BASE_SETTINGS.label, show: false } },
-    pill_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 6 }, border: { ...BASE_SETTINGS.border, radius: 20 } },
-    button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, label: { ...BASE_SETTINGS.label, show: false } },
-    pill_button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, label: { ...BASE_SETTINGS.label, show: false } },
+    image_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 48, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4 } },
+    slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 100, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' } },
+    polaroid_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, padding: 4, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, shadow: { ...BASE_SETTINGS.shadow, show: true } },
+    color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 50, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 50, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
+    square_color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 6, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
+    pill_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 6, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 } },
+    button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, label: { ...BASE_SETTINGS.label, show: false } },
+    pill_button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, label: { ...BASE_SETTINGS.label, show: false } },
     dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
     image_dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
   };
@@ -104,7 +104,137 @@ export default function OptionStylesPage() {
 
   const colors = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
 
-  const renderStyleCard = (styleId, title, previewNode) => (
+  // --- ORIGINAL STATIC PREVIEWS ---
+  const imageSwatchPreview = (
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
+      {images.slice(0, 6).map((img, i) => (
+        <div key={i} style={{ width: '48px', height: '48px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', overflow: 'hidden' }}>
+          <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      ))}
+    </InlineStack>
+  );
+
+  const slideSwatchPreview = (
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
+      {[
+        { name: 'Beige Brown', price: '$12.88' },
+        { name: 'Black White', price: '$15.99' },
+        { name: 'Red Rose', price: '$19.99' },
+        { name: 'Teal Lily', price: '$24.99' },
+        { name: 'Yellow Bloom', price: '$18.50' },
+        { name: 'Purple Mini', price: '$22.00' }
+      ].map((item, i) => (
+        <div key={i} style={{ width: '70px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '80px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+            <img src={images[i]} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }} />
+          </div>
+          <div style={{ padding: '4px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+            <div style={{ fontSize: '10px', color: '#666' }}>{item.price}</div>
+          </div>
+        </div>
+      ))}
+    </InlineStack>
+  );
+
+  const polaroidSwatchPreview = (
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
+      {images.slice(0, 6).map((img, i) => (
+        <div key={i} style={{ padding: '4px', backgroundColor: '#fff', border: i === 1 ? '2px solid #000' : '1px solid #ccc', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <div style={{ width: '40px', height: '48px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflow: 'hidden' }}>
+            <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        </div>
+      ))}
+    </InlineStack>
+  );
+
+  const colorSwatchPreview = (
+    <div style={{ padding: '4px' }}>
+      <InlineStack gap="200" align="start" blockAlign="start">
+        {colors.map((color, i) => (
+          <div key={i} style={{
+            width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+            background: color,
+            border: '2px solid #fff',
+            outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd',
+            outlineOffset: '2px'
+          }} />
+        ))}
+      </InlineStack>
+    </div>
+  );
+
+  const squareColorSwatchPreview = (
+    <div style={{ padding: '4px' }}>
+      <InlineStack gap="200" align="start" blockAlign="start">
+        {colors.map((color, i) => (
+          <div key={i} style={{
+            width: '32px', height: '32px', borderRadius: '4px', flexShrink: 0,
+            background: color,
+            border: '2px solid #fff',
+            outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd',
+            outlineOffset: '2px'
+          }} />
+        ))}
+      </InlineStack>
+    </div>
+  );
+
+  const colorPillPreview = (
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
+      {['Beige', 'Purple', 'Orange', 'Green', 'Yellow', 'Black', 'Red'].map((text, i) => (
+        <div key={i} style={{
+          display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', flexShrink: 0,
+          borderRadius: '20px', backgroundColor: '#fff',
+          border: i === 1 ? '2px solid #000' : '1px solid #ccc'
+        }}>
+          <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: colors[i] || '#000' }} />
+          <span style={{ fontSize: '12px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{text}</span>
+        </div>
+      ))}
+    </InlineStack>
+  );
+
+  const buttonPreview = (
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
+      <div style={{ padding: '8px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px' }}>Beige</div>
+      <div style={{ padding: '8px 16px', border: '2px solid #000', backgroundColor: '#000', color: '#fff', fontSize: '13px', fontWeight: 'bold' }}>Dark blue</div>
+      <div style={{ padding: '8px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px' }}>Green</div>
+      <div style={{ padding: '8px 16px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#999', fontSize: '13px', textDecoration: 'line-through' }}>Yellow</div>
+      <div style={{ padding: '8px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px' }}>Black</div>
+    </InlineStack>
+  );
+
+  const pillButtonPreview = (
+    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
+      <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>Beige</div>
+      <div style={{ padding: '6px 16px', border: '2px solid #000', backgroundColor: '#000', color: '#fff', fontSize: '13px', fontWeight: 'bold', borderRadius: '20px' }}>Dark blue</div>
+      <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>Green</div>
+      <div style={{ padding: '6px 16px', border: '2px solid #ddd', backgroundColor: '#fff', color: '#999', fontSize: '13px', textDecoration: 'line-through', borderRadius: '20px' }}>Yellow</div>
+      <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>Black</div>
+    </InlineStack>
+  );
+
+  const dropdownPreview = (
+    <div style={{ width: '100%', maxWidth: '300px', padding: '10px 14px', border: '1px solid #8c9196', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
+      <span style={{ fontSize: '14px' }}>Beige Brown</span>
+      <Icon source={ChevronDownIcon} tone="base" />
+    </div>
+  );
+
+  const imageDropdownPreview = (
+    <div style={{ width: '100%', maxWidth: '300px', padding: '6px 14px', border: '1px solid #8c9196', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <img src={images[0]} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />
+        <span style={{ fontSize: '14px' }}>Beige Brown</span>
+      </div>
+      <Icon source={ChevronDownIcon} tone="base" />
+    </div>
+  );
+
+  const renderStyleCard = (styleId, title, staticPreview) => (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'hidden' }}>
       <Box padding="300">
         <InlineStack align="space-between" blockAlign="center">
@@ -313,34 +443,34 @@ export default function OptionStylesPage() {
 
           <Grid>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("image_swatch", "Image swatch", renderPreview("image_swatch"))}
+              {renderStyleCard("image_swatch", "Image swatch", styleSettings["image_swatch"] ? renderPreview("image_swatch") : imageSwatchPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 12, xl: 12 }}>
-              {renderStyleCard("slide_swatch", "Slide swatch (Mobile only)", renderPreview("slide_swatch"))}
+              {renderStyleCard("slide_swatch", "Slide swatch (Mobile only)", styleSettings["slide_swatch"] ? renderPreview("slide_swatch") : slideSwatchPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("polaroid_swatch", "Polaroid swatch", renderPreview("polaroid_swatch"))}
+              {renderStyleCard("polaroid_swatch", "Polaroid swatch", styleSettings["polaroid_swatch"] ? renderPreview("polaroid_swatch") : polaroidSwatchPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("color_swatch", "Color swatch", renderPreview("color_swatch"))}
+              {renderStyleCard("color_swatch", "Color swatch", styleSettings["color_swatch"] ? renderPreview("color_swatch") : colorSwatchPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("square_color_swatch", "Square color swatch", renderPreview("square_color_swatch"))}
+              {renderStyleCard("square_color_swatch", "Square color swatch", styleSettings["square_color_swatch"] ? renderPreview("square_color_swatch") : squareColorSwatchPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("pill_swatch", "Color swatch in pill button", renderPreview("pill_swatch"))}
+              {renderStyleCard("pill_swatch", "Color swatch in pill button", styleSettings["pill_swatch"] ? renderPreview("pill_swatch") : colorPillPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("button", "Button", renderPreview("button"))}
+              {renderStyleCard("button", "Button", styleSettings["button"] ? renderPreview("button") : buttonPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("pill_button", "Pill button", renderPreview("pill_button"))}
+              {renderStyleCard("pill_button", "Pill button", styleSettings["pill_button"] ? renderPreview("pill_button") : pillButtonPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("dropdown", "Dropdown", renderPreview("dropdown"))}
+              {renderStyleCard("dropdown", "Dropdown", styleSettings["dropdown"] ? renderPreview("dropdown") : dropdownPreview)}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("image_dropdown", "Image swatch in dropdown", renderPreview("image_dropdown"))}
+              {renderStyleCard("image_dropdown", "Image swatch in dropdown", styleSettings["image_dropdown"] ? renderPreview("image_dropdown") : imageDropdownPreview)}
             </Grid.Cell>
           </Grid>
         </BlockStack>
