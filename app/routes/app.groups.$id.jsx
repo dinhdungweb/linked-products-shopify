@@ -1477,6 +1477,7 @@ export default function GroupDetail() {
                  background="bg-surface" 
                  borderColor="border" 
                  borderWidth="025" 
+                 borderRadius="300"
                  position="sticky" 
                  insetBlockEnd="0" 
                  zIndex="10"
