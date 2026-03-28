@@ -524,17 +524,15 @@ export default function StyleCustomizerPage() {
                 <BlockStack gap="400">
                     <Text variant="headingMd">Preview</Text>
                     
-                    <Box padding="600" background="bg-surface-secondary" borderRadius="400" borderWidth="025" borderColor="border">
-                        <BlockStack gap="400">
-                            {settings.label.show && !styleId.includes('dropdown') && (
-                                <Text variant="bodyMd">Color: {activeProduct.name}</Text>
-                            )}
-                            
-                            <div style={{ backgroundColor: '#f4f6f8', borderRadius: '8px', minHeight: '200px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                {renderPreview()}
-                            </div>
-                        </BlockStack>
-                    </Box>
+                    <BlockStack gap="400">
+                        {settings.label.show && !styleId.includes('dropdown') && (
+                            <Text variant="bodyMd">Color: {activeProduct.name}</Text>
+                        )}
+                        
+                        <div style={{ padding: '24px 0', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                            {renderPreview()}
+                        </div>
+                    </BlockStack>
                 </BlockStack>
             </Box>
           </Card>
