@@ -340,11 +340,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                     }}>
                         <div style={{ width: '12px', height: '12px', borderRadius: '50%', ...getSwatchStyle(p), flexShrink: 0 }} />
                         <span style={{ 
-                            fontSize: isCard ? '10px' : '12px',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: isCard ? '80px' : '120px'
+                            fontSize: isCard ? '10px' : '12px'
                         }}>{p.optionValue}</span>
                     </div>
                 ))}
@@ -366,10 +362,6 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         fontWeight: i === 0 ? 'bold' : 'normal'
                     }}>
                         <div style={{ 
-                            whiteSpace: 'nowrap', 
-                            overflow: 'hidden', 
-                            textOverflow: 'ellipsis', 
-                            maxWidth: '100%',
                             textAlign: 'center'
                         }}>
                             {p.optionValue}
@@ -443,11 +435,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                     borderRadius: '4px', 
                     fontSize: '12px', 
                     backgroundColor: i === 0 ? '#000' : '#fff', 
-                    color: i === 0 ? '#fff' : '#333',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    maxWidth: '150px'
+                    color: i === 0 ? '#fff' : '#333'
                 }}>{p.optionValue}</div>
             ))}
         </InlineStack>
