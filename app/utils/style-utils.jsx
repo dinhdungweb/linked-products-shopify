@@ -124,57 +124,101 @@ export const PreviewRenderer = ({ styleId, settings }) => {
   const isPillSwatch = styleId === 'pill_swatch';
 
   if (isDropdown) {
-    const activeProduct = PREVIEW_PRODUCTS[1];
+    const activeProduct = PREVIEW_PRODUCTS[1]; // Giả lập biến thể đang chọn
     const isImageDropdown = styleId === 'image_dropdown';
+    const borderRadius = `${settings.border.radius}px`;
     
     return (
-      <div style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start') }}>
+      <div style={{ position: 'relative', width: '100%', maxWidth: '400px', margin: '0 auto' }}>
         <div 
           onClick={() => setIsOpen(!isOpen)}
           style={{ 
             width: '100%', 
-            maxWidth: '300px', 
-            border: '1px solid #8c9196', 
-            borderRadius: '4px', 
+            border: `1px solid ${settings.border.color || '#8c9196'}`, 
+            borderRadius: borderRadius, 
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center', 
             backgroundColor: '#fff',
-            padding: '8px 12px',
+            padding: '10px 14px',
             cursor: 'pointer',
             position: 'relative',
-            zIndex: 10
+            zIndex: 10,
+            transition: 'all 0.2s ease',
+            boxShadow: settings.shadow?.show ? `${settings.shadow.offsetX}px ${settings.shadow.offsetY}px ${settings.shadow.blur}px ${settings.shadow.color}` : 'none'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {isImageDropdown && (
-              <img src={PREVIEW_PRODUCTS[0].color} alt="" style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+              <div style={{ 
+                width: `${settings.basic.swatchSize || 32}px`, 
+                height: `${settings.basic.swatchSize || 32}px`, 
+                borderRadius: '4px', 
+                overflow: 'hidden',
+                flexShrink: 0,
+                border: '1px solid rgba(0,0,0,0.05)'
+              }}>
+                <img 
+                  src={activeProduct.color} 
+                  alt="" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
+              </div>
             )}
-            <Text variant="bodyMd">{activeProduct.name}</Text>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <Text variant="bodyMd" fontWeight="medium">{activeProduct.name}</Text>
+                {settings.price?.show && (
+                    <Text variant="bodySm" tone="subdued">{activeProduct.price}</Text>
+                )}
+            </div>
           </div>
-          <Icon source={ChevronDownIcon} tone="base" />
+          <div style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
+            <Icon source={ChevronDownIcon} tone="base" />
+          </div>
         </div>
 
         {isOpen && (
           <div style={{ 
             position: 'absolute', 
             top: '100%', 
-            left: settings.layout.align === 'center' ? 'calc(50% - 150px)' : (settings.layout.align === 'right' ? 'auto' : '0'),
-            right: settings.layout.align === 'right' ? '0' : 'auto',
+            left: '0',
             width: '100%', 
-            maxWidth: '300px', 
-            marginTop: '4px',
+            marginTop: '8px',
             backgroundColor: '#fff',
             border: '1px solid #dbdfe2',
             borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
             zIndex: 100,
-            overflow: 'hidden'
+            maxHeight: '300px',
+            overflowY: 'auto'
           }}>
             {PREVIEW_PRODUCTS.map((p, index) => (
-              <div key={index} style={{ padding: '10px 14px', borderBottom: index === PREVIEW_PRODUCTS.length - 1 ? 'none' : '1px solid #f1f1f1', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                {isImageDropdown && <img src={p.color} alt="" style={{ width: '32px', height: '32px', borderRadius: '4px', objectFit: 'cover' }} />}
-                <Text variant="bodySm">{p.name}</Text>
+              <div 
+                key={index} 
+                style={{ 
+                    padding: '12px 14px', 
+                    borderBottom: index === PREVIEW_PRODUCTS.length - 1 ? 'none' : '1px solid #f1f1f1', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    gap: '12px', 
+                    cursor: 'pointer',
+                    backgroundColor: index === 1 ? '#f6f6f6' : 'transparent'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {isImageDropdown && (
+                        <img 
+                            src={p.color} 
+                            alt="" 
+                            style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} 
+                        />
+                    )}
+                    <Text variant="bodyMd">{p.name}</Text>
+                </div>
+                {settings.price?.show && (
+                    <Text variant="bodySm" tone="subdued">{p.price}</Text>
+                )}
               </div>
             ))}
           </div>
