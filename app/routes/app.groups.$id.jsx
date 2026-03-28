@@ -308,7 +308,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
 
     if (styleId === 'color_swatch' || styleId === 'square_color_swatch') {
         return (
-            <InlineStack gap="150" wrap={false}>
+            <InlineStack gap="150" wrap={true}>
                 {products.map((p, i) => (
                     <div key={i} style={{
                         width: isCard ? '16px' : '32px', 
@@ -327,7 +327,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
 
     if (styleId === 'pill_swatch') {
         return (
-            <InlineStack gap="150" wrap={false}>
+            <InlineStack gap="150" wrap={true}>
                 {products.map((p, i) => (
                     <div key={i} style={{ 
                         padding: isCard ? '4px 8px' : '6px 12px', 
@@ -340,7 +340,11 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                     }}>
                         <div style={{ width: '12px', height: '12px', borderRadius: '50%', ...getSwatchStyle(p), flexShrink: 0 }} />
                         <span style={{ 
-                            fontSize: isCard ? '10px' : '12px'
+                            fontSize: isCard ? '10px' : '12px',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: isCard ? '80px' : '120px'
                         }}>{p.optionValue}</span>
                     </div>
                 ))}
@@ -350,7 +354,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
 
     if (styleId === 'button' || styleId === 'pill_button') {
         return (
-            <InlineStack gap="150" wrap={false}>
+            <InlineStack gap="150" wrap={true}>
                 {products.map((p, i) => (
                     <div key={i} style={{ 
                         padding: isCard ? '4px 8px' : '8px 16px', 
@@ -362,7 +366,11 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         fontWeight: i === 0 ? 'bold' : 'normal'
                     }}>
                         <div style={{ 
-                            textAlign: 'center'
+                            textAlign: 'center',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: isCard ? '80px' : '120px'
                         }}>
                             {p.optionValue}
                         </div>
@@ -374,7 +382,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
 
     if (styleId.includes('card')) {
          return (
-            <InlineStack gap="200" wrap={false}>
+            <InlineStack gap="200" wrap={true}>
                 {products.map((p, i) => (
                     <div key={i} style={{ 
                         width: isCard ? '60px' : '80px', 
@@ -427,7 +435,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
 
     // Fallback to text blocks
     return (
-        <InlineStack gap="150" wrap={false}>
+        <InlineStack gap="150" wrap={true}>
             {products.map((p, i) => (
                 <div key={i} style={{ 
                     padding: '8px 16px', 
@@ -435,7 +443,11 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                     borderRadius: '4px', 
                     fontSize: '12px', 
                     backgroundColor: i === 0 ? '#000' : '#fff', 
-                    color: i === 0 ? '#fff' : '#333'
+                    color: i === 0 ? '#fff' : '#333',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: '120px'
                 }}>{p.optionValue}</div>
             ))}
         </InlineStack>
