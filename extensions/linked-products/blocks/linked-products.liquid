@@ -18,14 +18,14 @@
   {%- assign lp_border_radius = app_settings.borderRadius | default: 8 -%}
   {%- assign lp_border_color = app_settings.borderColor | default: '#e5e5e5' -%}
   {%- assign lp_selected_border_color = app_settings.selectedBorderColor | default: '#000000' -%}
-  {%- assign lp_border_width = app_settings.borderWidth | default: 2 -%}
+  {%- assign lp_border_width = app_settings.borderWidth | default: 1 -%}
   {%- assign lp_block_padding_x = app_settings.blockPaddingX | default: 12 -%}
   {%- assign lp_block_padding_y = app_settings.blockPaddingY | default: 8 -%}
   {%- assign lp_block_font_size = app_settings.blockFontSize | default: 14 -%}
   {%- assign lp_block_bg = app_settings.blockBgColor | default: '#ffffff' -%}
   {%- assign lp_block_text = app_settings.blockTextColor | default: '#000000' -%}
-  {%- assign lp_selected_bg = app_settings.selectedBgColor | default: '#000000' -%}
-  {%- assign lp_selected_text = app_settings.selectedTextColor | default: '#ffffff' -%}
+  {%- assign lp_selected_bg = app_settings.selectedBgColor | default: '#dddddd' -%}
+  {%- assign lp_selected_text = app_settings.selectedTextColor | default: '#000000' -%}
   {%- assign lp_show_option_name = true -%}
   {%- if app_settings.showOptionName == false -%}
     {%- assign lp_show_option_name = false -%}
