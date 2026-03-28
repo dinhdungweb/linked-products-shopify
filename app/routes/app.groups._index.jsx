@@ -339,7 +339,7 @@ export default function GroupsPage() {
 
       {/* Main Content Card */}
       <Card padding="0">
-        <Box paddingInline="300" paddingBlock="200">
+        <Box paddingInline="100" paddingBlock="200">
           <InlineStack align="space-between" blockAlign="center">
             <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                {!isSearchVisible ? (
