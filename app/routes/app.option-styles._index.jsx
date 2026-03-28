@@ -70,97 +70,7 @@ export default function OptionStylesPage() {
 
   // Assets moved to style-utils.jsx
   // --- ORIGINAL STATIC PREVIEWS ---
-  const imageSwatchPreview = (
-    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
-      {IMAGES.slice(0, 6).map((img, i) => (
-        <div key={i} style={{ width: '48px', height: '48px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', overflow: 'hidden' }}>
-          <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        </div>
-      ))}
-    </InlineStack>
-  );
-
-  const slideSwatchPreview = (
-    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
-      {[
-        { name: 'Beige Brown', price: '$12.88' },
-        { name: 'Black White', price: '$15.99' },
-        { name: 'Red Rose', price: '$19.99' },
-        { name: 'Teal Lily', price: '$24.99' },
-        { name: 'Yellow Bloom', price: '$18.50' },
-        { name: 'Purple Mini', price: '$22.00' }
-      ].map((item, i) => (
-        <div key={i} style={{ width: '70px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff', overflow: 'hidden' }}>
-          <div style={{ width: '100%', height: '80px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
-            <img src={IMAGES[i]} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }} />
-          </div>
-          <div style={{ padding: '4px', textAlign: 'center' }}>
-            <div style={{ fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
-            <div style={{ fontSize: '10px', color: '#666' }}>{item.price}</div>
-          </div>
-        </div>
-      ))}
-    </InlineStack>
-  );
-
-  const polaroidSwatchPreview = (
-    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
-      {IMAGES.slice(0, 6).map((img, i) => (
-        <div key={i} style={{ padding: '4px', backgroundColor: '#fff', border: i === 1 ? '2px solid #000' : '1px solid #ccc', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ width: '40px', height: '48px', backgroundColor: '#f4f4f4', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflow: 'hidden' }}>
-            <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-        </div>
-      ))}
-    </InlineStack>
-  );
-
-  const colorSwatchPreview = (
-    <div style={{ padding: '4px' }}>
-      <InlineStack gap="200" align="start" blockAlign="start">
-        {COLORS.map((color, i) => (
-          <div key={i} style={{
-            width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
-            background: color,
-            border: '2px solid #fff',
-            outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd',
-            outlineOffset: '2px'
-          }} />
-        ))}
-      </InlineStack>
-    </div>
-  );
-
-  const squareColorSwatchPreview = (
-    <div style={{ padding: '4px' }}>
-      <InlineStack gap="200" align="start" blockAlign="start">
-        {COLORS.map((color, i) => (
-          <div key={i} style={{
-            width: '32px', height: '32px', borderRadius: '4px', flexShrink: 0,
-            background: color,
-            border: '2px solid #fff',
-            outline: i === 1 ? '2px solid #5c6ac4' : '1px solid #ddd',
-            outlineOffset: '2px'
-          }} />
-        ))}
-      </InlineStack>
-    </div>
-  );
-
-  const colorPillPreview = (
-    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
-      {['Beige', 'Purple', 'Orange', 'Green', 'Yellow', 'Black', 'Red'].map((text, i) => (
-        <div key={i} style={{
-          display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', flexShrink: 0,
-          borderRadius: '20px', backgroundColor: '#fff',
-          border: i === 1 ? '2px solid #000' : '1px solid #ccc'
-        }}>
-          <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: COLORS[i] || '#000' }} />
-          <span style={{ fontSize: '12px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{text}</span>
-        </div>
-      ))}
-    </InlineStack>
-  );
+  // Static preview nodes removed in favor of universal renderPreviewContent
 
   const buttonPreview = (
     <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
@@ -170,33 +80,6 @@ export default function OptionStylesPage() {
       <div style={{ padding: '8px 16px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#999', fontSize: '13px', textDecoration: 'line-through' }}>Yellow</div>
       <div style={{ padding: '8px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px' }}>Black</div>
     </InlineStack>
-  );
-
-  const pillButtonPreview = (
-    <InlineStack gap="200" wrap={false} align="start" blockAlign="start">
-      <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>Beige</div>
-      <div style={{ padding: '6px 16px', border: '2px solid #000', backgroundColor: '#000', color: '#fff', fontSize: '13px', fontWeight: 'bold', borderRadius: '20px' }}>Dark blue</div>
-      <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>Green</div>
-      <div style={{ padding: '6px 16px', border: '2px solid #ddd', backgroundColor: '#fff', color: '#999', fontSize: '13px', textDecoration: 'line-through', borderRadius: '20px' }}>Yellow</div>
-      <div style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '13px', borderRadius: '20px' }}>Black</div>
-    </InlineStack>
-  );
-
-  const dropdownPreview = (
-    <div style={{ width: '100%', maxWidth: '300px', padding: '10px 14px', border: '1px solid #8c9196', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
-      <span style={{ fontSize: '14px' }}>Beige Brown</span>
-      <Icon source={ChevronDownIcon} tone="base" />
-    </div>
-  );
-
-  const imageDropdownPreview = (
-    <div style={{ width: '100%', maxWidth: '300px', padding: '6px 14px', border: '1px solid #8c9196', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <img src={IMAGES[0]} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'cover' }} />
-        <span style={{ fontSize: '14px' }}>Beige Brown</span>
-      </div>
-      <Icon source={ChevronDownIcon} tone="base" />
-    </div>
   );
 
   const renderStyleCard = (styleId, title, previewNode) => (
@@ -327,34 +210,34 @@ export default function OptionStylesPage() {
 
           <Grid>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("image_swatch", "Image swatch", styleSettings["image_swatch"] ? renderPreview("image_swatch") : imageSwatchPreview)}
+              {renderStyleCard("image_swatch", "Image swatch", renderPreview("image_swatch"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 12, xl: 12 }}>
-              {renderStyleCard("slide_swatch", "Slide swatch (Mobile only)", styleSettings["slide_swatch"] ? renderPreview("slide_swatch") : slideSwatchPreview)}
+              {renderStyleCard("slide_swatch", "Slide swatch (Mobile only)", renderPreview("slide_swatch"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("polaroid_swatch", "Polaroid swatch", styleSettings["polaroid_swatch"] ? renderPreview("polaroid_swatch") : polaroidSwatchPreview)}
+              {renderStyleCard("polaroid_swatch", "Polaroid swatch", renderPreview("polaroid_swatch"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("color_swatch", "Color swatch", styleSettings["color_swatch"] ? renderPreview("color_swatch") : colorSwatchPreview)}
+              {renderStyleCard("color_swatch", "Color swatch", renderPreview("color_swatch"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("square_color_swatch", "Square color swatch", styleSettings["square_color_swatch"] ? renderPreview("square_color_swatch") : squareColorSwatchPreview)}
+              {renderStyleCard("square_color_swatch", "Square color swatch", renderPreview("square_color_swatch"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("pill_swatch", "Color swatch in pill button", styleSettings["pill_swatch"] ? renderPreview("pill_swatch") : colorPillPreview)}
+              {renderStyleCard("pill_swatch", "Color swatch in pill button", renderPreview("pill_swatch"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("button", "Button", styleSettings["button"] ? renderPreview("button") : buttonPreview)}
+              {renderStyleCard("button", "Button", renderPreview("button"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("pill_button", "Pill button", styleSettings["pill_button"] ? renderPreview("pill_button") : pillButtonPreview)}
+              {renderStyleCard("pill_button", "Pill button", renderPreview("pill_button"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("dropdown", "Dropdown", styleSettings["dropdown"] ? renderPreview("dropdown") : dropdownPreview)}
+              {renderStyleCard("dropdown", "Dropdown", renderPreview("dropdown"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("image_dropdown", "Image swatch in dropdown", styleSettings["image_dropdown"] ? renderPreview("image_dropdown") : imageDropdownPreview)}
+              {renderStyleCard("image_dropdown", "Image swatch in dropdown", renderPreview("image_dropdown"))}
             </Grid.Cell>
           </Grid>
         </BlockStack>

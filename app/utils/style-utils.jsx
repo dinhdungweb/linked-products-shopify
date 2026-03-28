@@ -1,5 +1,5 @@
 import React from 'react';
-import { InlineStack, Text, Icon, Badge, Select } from "@shopify/polaris";
+import { InlineStack, Text, Icon, Badge } from "@shopify/polaris";
 import { ChevronDownIcon } from "@shopify/polaris-icons";
 
 export const IMAGES = [
@@ -14,6 +14,15 @@ export const IMAGES = [
 ];
 
 export const COLORS = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
+
+export const PREVIEW_PRODUCTS = [
+  { name: 'Beige Brown', color: IMAGES[0], colorHex: '#f5f5dc', style: 'one', price: '$12.88' },
+  { name: 'Black White', color: IMAGES[1], colorHex: '#a020f0', style: 'two', colorHex2: '#000000', price: '$15.99' },
+  { name: 'Red Rose', color: IMAGES[2], colorHex: '#ff0000', style: 'one', price: '$19.99' },
+  { name: 'Teal Lily', color: IMAGES[3], colorHex: '#008080', style: 'one', price: '$24.99' },
+  { name: 'Yellow Bloom', color: IMAGES[4], colorHex: '#ffff00', style: 'one', price: '$18.50' },
+  { name: 'Purple Mini', color: IMAGES[5], colorHex: '#800080', style: 'one', price: '$22.00' }
+];
 
 export const BASE_SETTINGS = {
   basic: { swatchSize: 32, gap: 10, hideActiveSwatch: false, activeSwatchFirst: false, padding: 0, twoColorStyle: "LT_RB", hoverEffect: "none" },
@@ -61,7 +70,7 @@ export const getSwatchStyle = (isActive, settings, styleId) => {
   return {
       position: 'relative',
       padding: `${settings.basic.padding || 0}px`,
-      border: `${b.width || 1}px solid ${isActive ? (b.activeColor || '#000') : (b.color || '#ccc')}`,
+      border: `${isActive ? (b.width + 1) : b.width || 1}px solid ${isActive ? (b.activeColor || '#000') : (b.color || '#ccc')}`,
       borderRadius: isRound ? '50%' : `${b.radius || 0}px`,
       cursor: 'pointer',
       backgroundColor: '#fff',
@@ -98,19 +107,12 @@ export const renderBadge = (isActive, settings) => {
   );
 };
 
-export const PREVIEW_PRODUCTS = [
-  { name: 'Beige Brown', color: IMAGES[0], style: 'one', price: '$12.88' },
-  { name: 'Black White', color: IMAGES[1], style: 'one', price: '$15.99' },
-  { name: 'Red Rose', color: IMAGES[2], style: 'one', price: '$19.99' },
-  { name: 'Teal Lily', color: IMAGES[3], style: 'one', price: '$24.99' },
-  { name: 'Yellow Bloom', color: IMAGES[4], style: 'one', price: '$18.50' },
-  { name: 'Purple Mini', color: IMAGES[5], style: 'one', price: '$22.00' }
-];
-
 export const renderPreviewContent = (styleId, settings) => {
   const isSlide = styleId.includes('slide');
   const isButton = styleId.includes('button');
   const isDropdown = styleId.includes('dropdown');
+  const isColor = styleId.includes('color');
+  const isPill = styleId.includes('pill');
 
   if (isDropdown) {
     const activeProduct = PREVIEW_PRODUCTS[1];
@@ -145,7 +147,7 @@ export const renderPreviewContent = (styleId, settings) => {
       flexWrap: isSlide ? 'nowrap' : 'wrap',
       overflowX: isSlide ? 'auto' : 'visible',
       justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start'),
-      padding: '20px',
+      padding: '16px', // Uniform padding to match Gallery
       width: '100%'
   };
 
@@ -155,31 +157,60 @@ export const renderPreviewContent = (styleId, settings) => {
               const isActive = i === 1;
               const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
               
+              const renderSwatchInner = () => {
+                const isTwoColor = p.style === 'two';
+                const size = isSlide ? '62px' : `${settings.basic.swatchSize}px`;
+                const height = isSlide ? '80px' : `${settings.basic.swatchSize}px`;
+                const radius = isRound ? '50%' : `${settings.border.radius}px`;
+
+                if (isColor) {
+                    return (
+                        <div style={{ 
+                            width: size, height: size, 
+                            borderRadius: radius, 
+                            background: isTwoColor ? `linear-gradient(to bottom right, ${p.colorHex} 50%, ${p.colorHex2} 50%)` : p.colorHex,
+                            border: '1px solid rgba(0,0,0,0.05)'
+                        }} />
+                    );
+                }
+
+                if (isPill) {
+                    return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                           <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: p.colorHex }} />
+                           <Text variant="bodySm" fontWeight={isActive ? 'bold' : 'regular'}>{p.name.split(' ')[0]}</Text>
+                        </div>
+                    );
+                }
+
+                // Default: Image
+                return (
+                    <div style={{ 
+                        width: size, height: height, 
+                        backgroundColor: '#eee',
+                        borderRadius: radius,
+                        border: '1px solid rgba(0,0,0,0.1)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}>
+                        <img src={p.color} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                );
+              };
+
               return (
                   <div key={i} style={getOuterStyle(isActive, settings, styleId)}>
                       <div style={{ 
                           ...getSwatchStyle(isActive, settings, styleId), 
-                          padding: isButton ? '8px 16px' : `${settings.basic.padding}px`,
-                          minWidth: isSlide ? '70px' : `${settings.basic.swatchSize}px`,
-                          minHeight: isSlide ? '120px' : `${settings.basic.swatchSize}px`,
+                          padding: isButton ? '8px 16px' : (isPill ? '6px 12px' : `${settings.basic.padding}px`),
+                          minWidth: isSlide ? '70px' : (isPill ? 'auto' : `${settings.basic.swatchSize}px`),
+                          minHeight: isSlide ? '120px' : (isPill ? 'auto' : `${settings.basic.swatchSize}px`),
                       }}>
                           {isActive && renderBadge(isActive, settings)}
-                          {!isButton && (
-                              <div style={{ 
-                                  width: isSlide ? '62px' : `${settings.basic.swatchSize}px`, 
-                                  height: isSlide ? '80px' : `${settings.basic.swatchSize}px`, 
-                                  backgroundColor: '#eee',
-                                  borderRadius: isRound ? '50%' : `${settings.border.radius}px`,
-                                  border: '1px solid rgba(0,0,0,0.1)',
-                                  position: 'relative',
-                                  overflow: 'hidden'
-                              }}>
-                                  <img src={p.color} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              </div>
-                          )}
-                          {(settings.label.show || isButton || isSlide) && (
+                          {!isButton && renderSwatchInner()}
+                          {(settings.label.show || isButton || isSlide) && !isPill && (
                               <div style={{ marginTop: isButton ? 0 : '8px', textAlign: 'center' }}>
-                                  <Text variant="bodySm" fontWeight={isActive ? 'bold' : 'regular'}>{p.name}</Text>
+                                  <Text variant="bodySm" fontWeight={isActive ? 'bold' : 'regular'}>{isButton ? p.name.split(' ')[0] : p.name}</Text>
                                   {isSlide && <Text variant="bodyXs" tone="subdued">{p.price}</Text>}
                               </div>
                           )}
