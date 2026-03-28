@@ -139,7 +139,7 @@ const renderPreview = (styleId) => {
                         <img src={PREVIEW_IMAGES[i]} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover' }} />
                     </div>
                     <div style={{ padding: '4px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden' }}>{name}</div>
+                        <div style={{ fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</div>
                         <div style={{ fontSize: '10px', color: '#666' }}>$12.88</div>
                     </div>
                 </div>
@@ -411,10 +411,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                             fontWeight: 'bold', 
                             textAlign: 'center', 
                             width: '100%',
-                            lineHeight: '1.2',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
+                            whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis'
                         }}>{p.optionValue}</div>
