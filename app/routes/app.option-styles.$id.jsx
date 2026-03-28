@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation, useParams, Link } from "@remix-run/react";
+import { useLoaderData, useSubmit, useNavigation, useParams, Link, useActionData } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -84,64 +84,73 @@ export const action = async ({ request, params }) => {
   const formData = await request.formData();
   const action = formData.get("action");
 
-  if (action === "delete") {
-    await prisma.optionStyleSetting.delete({
+  try {
+    if (action === "delete") {
+      await prisma.optionStyleSetting.delete({
+        where: { shop_styleId: { shop, styleId } },
+      });
+      return redirect("/app/option-styles");
+    }
+
+    const settings = JSON.parse(formData.get("settings"));
+
+    const updated = await prisma.optionStyleSetting.upsert({
       where: { shop_styleId: { shop, styleId } },
+      update: { settings },
+      create: { shop, styleId, settings },
     });
-    return redirect("/app/option-styles");
-  }
 
-  const settings = JSON.parse(formData.get("settings"));
+    // Sync to metafields (Map of styleId -> settings)
+    const shopData = await admin.graphql(`{ shop { id } }`);
+    const shopJson = await shopData.json();
+    const shopId = shopJson.data.shop.id;
 
-  const updated = await prisma.optionStyleSetting.upsert({
-    where: { shop_styleId: { shop, styleId } },
-    update: { settings },
-    create: { shop, styleId, settings },
-  });
-
-  // Sync to metafields (Map of styleId -> settings)
-  // Get existing metafield first
-  const shopData = await admin.graphql(`{ shop { id } }`);
-  const shopJson = await shopData.json();
-  const shopId = shopJson.data.shop.id;
-
-  const metafieldQuery = await admin.graphql(`
-    query getMetafield {
-      shop {
-        metafield(namespace: "linked_products", key: "style_customizations") {
-          value
+    const metafieldQuery = await admin.graphql(`
+      query getMetafield {
+        shop {
+          metafield(namespace: "linked_products", key: "style_customizations") {
+            value
+          }
         }
       }
-    }
-  `);
-  
-  const metafieldResult = await metafieldQuery.json();
-  let allStyles = {};
-  try {
-    allStyles = JSON.parse(metafieldResult.data.shop.metafield?.value || "{}");
-  } catch (e) {}
-  
-  allStyles[styleId] = settings;
+    `);
+    
+    const metafieldResult = await metafieldQuery.json();
+    let allStyles = {};
+    try {
+      allStyles = JSON.parse(metafieldResult.data.shop.metafield?.value || "{}");
+    } catch (e) {}
+    
+    allStyles[styleId] = settings;
 
-  await admin.graphql(`
-    mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
-      metafieldsSet(metafields: $metafields) {
-        userErrors { field message }
+    const mutationResponse = await admin.graphql(`
+      mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+          userErrors { field message }
+        }
       }
-    }
-  `, {
-    variables: {
-      metafields: [{
-        namespace: "linked_products",
-        key: "style_customizations",
-        type: "json",
-        ownerId: shopId,
-        value: JSON.stringify(allStyles)
-      }]
-    }
-  });
+    `, {
+      variables: {
+        metafields: [{
+          namespace: "linked_products",
+          key: "style_customizations",
+          type: "json",
+          ownerId: shopId,
+          value: JSON.stringify(allStyles)
+        }]
+      }
+    });
 
-  return json({ success: true, settings: updated.settings });
+    const mutationResult = await mutationResponse.json();
+    if (mutationResult.data?.metafieldsSet?.userErrors?.length > 0) {
+        return json({ success: false, error: mutationResult.data.metafieldsSet.userErrors[0].message });
+    }
+
+    return json({ success: true, message: "Settings saved successfully", settings: updated.settings });
+  } catch (error) {
+    console.error("Save settings error:", error);
+    return json({ success: false, error: error.message || "Failed to save settings" });
+  }
 };
 
 export default function StyleCustomizerPage() {
@@ -151,7 +160,16 @@ export default function StyleCustomizerPage() {
   const submit = useSubmit();
   const navigation = useNavigation();
   const shopify = useAppBridge();
+  const actionData = useActionData();
   const isLoading = navigation.state !== "idle";
+
+  useEffect(() => {
+    if (actionData?.success) {
+      shopify.toast.show(actionData.message || "Settings saved");
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
+    }
+  }, [actionData, shopify]);
 
   const toggleSection = (section) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
