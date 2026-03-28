@@ -198,8 +198,8 @@ export const PreviewRenderer = ({ styleId, settings }) => {
               
               const renderSwatchInner = () => {
                 const isTwoColor = p.style === 'two';
-                const size = isSlide ? 62 : settings.basic.swatchSize;
-                const height = isSlide ? 80 : (size * ratioH / ratioW);
+                const size = settings.basic.swatchSize;
+                const height = (size * ratioH / ratioW);
                 const radius = isRound ? '50%' : `${settings.border.radius}px`;
 
                 if (isColor) {
