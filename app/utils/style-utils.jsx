@@ -215,10 +215,21 @@ export const PreviewRenderer = ({ styleId, settings }) => {
 
                 if (isPillSwatch) {
                     return (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                           <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: p.colorHex }} />
-                           <Text variant="bodySm" fontWeight={isActive ? 'bold' : 'regular'}>{p.name.split(' ')[0]}</Text>
-                        </div>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: p.colorHex }} />
+                            {(settings.variantName?.show) && (
+                                <div style={{ 
+                                    fontSize: `${settings.variantName?.fontSize}px`, 
+                                    fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'),
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: settings.variantName?.maxLines || 1,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden'
+                                }}>
+                                    {p.name.split(' ')[0]}
+                                </div>
+                            )}
+                         </div>
                     );
                 }
 
@@ -257,10 +268,22 @@ export const PreviewRenderer = ({ styleId, settings }) => {
                       }}>
                           {isActive && renderBadge(isActive, settings)}
                           {!isButton && renderSwatchInner()}
-                          {(settings.label.show || isButton || isSlide) && !isPillSwatch && (
-                              <div style={{ marginTop: isButton ? 0 : '8px', textAlign: 'center' }}>
-                                  <Text variant="bodySm" fontWeight={isActive ? 'bold' : 'regular'}>{isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}</Text>
-                                  {isSlide && <Text variant="bodyXs" tone="subdued">{p.price}</Text>}
+                          {(settings.variantName?.show || isButton) && !isPillSwatch && (
+                              <div style={{ 
+                                  marginTop: isButton ? 0 : '8px', 
+                                  textAlign: 'center',
+                                  fontSize: `${settings.variantName?.fontSize}px`,
+                                  fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'),
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: settings.variantName?.maxLines || 1,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                  lineHeight: '1.2'
+                              }}>
+                                  {isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}
+                                  {isSlide && (
+                                      <div style={{ fontSize: '0.85em', opacity: 0.7, marginTop: '2px' }}>{p.price}</div>
+                                  )}
                               </div>
                           )}
                       </div>

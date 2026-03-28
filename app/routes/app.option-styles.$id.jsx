@@ -353,7 +353,7 @@ export default function StyleCustomizerPage() {
                     <Box padding="400" paddingBlockStart="0">
                         <BlockStack gap="400">
                             <InlineStack align="space-between">
-                                <Text variant="bodyMd">Show label</Text>
+                                <Text variant="bodyMd">Show option label (e.g. Color:)</Text>
                                 <Checkbox label="" labelHidden checked={settings.label.show} onChange={(v) => handleUpdate('label', 'show', v)} />
                             </InlineStack>
                             <BlockStack gap="200">
@@ -376,7 +376,7 @@ export default function StyleCustomizerPage() {
                             </BlockStack>
                             <RangeSlider label={`Line height (${settings.label.lineHeight}px)`} value={settings.label.lineHeight} onChange={(v) => handleUpdate('label', 'lineHeight', v)} min={12} max={50} output />
                             <InlineStack align="space-between">
-                                <Text variant="bodyMd">Show selected variant name</Text>
+                                <Text variant="bodyMd">Show selected variant name next to label</Text>
                                 <Checkbox label="" labelHidden checked={settings.label.showSelectedVariant} onChange={(v) => handleUpdate('label', 'showSelectedVariant', v)} />
                             </InlineStack>
                         </BlockStack>
@@ -395,7 +395,7 @@ export default function StyleCustomizerPage() {
                     <Box padding="400" paddingBlockStart="0">
                         <BlockStack gap="400">
                             <InlineStack align="space-between">
-                                <Text variant="bodyMd">Show variant name</Text>
+                                <Text variant="bodyMd">Show name below/inside swatch</Text>
                                 <Checkbox label="" labelHidden checked={settings.variantName?.show} onChange={(v) => handleUpdate('variantName', 'show', v)} />
                             </InlineStack>
                             <RangeSlider label={`Text font size (${settings.variantName?.fontSize}px)`} value={settings.variantName?.fontSize} onChange={(v) => handleUpdate('variantName', 'fontSize', v)} min={8} max={30} output />
@@ -585,10 +585,23 @@ export default function StyleCustomizerPage() {
                     
                     <BlockStack gap="400">
                         {settings.label.show && !styleId.includes('dropdown') && (
-                            <Text variant="bodyMd">Color: {activeProduct.name}</Text>
+                            <div style={{ 
+                                marginBottom: `${settings.label.gap}px`,
+                                fontSize: `${settings.label.fontSize}px`,
+                                fontWeight: settings.label.fontWeight || 'normal',
+                                lineHeight: `${settings.label.lineHeight}px`,
+                                display: settings.label.layout === 'inline' ? 'flex' : 'block',
+                                gap: '8px',
+                                alignItems: 'baseline'
+                            }}>
+                                <span>Color:</span>
+                                {settings.label.showSelectedVariant && (
+                                    <span style={{ fontWeight: settings.label.selectedVariantFontWeight || 'bold' }}>{activeProduct.name}</span>
+                                )}
+                            </div>
                         )}
                         
-                        <div style={{ padding: '24px 0', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                        <div style={{ padding: '16px 0', width: '100%', display: 'flex', justifyContent: 'center' }}>
                             {renderPreview()}
                         </div>
                     </BlockStack>
