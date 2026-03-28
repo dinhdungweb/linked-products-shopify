@@ -46,6 +46,7 @@ import {
   DiamondIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { syncGroupMetafields } from "../sync.server";
 
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
@@ -162,6 +163,26 @@ export async function action({ request }) {
     return json({ success: true, message: "Group deleted successfully" });
   }
 
+  if (actionType === "toggleStatus") {
+    const groupId = formData.get("groupId");
+    const currentStatus = formData.get("currentStatus");
+    const newStatus = currentStatus === "active" ? "draft" : "active";
+    
+    await prisma.productGroup.update({
+      where: { id: groupId },
+      data: { status: newStatus }
+    });
+    
+    await syncGroupMetafields(admin, prisma, groupId);
+    return json({ success: true, message: `Group set to ${newStatus}` });
+  }
+
+  if (actionType === "sync") {
+    const groupId = formData.get("groupId");
+    await syncGroupMetafields(admin, prisma, groupId);
+    return json({ success: true, message: "Synced successfully" });
+  }
+
   return json({ error: "Invalid action" }, { status: 400 });
 }
 
@@ -190,6 +211,21 @@ export default function GroupsPage() {
     }
   }, [submit]);
 
+  const handleToggleStatus = useCallback((groupId, currentStatus) => {
+    const formData = new FormData();
+    formData.append("action", "toggleStatus");
+    formData.append("groupId", groupId);
+    formData.append("currentStatus", currentStatus);
+    submit(formData, { method: "POST" });
+  }, [submit]);
+
+  const handleSyncGroup = useCallback((groupId) => {
+    const formData = new FormData();
+    formData.append("action", "sync");
+    formData.append("groupId", groupId);
+    submit(formData, { method: "POST" });
+  }, [submit]);
+
   const tabs = [
     { id: 'all', content: 'All', panelID: 'all-groups' },
     { id: 'single', content: 'Single option', panelID: 'single-option' },
@@ -200,6 +236,8 @@ export default function GroupsPage() {
   const ActionMenu = ({ groupId }) => {
     const [active, setActive] = useState(false);
     const toggleActive = useCallback(() => setActive((a) => !a), []);
+    const group = groups.find(g => g.id === groupId);
+    const status = group?.status || "active";
 
     return (
       <Popover
@@ -211,8 +249,12 @@ export default function GroupsPage() {
           actionRole="menuitem"
           items={[
             { content: 'Edit group', icon: ViewIcon, url: `/app/groups/${groupId}` },
-            { content: 'Set as draft', icon: XIcon },
-            { content: 'Delete', icon: DeleteIcon, destructive: true, onAction: () => handleDeleteGroup(groupId) },
+            { 
+              content: status === "active" ? 'Set as draft' : 'Set as active', 
+              icon: status === "active" ? XIcon : DiamondIcon,
+              onAction: () => { handleToggleStatus(groupId, status); toggleActive(); }
+            },
+            { content: 'Delete', icon: DeleteIcon, destructive: true, onAction: () => { handleDeleteGroup(groupId); toggleActive(); } },
           ]}
         />
       </Popover>
@@ -464,7 +506,12 @@ export default function GroupsPage() {
                 <IndexTable.Cell>
                    <InlineStack align="end" gap="100">
                       <Button icon={DuplicateIcon} variant="tertiary" />
-                      <Button icon={RefreshIcon} variant="tertiary" />
+                      <Button 
+                        icon={RefreshIcon} 
+                        variant="tertiary" 
+                        onClick={() => handleSyncGroup(group.id)}
+                        loading={isLoading && navigation.formData?.get("groupId") === group.id && navigation.formData?.get("action") === "sync"}
+                      />
                       <ActionMenu groupId={group.id} />
                    </InlineStack>
                 </IndexTable.Cell>

@@ -36,6 +36,7 @@ import {
     DragHandleIcon,
     ChevronDownIcon,
 } from "@shopify/polaris-icons";
+import { syncGroupMetafields } from "../sync.server";
 
 const STYLE_OPTIONS = [
     { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch', category: 'Image Swatch' },
@@ -563,60 +564,6 @@ export async function action({ request, params }) {
     const formData = await request.formData();
     const actionType = formData.get("action");
 
-    async function syncGroupMetafields(gId) {
-        const group = await prisma.productGroup.findUnique({
-            where: { id: gId },
-            include: { products: { orderBy: { position: "asc" } } },
-        });
-
-        if (!group || group.products.length < 2) {
-            return { success: false, error: "At least 2 products are required to sync" };
-        }
-
-        const metafieldValue = group.products.map(p => ({
-            handle: p.productHandle,
-            title: p.optionValue || "",
-            image: p.customImageUrl || "",
-            color: p.customColor || "#FFFFFF",
-            color2: p.customColor2 || "",
-            style: p.style || "one"
-        }));
-
-        const metafields = [];
-        for (const product of group.products) {
-            const base = { ownerId: product.productId, namespace: "linked_products" };
-            metafields.push({ ...base, key: "linked_list", value: JSON.stringify(metafieldValue), type: "json" });
-            metafields.push({ ...base, key: "option_value", value: product.optionValue || "", type: "single_line_text_field" });
-            metafields.push({ ...base, key: "inventory_behavior", value: group.inventoryBehavior || "show", type: "single_line_text_field" });
-            metafields.push({ ...base, key: "option_name", value: group.optionName || "Color", type: "single_line_text_field" });
-            metafields.push({ ...base, key: "selector_style", value: group.selectorStyle || "block", type: "single_line_text_field" });
-            metafields.push({ ...base, key: "card_selector_style", value: group.cardSelectorStyle || "swatch", type: "single_line_text_field" });
-        }
-
-        console.log(`[Sync] Group ${gId}: Syncing ${metafields.length} metafields to ${group.products.length} products...`);
-
-        const BATCH_SIZE = 25;
-        for (let i = 0; i < metafields.length; i += BATCH_SIZE) {
-            const batch = metafields.slice(i, i + BATCH_SIZE);
-            const metafieldMutation = await admin.graphql(`
-                mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
-                    metafieldsSet(metafields: $metafields) {
-                        userErrors { message }
-                    }
-                }
-            `, { variables: { metafields: batch } });
-            const result = await metafieldMutation.json();
-            if (result.data?.metafieldsSet?.userErrors?.length > 0) {
-                console.error(`[Sync Error] ${result.data.metafieldsSet.userErrors[0].message}`);
-                throw new Error(result.data.metafieldsSet.userErrors[0].message);
-            }
-        }
-
-        console.log(`[Sync Success] Group ${gId} synced successfully.`);
-
-        await prisma.productGroup.update({ where: { id: gId }, data: { syncStatus: "synced" } });
-        return { success: true };
-    }
 
     if (actionType === "addProducts") {
         const productsJson = formData.get("products");
@@ -670,7 +617,7 @@ export async function action({ request, params }) {
     if (actionType === "removeProduct") {
         const productId = formData.get("productId");
         await prisma.productGroupItem.delete({ where: { groupId_productId: { groupId, productId } } });
-        await syncGroupMetafields(groupId);
+        await syncGroupMetafields(admin, prisma, groupId);
         return json({ success: true, message: "Product removed!" });
     }
 
@@ -688,7 +635,7 @@ export async function action({ request, params }) {
             where: { groupId_productId: { groupId, productId } },
             data: updateData,
         });
-        await syncGroupMetafields(groupId);
+        await syncGroupMetafields(admin, prisma, groupId);
         return json({ success: true });
     }
 
@@ -711,7 +658,7 @@ export async function action({ request, params }) {
         if (status !== null) updateData.status = status;
 
         await prisma.productGroup.update({ where: { id: groupId }, data: updateData });
-        await syncGroupMetafields(groupId);
+        await syncGroupMetafields(admin, prisma, groupId);
         return json({ success: true });
     }
 
@@ -735,7 +682,7 @@ export async function action({ request, params }) {
                 });
             }
         }
-        await syncGroupMetafields(groupId);
+        await syncGroupMetafields(admin, prisma, groupId);
         return json({ success: true, message: "Option values auto-filled!" });
     }
 
@@ -780,12 +727,12 @@ export async function action({ request, params }) {
             }
         });
 
-        await syncGroupMetafields(groupId);
+        await syncGroupMetafields(admin, prisma, groupId);
         return json({ success: true, message: "All changes saved and synced!" });
     }
 
     if (actionType === "sync") {
-        await syncGroupMetafields(groupId);
+        await syncGroupMetafields(admin, prisma, groupId);
         return json({ success: true, message: "Synced successfully!" });
     }
 
