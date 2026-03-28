@@ -344,19 +344,19 @@ export default function OptionStylesPage() {
 
           <Grid>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("Slide swatch (Mobile only)", slideSwatchPreview)}
+              {renderExploreCard("Slide swatch (Mobile only)", renderPreview("slide_swatch"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("Image swatch card", imageSwatchCardPreview)}
+              {renderExploreCard("Image swatch", renderPreview("image_swatch"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("Polaroid swatch", polaroidSwatchPreview)}
+              {renderExploreCard("Polaroid swatch", renderPreview("polaroid_swatch"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("Color swatch card", colorSwatchCardPreview)}
+              {renderExploreCard("Color swatch", renderPreview("color_swatch"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("Button", buttonPreview)}
+              {renderExploreCard("Button", renderPreview("button"))}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
               {renderExploreCard("Find more styles", null, true)}
