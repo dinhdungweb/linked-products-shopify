@@ -1266,20 +1266,16 @@ export default function GroupDetail() {
                                     {localProducts.map((product, idx) => (
                                         <div key={product.productId}>
                                             <Box padding="400">
-                                                <Grid>
-                                                    <Grid.Cell columnSpan={{ xs: 1, sm: 1, md: 1, lg: 1 }}>
-                                                        <Box paddingBlockStart="400">
-                                                            <Icon source={DragHandleIcon} tone="subdued" />
-                                                        </Box>
-                                                    </Grid.Cell>
-                                                    <Grid.Cell columnSpan={{ xs: 2, sm: 2, md: 2, lg: 2 }}>
-                                                        <Thumbnail
-                                                            source={product.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"}
-                                                            size="medium"
-                                                            alt=""
-                                                        />
-                                                    </Grid.Cell>
-                                                    <Grid.Cell columnSpan={{ xs: 7, sm: 7, md: 7, lg: 7 }}>
+                                                <InlineStack gap="300" blockAlign="start" wrap={false}>
+                                                    <div style={{ paddingBlockStart: '12px' }}>
+                                                        <Icon source={DragHandleIcon} tone="subdued" />
+                                                    </div>
+                                                    <Thumbnail
+                                                        source={product.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"}
+                                                        size="medium"
+                                                        alt=""
+                                                    />
+                                                    <div style={{ flex: 1 }}>
                                                         <BlockStack gap="200">
                                                             <InlineStack gap="200" blockAlign="center">
                                                                 <Badge tone={product.status === "ACTIVE" ? "success" : "info"}>
@@ -1341,9 +1337,9 @@ export default function GroupDetail() {
                                                                 </InlineStack>
                                                             </InlineStack>
                                                         </BlockStack>
-                                                    </Grid.Cell>
-                                                    <Grid.Cell columnSpan={{ xs: 2, sm: 2, md: 2, lg: 2 }}>
-                                                        <InlineStack gap="200" align="end">
+                                                    </div>
+                                                    <div style={{ minWidth: '100px' }}>
+                                                        <InlineStack gap="100" align="end">
                                                             <Tooltip content="Preview product">
                                                                 <Button icon={ViewIcon} variant="tertiary" url={`https://${shop}/products/${product.handle}`} target="_blank" />
                                                             </Tooltip>
@@ -1351,8 +1347,8 @@ export default function GroupDetail() {
                                                                 <Button icon={DeleteIcon} tone="critical" onClick={() => handleRemoveProduct(product.productId)} />
                                                             </Tooltip>
                                                         </InlineStack>
-                                                    </Grid.Cell>
-                                                </Grid>
+                                                    </div>
+                                                </InlineStack>
                                             </Box>
                                             {idx < localProducts.length - 1 && <Divider />}
                                         </div>
