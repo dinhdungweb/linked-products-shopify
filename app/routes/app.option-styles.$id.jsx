@@ -147,7 +147,7 @@ export const action = async ({ request, params }) => {
 export default function StyleCustomizerPage() {
   const { styleId, settings: initialSettings } = useLoaderData();
   const [settings, setSettings] = useState(initialSettings);
-  const [openSections, setOpenSections] = useState({ basic: true });
+  const [openSections, setOpenSections] = useState({ basic: true, variantName: false });
   const submit = useSubmit();
   const navigation = useNavigation();
   const shopify = useAppBridge();
@@ -379,6 +379,36 @@ export default function StyleCustomizerPage() {
                                 <Text variant="bodyMd">Show selected variant name</Text>
                                 <Checkbox label="" labelHidden checked={settings.label.showSelectedVariant} onChange={(v) => handleUpdate('label', 'showSelectedVariant', v)} />
                             </InlineStack>
+                        </BlockStack>
+                    </Box>
+                </Collapsible>
+            </Box>
+            <Divider />
+            
+            {/* Variant name settings */}
+            <Box padding="0">
+                <div onClick={() => toggleSection('variantName')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text variant="headingSm">Variant name settings</Text>
+                    <Icon source={openSections.variantName ? ChevronUpIcon : ChevronDownIcon} />
+                </div>
+                <Collapsible open={openSections.variantName}>
+                    <Box padding="400" paddingBlockStart="0">
+                        <BlockStack gap="400">
+                            <InlineStack align="space-between">
+                                <Text variant="bodyMd">Show variant name</Text>
+                                <Checkbox label="" labelHidden checked={settings.variantName?.show} onChange={(v) => handleUpdate('variantName', 'show', v)} />
+                            </InlineStack>
+                            <RangeSlider label={`Text font size (${settings.variantName?.fontSize}px)`} value={settings.variantName?.fontSize} onChange={(v) => handleUpdate('variantName', 'fontSize', v)} min={8} max={30} output />
+                            <BlockStack gap="200">
+                                <Text variant="bodyMd">Font weight</Text>
+                                <ButtonGroup variant="segmented">
+                                    <Button pressed={settings.variantName?.fontWeight === "lighter"} onClick={() => handleUpdate('variantName', 'fontWeight', "lighter")}>Lighter</Button>
+                                    <Button pressed={settings.variantName?.fontWeight === "normal"} onClick={() => handleUpdate('variantName', 'fontWeight', "normal")}>Normal</Button>
+                                    <Button pressed={settings.variantName?.fontWeight === "semibold"} onClick={() => handleUpdate('variantName', 'fontWeight', "semibold")}>Semibold</Button>
+                                    <Button pressed={settings.variantName?.fontWeight === "bolder"} onClick={() => handleUpdate('variantName', 'fontWeight', "bolder")}>Bolder</Button>
+                                </ButtonGroup>
+                            </BlockStack>
+                            <RangeSlider label={`Max text lines (${settings.variantName?.maxLines} line)`} value={settings.variantName?.maxLines} onChange={(v) => handleUpdate('variantName', 'maxLines', v)} min={1} max={6} output />
                         </BlockStack>
                     </Box>
                 </Collapsible>
