@@ -577,7 +577,7 @@ export async function action({ request, params }) {
             handle: p.productHandle,
             title: p.optionValue || "",
             image: p.customImageUrl || "",
-            color: p.customColor || "",
+            color: p.customColor || "#FFFFFF",
             color2: p.customColor2 || "",
             style: p.style || "one"
         }));
@@ -653,6 +653,7 @@ export async function action({ request, params }) {
                     optionValue: product.title,
                     position,
                     style: defaultStyle,
+                    customColor: "#FFFFFF"
                 },
             });
         }
@@ -770,8 +771,8 @@ export async function action({ request, params }) {
                         data: {
                             optionValue: item.optionValue,
                             customImageUrl: item.customImageUrl || null,
-                            customColor: item.customColor || null,
-                            customColor2: item.customColor2 || null,
+                            customColor: item.customColor || (item.style === 'one' ? "#FFFFFF" : null),
+                            customColor2: item.customColor2 || (item.style === 'two' ? "#F5F5F5" : null),
                             style: item.style || "one",
                         }
                     });

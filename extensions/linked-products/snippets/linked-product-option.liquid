@@ -114,6 +114,10 @@
       {%- assign has_color = true -%}
       {%- assign css_color = "#c3b091" -%}
   {%- endcase -%}
+  {%- if css_color == "" -%}
+    {%- assign has_color = true -%}
+    {%- assign css_color = "#FFFFFF" -%}
+  {%- endif -%}
 {%- endif -%}
 
 {%- case style -%}
