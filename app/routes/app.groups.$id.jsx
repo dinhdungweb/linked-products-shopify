@@ -115,7 +115,6 @@ const getBorderRadius = (id) => {
     if (!id) return '50%';
     const lower = id.toLowerCase();
     if (lower.includes('square')) return '4px';
-    if (lower.includes('image')) return '4px';
     if (lower.includes('slide')) return '4px';
     if (lower.includes('polaroid')) return '0';
     return '50%';
@@ -125,7 +124,7 @@ const renderPreview = (styleId) => {
     if (styleId === 'image_swatch') return (
         <InlineStack gap="200" wrap={false}>
             {PREVIEW_IMAGES.map((img, i) => (
-                <div key={i} style={{ width: '48px', height: '48px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '4px', overflow: 'hidden' }}>
+                <div key={i} style={{ width: '48px', height: '48px', flexShrink: 0, border: i === 1 ? '2px solid #000' : '1px solid #ccc', borderRadius: '50%', overflow: 'hidden' }}>
                     <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
             ))}
@@ -249,7 +248,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         height: isCard ? '24px' : '48px', 
                         flexShrink: 0, 
                         border: i === 0 ? '2px solid #000' : '1px solid #ccc', 
-                        borderRadius: '4px',
+                        borderRadius: '50%',
                         backgroundColor: '#fff',
                         overflow: 'hidden' 
                     }}>
@@ -410,11 +409,10 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         <div style={{ 
                             fontSize: '10px', 
                             fontWeight: 'bold', 
-                            whiteSpace: 'nowrap', 
-                            overflow: 'hidden', 
-                            textOverflow: 'ellipsis',
+                            whiteSpace: 'normal', 
                             textAlign: 'center', 
-                            width: '100%' 
+                            width: '100%',
+                            lineHeight: '1.2'
                         }}>{p.optionValue}</div>
                     </div>
                 ))}
