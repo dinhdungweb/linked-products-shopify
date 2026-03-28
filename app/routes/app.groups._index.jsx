@@ -341,17 +341,21 @@ export default function GroupsPage() {
       <Card padding="0">
         <style>
           {`
-            .Polaris-Tabs__Tab {
-              padding-top: 4px !important;
-              padding-bottom: 4px !important;
-              min-height: unset !important;
+            .Polaris-Tabs__Outer .Polaris-Box {
+              padding: 0 !important;
+              padding-block-start: 0 !important;
+              padding-block-end: 0 !important;
+              --pc-box-padding-block-start-xs: 0 !important;
+              --pc-box-padding-block-end-xs: 0 !important;
+              --pc-box-padding-block-start-md: 0 !important;
+              --pc-box-padding-block-end-md: 0 !important;
             }
-            .Polaris-Tabs__TabContainer {
-              line-height: 1 !important;
+            .Polaris-Tabs__Tab {
+              min-height: unset !important;
             }
           `}
         </style>
-        <Box paddingInline="300" paddingBlock="100">
+        <Box paddingInline="300" paddingBlock="300">
           <InlineStack align="space-between" blockAlign="center">
             <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                {!isSearchVisible ? (
