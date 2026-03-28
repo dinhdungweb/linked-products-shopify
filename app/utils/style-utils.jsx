@@ -280,20 +280,25 @@ export const PreviewRenderer = ({ styleId, settings }) => {
                           {(settings.variantName?.show || isButton) && !isPillSwatch && (
                               <div style={{ 
                                   marginTop: isButton ? 0 : '8px', 
+                                  paddingBottom: isButton ? 0 : '8px',
                                   textAlign: 'center',
                                   width: '100%',
                                   maxWidth: '100%',
-                                  fontSize: `${settings.variantName?.fontSize}px`,
-                                  fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'),
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: settings.variantName?.maxLines || 1,
-                                  WebkitBoxOrient: 'vertical',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
                                   lineHeight: '1.2',
                                   wordBreak: 'break-word'
                               }}>
-                                  {isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}
+                                  <div style={{
+                                      fontSize: `${settings.variantName?.fontSize}px`,
+                                      fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'),
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: settings.variantName?.maxLines || 1,
+                                      WebkitBoxOrient: 'vertical',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                  }}>
+                                      {isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}
+                                  </div>
+                                  
                                   {settings.price?.show && (
                                       <div style={{ 
                                           fontSize: `${settings.price?.fontSize || 10}px`, 
