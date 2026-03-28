@@ -441,10 +441,34 @@ export default function StyleCustomizerPage() {
                 </div>
                 <Collapsible open={openSections.price}>
                     <Box padding="400" paddingBlockStart="0">
-                         <InlineStack align="space-between">
-                                <Text variant="bodyMd">Show price</Text>
-                                <Checkbox label="" labelHidden checked={settings.price.show} onChange={(v) => handleUpdate('price', 'show', v)} />
-                        </InlineStack>
+                         <BlockStack gap="400">
+                            <InlineStack align="space-between">
+                                 <Text variant="bodyMd">Show price</Text>
+                                 <Checkbox label="" labelHidden checked={settings.price?.show} onChange={(v) => handleUpdate('price', 'show', v)} />
+                            </InlineStack>
+                            <RangeSlider 
+                                label={`Price font size (${settings.price?.fontSize || 10}px)`} 
+                                value={settings.price?.fontSize || 10} 
+                                onChange={(v) => handleUpdate('price', 'fontSize', v)} 
+                                min={8} max={30} 
+                                output 
+                            />
+                            <BlockStack gap="200">
+                                <Text variant="bodyMd">Font weight</Text>
+                                <ButtonGroup variant="segmented">
+                                    <Button pressed={settings.price?.fontWeight === "lighter"} onClick={() => handleUpdate('price', 'fontWeight', "lighter")}>Lighter</Button>
+                                    <Button pressed={settings.price?.fontWeight === "normal"} onClick={() => handleUpdate('price', 'fontWeight', "normal")}>Normal</Button>
+                                    <Button pressed={settings.price?.fontWeight === "semibold"} onClick={() => handleUpdate('price', 'fontWeight', "semibold")}>Semibold</Button>
+                                    <Button pressed={settings.price?.fontWeight === "bolder"} onClick={() => handleUpdate('price', 'fontWeight', "bolder")}>Bolder</Button>
+                                </ButtonGroup>
+                            </BlockStack>
+                            <TextField 
+                                label="Price color" 
+                                value={settings.price?.color || "#6d7175"} 
+                                onChange={(v) => handleUpdate('price', 'color', v)} 
+                                autoComplete="off" 
+                            />
+                         </BlockStack>
                     </Box>
                 </Collapsible>
             </Box>

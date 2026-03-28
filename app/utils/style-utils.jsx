@@ -29,7 +29,7 @@ export const BASE_SETTINGS = {
   border: { radius: 4, width: 1, color: "#dbdfe2", activeColor: "#000000", hoverColor: "#000000", outerWidth: 0, outerRadius: 4, outerPadding: 4, outerColor: "#dbdfe2", outerActiveColor: "#000000", outerHoverColor: "#000000" },
   label: { show: true, layout: "stack", gap: 8, fontSize: 14, fontWeight: "normal", lineHeight: 18, showSelectedVariant: true, selectedVariantFontWeight: "normal" },
   variantName: { show: true, fontSize: 12, fontWeight: "semibold", maxLines: 1 },
-  price: { show: false },
+  price: { show: false, fontSize: 10, fontWeight: "normal", color: "#6d7175" },
   text: { position: "right", gap: 8, width: 50 },
   layout: { marginTop: 0, marginBottom: 10, align: "left", type: "stack", maxSwatches: 100 },
   unavailable: { style: "cross_mark", allowRedirect: false, hideUnmatched: false },
@@ -294,8 +294,15 @@ export const PreviewRenderer = ({ styleId, settings }) => {
                                   wordBreak: 'break-word'
                               }}>
                                   {isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}
-                                  {isSlide && (
-                                      <div style={{ fontSize: '0.86em', opacity: 0.7, marginTop: '2px' }}>{p.price}</div>
+                                  {settings.price?.show && (
+                                      <div style={{ 
+                                          fontSize: `${settings.price?.fontSize || 10}px`, 
+                                          fontWeight: settings.price?.fontWeight || 'normal',
+                                          color: settings.price?.color || '#6d7175',
+                                          marginTop: '2px' 
+                                      }}>
+                                          {p.price}
+                                      </div>
                                   )}
                               </div>
                           )}
