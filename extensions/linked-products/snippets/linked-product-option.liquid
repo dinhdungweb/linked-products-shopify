@@ -160,7 +160,7 @@
        class="linked-option linked-option--swatch {% if style == 'square_color_swatch' %}is-square{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
        title="{{ value }}">
       {%- if has_color -%}
-        <span class="swatch-bg swatch-bg--color" style="background-color: {{ css_color }};"></span>
+        <span class="swatch-bg swatch-bg--color" style="{% if item_style == 'two' %}background: linear-gradient(to right, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
       {%- elsif final_image_url != blank -%}
         <span class="swatch-bg" style="background-image: url({{ final_image_url }});"></span>
       {%- else -%}
@@ -204,7 +204,7 @@
        class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
        title="{{ value }}">
       <div class="card-media is-color" 
-           style="{% if has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: #f4f4f4;{% endif %}">
+           style="{% if item_style == 'two' %}background: linear-gradient(to right, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: #f4f4f4;{% endif %}">
         {%- if has_color or final_image_url != blank -%}
           <span class="swatch-anchor"></span>
         {%- else -%}

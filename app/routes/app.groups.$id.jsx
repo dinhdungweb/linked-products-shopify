@@ -544,7 +544,9 @@ export async function action({ request, params }) {
             handle: p.productHandle,
             title: p.optionValue || "",
             image: p.customImageUrl || "",
-            color: p.customColor || ""
+            color: p.customColor || "",
+            color2: p.customColor2 || "",
+            style: p.style || "one"
         }));
 
         const metafields = [];

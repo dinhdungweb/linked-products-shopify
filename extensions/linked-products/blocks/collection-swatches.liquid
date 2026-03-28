@@ -11,8 +11,6 @@
 {%- if linked_handles_raw != blank and linked_handles_raw.size > 1 -%}
   {%- assign current_handle = product.handle -%}
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
-  {%- assign meta_card_style = product.metafields.linked_products.card_selector_style.value -%}
-  {%- assign active_style = meta_card_style | default: block.settings.swatch_style | default: 'swatch' -%}
   
   <div class="collection-swatches" style="
     --cs-size: {{ block.settings.swatch_size }}px;
@@ -50,6 +48,8 @@
         
         {%- comment -%}Determine swatch appearance{%- endcomment -%}
         {%- assign swatch_color = item.color -%}
+        {%- assign swatch_color2 = item.color2 -%}
+        {%- assign swatch_style = item.style -%}
         {%- assign swatch_image = item.image -%}
         {%- assign swatch_value = item.title -%}
         
@@ -94,8 +94,8 @@
            title="{{ swatch_value }}{% if swatch_product.available == false %} (Sold out){% endif %}"
            aria-label="{{ swatch_value }}">
           
-          {%- if final_color != blank -%}
-            <span class="cs-swatch__color" style="background-color: {{ final_color }};"></span>
+          {%- if final_color != blank or swatch_style == 'two' -%}
+            <span class="cs-swatch__color" style="{% if swatch_style == 'two' %}background: linear-gradient(to right, {{ swatch_color | default: '#ccc' }} 50%, {{ swatch_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ final_color }};{% endif %}"></span>
           {%- elsif swatch_image != blank -%}
             <img src="{{ swatch_image }}" alt="{{ swatch_value }}" width="24" height="24" loading="lazy" class="cs-swatch__img">
           {%- elsif swatch_product.featured_image != blank -%}

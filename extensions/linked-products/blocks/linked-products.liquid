@@ -123,7 +123,9 @@
                     style: active_selector_style,
                     settings: app_settings,
                     custom_image: item.image,
-                    custom_color: item.color
+                    custom_color: item.color,
+                    custom_color2: item.color2,
+                    item_style: item.style
                 -%}
                 {%- assign current_rendered = true -%}
               {%- else -%}
@@ -141,7 +143,9 @@
                       style: active_selector_style,
                       settings: app_settings,
                       custom_image: item.image,
-                      custom_color: item.color
+                      custom_color: item.color,
+                      custom_color2: item.color2,
+                      item_style: item.style
                   -%}
                 {%- endif -%}
               {%- endif -%}
