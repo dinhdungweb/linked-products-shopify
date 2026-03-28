@@ -203,9 +203,9 @@ export const renderPreviewContent = (styleId, settings) => {
                   <div key={i} style={getOuterStyle(isActive, settings, styleId)}>
                       <div style={{ 
                           ...getSwatchStyle(isActive, settings, styleId), 
-                          padding: isButton ? '8px 16px' : (isPill ? '6px 12px' : `${settings.basic.padding}px`),
-                          minWidth: isSlide ? '70px' : (isPill ? 'auto' : `${settings.basic.swatchSize}px`),
-                          minHeight: isSlide ? '120px' : (isPill ? 'auto' : `${settings.basic.swatchSize}px`),
+                          padding: isButton ? '8px 16px' : (isPillSwatch ? '6px 12px' : `${settings.basic.padding}px`),
+                          minWidth: isSlide ? '70px' : (isPillSwatch ? 'auto' : `${settings.basic.swatchSize}px`),
+                          minHeight: isSlide ? '120px' : (isPillSwatch ? 'auto' : `${settings.basic.swatchSize}px`),
                       }}>
                           {isActive && renderBadge(isActive, settings)}
                           {!isButton && renderSwatchInner()}
