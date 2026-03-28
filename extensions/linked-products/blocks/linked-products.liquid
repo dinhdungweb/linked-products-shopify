@@ -4,8 +4,9 @@
 {%- endcomment -%}
 
 {%- assign linked_handles_raw = product.metafields.linked_products.linked_list.value -%}
+{%- assign group_status = product.metafields.linked_products.status.value | default: 'active' -%}
 
-{%- if linked_handles_raw != blank and linked_handles_raw.size > 0 -%}
+{%- if linked_handles_raw != blank and linked_handles_raw.size > 0 and group_status == 'active' -%}
   
   {%- assign current_handle = product.handle -%}
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
