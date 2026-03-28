@@ -339,13 +339,13 @@ export default function GroupsPage() {
 
       {/* Main Content Card */}
       <Card padding="0">
-        <Box paddingInline="300" paddingBlock="100">
+        <Box paddingInline="300" paddingBlock="200">
           <InlineStack align="space-between" blockAlign="center">
             <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                {!isSearchVisible ? (
                   <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
                ) : (
-                  <div style={{ flex: 1, marginRight: '16px', paddingLeft: '12px' }}>
+                  <div style={{ flex: 1, marginRight: '16px' }}>
                     <TextField
                       prefix={<Icon source={SearchIcon} tone="subdued" />}
                       suffix={<Button icon={XIcon} variant="tertiary" onClick={() => { setIsSearchVisible(false); setSearchValue(""); }} />}
