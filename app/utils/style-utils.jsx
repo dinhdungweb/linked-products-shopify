@@ -254,7 +254,6 @@ export const PreviewRenderer = ({ styleId, settings }) => {
                       <div style={{ 
                           ...getSwatchStyle(isActive, settings, styleId), 
                           padding: isButton ? '8px 16px' : (isPillSwatch ? '6px 12px' : `${settings.basic.padding}px`),
-                          minWidth: (isPillSwatch ? 'auto' : `${size}px`),
                       }}>
                           {isActive && renderBadge(isActive, settings)}
                           {!isButton && renderSwatchInner()}
