@@ -112,7 +112,7 @@ export const renderPreviewContent = (styleId, settings) => {
   const isButton = styleId.includes('button');
   const isDropdown = styleId.includes('dropdown');
   const isColor = styleId.includes('color');
-  const isPill = styleId.includes('pill');
+  const isPillSwatch = styleId === 'pill_swatch';
 
   if (isDropdown) {
     const activeProduct = PREVIEW_PRODUCTS[1];
@@ -156,6 +156,7 @@ export const renderPreviewContent = (styleId, settings) => {
           {PREVIEW_PRODUCTS.map((p, i) => {
               const isActive = i === 1;
               const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
+              const isTwoColor = p.style === 'two';
               
               const renderSwatchInner = () => {
                 const isTwoColor = p.style === 'two';
@@ -174,7 +175,7 @@ export const renderPreviewContent = (styleId, settings) => {
                     );
                 }
 
-                if (isPill) {
+                if (isPillSwatch) {
                     return (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: p.colorHex }} />
@@ -208,9 +209,9 @@ export const renderPreviewContent = (styleId, settings) => {
                       }}>
                           {isActive && renderBadge(isActive, settings)}
                           {!isButton && renderSwatchInner()}
-                          {(settings.label.show || isButton || isSlide) && !isPill && (
+                          {(settings.label.show || isButton || isSlide) && !isPillSwatch && (
                               <div style={{ marginTop: isButton ? 0 : '8px', textAlign: 'center' }}>
-                                  <Text variant="bodySm" fontWeight={isActive ? 'bold' : 'regular'}>{isButton ? p.name.split(' ')[0] : p.name}</Text>
+                                  <Text variant="bodySm" fontWeight={isActive ? 'bold' : 'regular'}>{isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}</Text>
                                   {isSlide && <Text variant="bodyXs" tone="subdued">{p.price}</Text>}
                               </div>
                           )}
