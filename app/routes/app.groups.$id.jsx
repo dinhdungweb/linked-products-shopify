@@ -210,7 +210,7 @@ const renderPreview = (styleId) => {
         <InlineStack gap="200" wrap={false}>
             {['Beige', 'Purple', 'Orange', 'Green', 'Yellow', 'Black'].map((name, i) => (
                 <div key={i} style={{ padding: '8px', border: i === 1 ? '1px solid #000' : '1px solid #ccc', backgroundColor: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                    <div style={{ width: styleId === 'image_swatch_card' ? '40px' : '32px', height: styleId === 'image_swatch_card' ? '40px' : '32px', borderRadius: getBorderRadius(styleId), overflow: 'hidden', backgroundColor: PREVIEW_COLORS[i], border: '1px solid #ddd' }}>
+                    <div style={{ width: styleId === 'image_swatch_card' ? '40px' : '32px', height: styleId === 'image_swatch_card' ? '40px' : '32px', borderRadius: getBorderRadius(styleId), overflow: 'hidden', background: PREVIEW_COLORS[i], border: '1px solid #ddd' }}>
                         {styleId === 'image_swatch_card' && <img src={PREVIEW_IMAGES[i]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                     </div>
                     <div style={{ fontSize: '10px', fontWeight: i === 1 ? 'bold' : 'normal' }}>{name}</div>
@@ -338,7 +338,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         alignItems: 'center',
                         gap: '8px'
                     }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: p.customColor || '#ccc' }} />
+                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', ...getSwatchStyle(p) }} />
                         <span style={{ fontSize: isCard ? '10px' : '12px' }}>{p.optionValue}</span>
                     </div>
                 ))}
@@ -386,7 +386,7 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                             width: isCard ? '30px' : '40px', 
                             height: isCard ? '30px' : '40px', 
                             borderRadius: getBorderRadius(styleId), 
-                            backgroundColor: p.customColor || '#f4f4f4',
+                            ...getSwatchStyle(p),
                             overflow: 'hidden',
                             border: '1px solid #eee'
                         }}>
