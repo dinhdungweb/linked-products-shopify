@@ -29,9 +29,9 @@ import {
   DeleteIcon,
   ArrowLeftIcon,
   InfoIcon,
-  AlignmentLeftIcon,
-  AlignmentCenterIcon,
-  AlignmentRightIcon,
+  TextAlignLeftIcon,
+  TextAlignCenterIcon,
+  TextAlignRightIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 
@@ -441,9 +441,9 @@ export default function StyleCustomizerPage() {
                             <BlockStack gap="200">
                                 <Text variant="bodyMd">Align</Text>
                                 <ButtonGroup variant="segmented">
-                                    <Button pressed={settings.layout.align === "left"} onClick={() => handleUpdate('layout', 'align', "left")} icon={AlignmentLeftIcon} />
-                                    <Button pressed={settings.layout.align === "center"} onClick={() => handleUpdate('layout', 'align', "center")} icon={AlignmentCenterIcon} />
-                                    <Button pressed={settings.layout.align === "right"} onClick={() => handleUpdate('layout', 'align', "right")} icon={AlignmentRightIcon} />
+                                    <Button pressed={settings.layout.align === "left"} onClick={() => handleUpdate('layout', 'align', "left")} icon={TextAlignLeftIcon} />
+                                    <Button pressed={settings.layout.align === "center"} onClick={() => handleUpdate('layout', 'align', "center")} icon={TextAlignCenterIcon} />
+                                    <Button pressed={settings.layout.align === "right"} onClick={() => handleUpdate('layout', 'align', "right")} icon={TextAlignRightIcon} />
                                 </ButtonGroup>
                             </BlockStack>
                             <BlockStack gap="200">
