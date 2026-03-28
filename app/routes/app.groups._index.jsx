@@ -43,7 +43,7 @@ import {
   DuplicateIcon,
   MenuHorizontalIcon,
   RefreshIcon,
-  DiamondIcon,
+  CheckIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { syncGroupMetafields } from "../sync.server";
@@ -251,7 +251,7 @@ export default function GroupsPage() {
             { content: 'Edit group', icon: ViewIcon, url: `/app/groups/${groupId}` },
             { 
               content: status === "active" ? 'Set as draft' : 'Set as active', 
-              icon: status === "active" ? XIcon : DiamondIcon,
+              icon: status === "active" ? XIcon : CheckIcon,
               onAction: () => { handleToggleStatus(groupId, status); toggleActive(); }
             },
             { content: 'Delete', icon: DeleteIcon, destructive: true, onAction: () => { handleDeleteGroup(groupId); toggleActive(); } },
