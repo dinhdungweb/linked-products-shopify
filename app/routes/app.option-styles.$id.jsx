@@ -86,8 +86,8 @@ export const action = async ({ request, params }) => {
 
   try {
     if (action === "delete") {
-      await prisma.optionStyleSetting.delete({
-        where: { shop_styleId: { shop, styleId } },
+      await prisma.optionStyleSetting.deleteMany({
+        where: { shop, styleId },
       });
       return redirect("/app/option-styles");
     }
