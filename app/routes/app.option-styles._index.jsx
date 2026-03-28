@@ -195,6 +195,12 @@ export default function OptionStylesPage() {
               {renderStyleCard("pill_button", "Pill button")}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("image_swatch_card", "Image swatch card")}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+              {renderStyleCard("color_swatch_card", "Color swatch card")}
+            </Grid.Cell>
+            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
               {renderStyleCard("dropdown", "Dropdown")}
             </Grid.Cell>
             <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
