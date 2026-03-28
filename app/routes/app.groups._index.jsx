@@ -202,6 +202,14 @@ export default function GroupsPage() {
 
   const isLoading = navigation.state !== "idle";
 
+  useEffect(() => {
+    if (actionData?.success) {
+      shopify.toast.show(actionData.message || "Action successful");
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
+    }
+  }, [actionData, shopify]);
+
   const handleDeleteGroup = useCallback((groupId) => {
     if (confirm("Are you sure you want to delete this group?")) {
       const formData = new FormData();
