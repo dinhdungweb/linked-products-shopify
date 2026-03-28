@@ -50,7 +50,7 @@ const BASE_SETTINGS = {
 
 const DEFAULT_SETTINGS_BY_STYLE = {
   image_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 48, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4 } },
-  slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 100, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' } },
+  slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 70, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, outerWidth: 0 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' } },
   polaroid_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, padding: 4, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, shadow: { ...BASE_SETTINGS.shadow, show: true } },
   color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 50, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 50, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
   square_color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 6, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
@@ -289,14 +289,14 @@ export default function StyleCustomizerPage() {
                         <div style={{ 
                             ...getSwatchStyle(isActive), 
                             padding: isButton ? '8px 16px' : `${settings.basic.padding}px`,
-                            minWidth: isSlide ? '120px' : `${settings.basic.swatchSize}px`,
-                            minHeight: isSlide ? '160px' : `${settings.basic.swatchSize}px`,
+                            minWidth: isSlide ? '70px' : `${settings.basic.swatchSize}px`,
+                            minHeight: isSlide ? '120px' : `${settings.basic.swatchSize}px`,
                         }}>
                             {isActive && renderBadge()}
                             {!isButton && (
                                 <div style={{ 
-                                    width: isSlide ? '100px' : `${settings.basic.swatchSize}px`, 
-                                    height: isSlide ? '100px' : `${settings.basic.swatchSize}px`, 
+                                    width: isSlide ? '62px' : `${settings.basic.swatchSize}px`, 
+                                    height: isSlide ? '80px' : `${settings.basic.swatchSize}px`, 
                                     backgroundColor: '#eee',
                                     borderRadius: isRound ? '50%' : `${settings.border.radius}px`,
                                     border: '1px solid rgba(0,0,0,0.1)',

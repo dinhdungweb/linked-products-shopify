@@ -57,7 +57,7 @@ export default function OptionStylesPage() {
 
   const DEFAULT_SETTINGS_BY_STYLE = {
     image_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 48, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4 } },
-    slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 100, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' } },
+    slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 70, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, outerWidth: 0 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' } },
     polaroid_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, padding: 4, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, shadow: { ...BASE_SETTINGS.shadow, show: true } },
     color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 50, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 50, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
     square_color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 6, outerColor: "#dddddd" }, label: { ...BASE_SETTINGS.label, show: false } },
@@ -234,7 +234,7 @@ export default function OptionStylesPage() {
     </div>
   );
 
-  const renderStyleCard = (styleId, title, staticPreview) => (
+  const renderStyleCard = (styleId, title, previewNode) => (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'hidden' }}>
       <Box padding="300">
         <InlineStack align="space-between" blockAlign="center">
@@ -298,10 +298,11 @@ export default function OptionStylesPage() {
     const getOuterStyle = (isActive) => {
       const b = settings.border;
       if (b.outerWidth <= 0) return {};
+      const isRound = styleId.includes('round') || styleId.includes('pill') || styleId.includes('circle') || (styleId === 'color_swatch' && settings.border.radius > 20);
       return {
           padding: `${b.outerPadding}px`,
           border: `${b.outerWidth}px solid ${isActive ? b.outerActiveColor : b.outerColor}`,
-          borderRadius: `${b.outerRadius}px`,
+          borderRadius: isRound ? '50%' : `${b.outerRadius}px`,
           display: 'inline-flex',
           margin: '2px'
       };
@@ -351,10 +352,10 @@ export default function OptionStylesPage() {
                 return (
                     <div key={i} style={getOuterStyle(isActive)}>
                         <div style={getSwatchStyle(isActive)}>
-                            {renderBadge(isActive)}
+                            {isActive && renderBadge(isActive)}
                             {!isButton && (
                                 <div style={{ 
-                                    width: isSlide ? '80px' : `${settings.basic.swatchSize}px`, 
+                                    width: isSlide ? '62px' : `${settings.basic.swatchSize}px`, 
                                     height: isSlide ? '80px' : `${settings.basic.swatchSize}px`, 
                                     backgroundColor: '#eee', borderRadius: isRound ? '50%' : `${settings.border.radius}px`, overflow: 'hidden'
                                 }}>
