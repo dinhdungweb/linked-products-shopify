@@ -644,11 +644,13 @@ export default function StyleCustomizerPage() {
                         )}
                         
                         <div style={{ 
-                            padding: '16px 0', 
+                            padding: '24px 0', 
                             width: '100%', 
                             display: 'flex', 
                             justifyContent: 'center',
-                            minHeight: styleId.includes('dropdown') ? '350px' : 'auto' // Đảm bảo đủ không gian cho menu mở ra
+                            alignItems: 'flex-start', // Đưa dropdown lên phía trên
+                            overflow: 'visible',      // Cho phép menu mở tràn ra ngoài
+                            minHeight: '200px'        // Chiều cao vừa đủ để không quá trống trải
                         }}>
                             {renderPreview()}
                         </div>
