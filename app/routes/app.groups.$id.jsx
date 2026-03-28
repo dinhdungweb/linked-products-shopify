@@ -409,10 +409,14 @@ const renderSidebarPreview = (styleId, isCard = false, products = []) => {
                         <div style={{ 
                             fontSize: '10px', 
                             fontWeight: 'bold', 
-                            whiteSpace: 'normal', 
                             textAlign: 'center', 
                             width: '100%',
-                            lineHeight: '1.2'
+                            lineHeight: '1.2',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
                         }}>{p.optionValue}</div>
                     </div>
                 ))}
