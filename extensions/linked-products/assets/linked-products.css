@@ -41,7 +41,8 @@
 }
 
 .selected-value {
-  font-weight: 600;
+  display: var(--lp-show-selected, block);
+  font-weight: var(--lp-selected-weight, 600);
   font-size: var(--lp-block-font-size, 14px) !important;
 }
 
@@ -93,12 +94,22 @@
   cursor: pointer;
   background: #ffffff;
   overflow: hidden;
+  box-shadow: var(--lp-shadow, none);
 }
 
 .linked-option:hover {
   border-color: var(--lp-selected-border-color);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.linked-products-picker[style*="--lp-hover-effect: zoom"] .linked-option:hover {
+  transform: scale(1.1);
+  z-index: 10;
+}
+
+.linked-products-picker[style*="--lp-hover-effect: lift"] .linked-option:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  z-index: 10;
 }
 
 /* Disable hover effects */
@@ -169,18 +180,23 @@
 }
 
 .linked-option--slide .slide-title {
-  display: block;
+  display: -webkit-box;
+  -webkit-line-clamp: var(--lp-max-lines, 1);
+  line-clamp: var(--lp-max-lines, 1);
+  -webkit-box-orient: vertical;
   font-size: var(--lp-variant-font-size, 11px);
-  font-weight: 600;
-  white-space: nowrap;
+  font-weight: var(--lp-variant-weight, 600);
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .linked-option--slide .slide-price {
   display: block;
   font-size: var(--lp-price-font-size, 10px);
-  color: #666;
+  font-weight: var(--lp-price-weight, 400);
+  color: var(--lp-price-color, #666);
 }
 
 /* Polaroid Style */
@@ -277,14 +293,18 @@
 }
 
 .linked-option--card .card-label {
+  display: -webkit-box;
+  -webkit-line-clamp: var(--lp-max-lines, 1);
+  line-clamp: var(--lp-max-lines, 1);
+  -webkit-box-orient: vertical;
   font-size: var(--lp-variant-font-size, 11px);
-  font-weight: 600;
+  font-weight: var(--lp-variant-weight, 600);
   text-align: center;
   line-height: 1.2;
   width: 100%;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .linked-option--swatch .swatch-bg--color {

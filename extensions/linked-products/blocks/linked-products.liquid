@@ -52,10 +52,59 @@
     {%- assign lp_justify_content = 'flex-end' -%}
   {%- endif -%}
 
+  {%- assign lp_show_selected_variant = active_style_settings.label.showSelectedVariant | default: true -%}
+  {%- assign raw_selected_weight = active_style_settings.label.selectedVariantFontWeight | default: 'normal' -%}
+  {%- case raw_selected_weight -%}
+    {%- when 'lighter' -%}{%- assign lp_selected_weight = 200 -%}
+    {%- when 'normal' -%}{%- assign lp_selected_weight = 400 -%}
+    {%- when 'semibold' -%}{%- assign lp_selected_weight = 600 -%}
+    {%- when 'bold' -%}{%- assign lp_selected_weight = 700 -%}
+    {%- when 'bolder' -%}{%- assign lp_selected_weight = 900 -%}
+    {%- else -%}{%- assign lp_selected_weight = raw_selected_weight -%}
+  {%- endcase -%}
+  
+  {%- assign lp_hover_effect = active_style_settings.basic.hoverEffect | default: 'none' -%}
+
   {%- assign lp_variant_font_size = active_style_settings.variantName.fontSize | default: 12 -%}
+  {%- assign raw_variant_weight = active_style_settings.variantName.fontWeight | default: 'semibold' -%}
+  {%- case raw_variant_weight -%}
+    {%- when 'lighter' -%}{%- assign lp_variant_weight = 200 -%}
+    {%- when 'normal' -%}{%- assign lp_variant_weight = 400 -%}
+    {%- when 'semibold' -%}{%- assign lp_variant_weight = 600 -%}
+    {%- when 'bold' -%}{%- assign lp_variant_weight = 700 -%}
+    {%- when 'bolder' -%}{%- assign lp_variant_weight = 900 -%}
+    {%- else -%}{%- assign lp_variant_weight = raw_variant_weight -%}
+  {%- endcase -%}
+  {%- assign lp_max_lines = active_style_settings.variantName.maxLines | default: 1 -%}
+
   {%- assign lp_price_font_size = active_style_settings.price.fontSize | default: 10 -%}
+  {%- assign raw_price_weight = active_style_settings.price.fontWeight | default: 'normal' -%}
+  {%- case raw_price_weight -%}
+    {%- when 'lighter' -%}{%- assign lp_price_weight = 200 -%}
+    {%- when 'normal' -%}{%- assign lp_price_weight = 400 -%}
+    {%- when 'semibold' -%}{%- assign lp_price_weight = 600 -%}
+    {%- when 'bold' -%}{%- assign lp_price_weight = 700 -%}
+    {%- when 'bolder' -%}{%- assign lp_price_weight = 900 -%}
+    {%- else -%}{%- assign lp_price_weight = raw_price_weight -%}
+  {%- endcase -%}
+  {%- assign lp_price_color = active_style_settings.price.color | default: '#6d7175' -%}
+
   {%- assign lp_aspect_ratio = active_style_settings.basic.aspectRatio | replace: ':', '/' | default: '1/1' -%}
   {%- assign lp_image_position = active_style_settings.basic.imagePosition | default: 'center' -%}
+
+  {%- assign lp_shadow_show = active_style_settings.shadow.show | default: false -%}
+  {%- assign lp_shadow_color = active_style_settings.shadow.color | default: 'rgba(0,0,0,0.1)' -%}
+  {%- assign lp_shadow_blur = active_style_settings.shadow.blur | default: 4 -%}
+  {%- assign lp_shadow_spread = active_style_settings.shadow.spread | default: 0 -%}
+  {%- assign lp_shadow_x = active_style_settings.shadow.offsetX | default: 0 -%}
+  {%- assign lp_shadow_y = active_style_settings.shadow.offsetY | default: 2 -%}
+
+  {%- assign lp_badge_show = active_style_settings.badge.show | default: false -%}
+  {%- assign lp_badge_text = active_style_settings.badge.text | default: 'NEW' -%}
+  {%- assign lp_badge_pos = active_style_settings.badge.position | default: 'top-right' -%}
+  {%- assign lp_badge_size = active_style_settings.badge.fontSize | default: 10 -%}
+  {%- assign lp_badge_color = active_style_settings.badge.color | default: '#ffffff' -%}
+  {%- assign lp_badge_bg = active_style_settings.badge.bgColor | default: '#000000' -%}
 
   {%- assign lp_is_slide = false -%}
   {%- if active_selector_style contains 'slide' -%}
@@ -79,9 +128,24 @@
     --lp-label-size: {{ lp_label_font_size }}px;
     --lp-label-weight: {{ lp_label_font_weight }};
     --lp-variant-font-size: {{ lp_variant_font_size }}px;
+    --lp-variant-weight: {{ lp_variant_weight }};
+    --lp-max-lines: {{ lp_max_lines }};
     --lp-price-font-size: {{ lp_price_font_size }}px;
+    --lp-price-weight: {{ lp_price_weight }};
+    --lp-price-color: {{ lp_price_color }};
     --lp-aspect-ratio: {{ lp_aspect_ratio }};
     --lp-image-position: {{ lp_image_position }};
+    --lp-hover-effect: {{ lp_hover_effect }};
+    --lp-selected-weight: {{ lp_selected_weight }};
+    {% if lp_show_selected_variant %}-show-selected: block{% else %}-show-selected: none{% endif %};
+    {% if lp_shadow_show %}
+    --lp-shadow: {{ lp_shadow_x }}px {{ lp_shadow_y }}px {{ lp_shadow_blur }}px {{ lp_shadow_spread }}px {{ lp_shadow_color }};
+    {% else %}
+    --lp-shadow: none;
+    {% endif %}
+    --lp-badge-size: {{ lp_badge_size }}px;
+    --lp-badge-color: {{ lp_badge_color }};
+    --lp-badge-bg: {{ lp_badge_bg }};
   ">
     <div class="variant-picker">
       <fieldset class="variant-picker__option" style="text-align: {{ lp_layout_align }};">
