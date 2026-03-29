@@ -269,7 +269,7 @@
     <span class="dropdown-option-placeholder">Use block settings for dropdown</span>
 
   {%- else -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size); height: var(--lp-swatch-size);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--block {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{% if is_unavailable %}{{ value }} (Sold out){% else %}{{ value }}{% endif %}">
