@@ -227,11 +227,11 @@
 }
 
 .linked-option--slide .slide-info {
-  padding: var(--lp-swatch-padding, 8px);
-  min-height: 2.4em; /* Ensure some height even with short text */
+  padding: 4px 6px; /* Fixed small padding per user request */
+  min-height: 2.2em;
   text-align: center;
   width: 100%;
-  border-top: 1px solid #f0f0f0; /* Separator like Preview */
+  border-top: 1px solid #f0f0f0;
   display: flex;
   flex-direction: column;
   justify-content: center;

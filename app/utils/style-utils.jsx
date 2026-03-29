@@ -342,8 +342,8 @@ export const renderBadge = (isActive, settings) => {
                           {!isButton && renderSwatchInner()}
                           {(settings.variantName?.show || isButton) && !isPillSwatch && (
                               <div style={{ 
-                                  marginTop: isButton ? 0 : '8px', 
-                                  paddingBottom: isButton ? 0 : '8px',
+                                  marginTop: isButton ? 0 : '4px', 
+                                  paddingBottom: isButton ? 0 : '4px',
                                   textAlign: 'center',
                                   width: '100%',
                                   maxWidth: '100%',
