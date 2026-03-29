@@ -73,13 +73,18 @@ const STYLE_OPTIONS = [
     { id: 'pill_button', label: 'Pill button', type: 'Button', category: 'Button & Label' },
     { id: 'dropdown', label: 'Dropdown', type: 'Dropdown', category: 'Dropdown' },
     { id: 'image_dropdown', label: 'Image swatch in dropdown', type: 'Dropdown', category: 'Dropdown' },
+    { id: 'button_on_card', label: 'Button (Collection)', type: 'Button', category: 'Product Card' },
+    { id: 'color_swatch_on_card', label: 'Color Swatch (Collection)', type: 'Color swatch', category: 'Product Card' },
+    { id: 'image_swatch_on_card', label: 'Image Swatch (Collection)', type: 'Image swatch', category: 'Product Card' },
+    { id: 'dropdown_on_card', label: 'Dropdown (Collection)', type: 'Dropdown', category: 'Product Card' },
 ];
 
 const STYLE_CATEGORIES = [
     "Image Swatch",
     "Color swatch",
     "Button & Label",
-    "Dropdown"
+    "Dropdown",
+    "Product Card"
 ];
 
 const PREVIEW_IMAGES = [
@@ -639,7 +644,7 @@ export async function loader({ request, params }) {
                 name: "",
                 optionName: "Color",
                 selectorStyle: appSettings.defaultProductPageStyle || "image_swatch",
-                cardSelectorStyle: appSettings.defaultProductCardStyle || "image_swatch_card",
+                cardSelectorStyle: appSettings.defaultProductCardStyle || "image_swatch_on_card",
                 status: "active",
                 products: [],
             },
@@ -734,7 +739,7 @@ export async function action({ request, params }) {
                     name: "Untitled Group",
                     optionName: "Color",
                     selectorStyle: appSettings?.defaultProductPageStyle || "image_swatch",
-                    cardSelectorStyle: appSettings?.defaultProductCardStyle || "image_swatch_card",
+                    cardSelectorStyle: appSettings?.defaultProductCardStyle || "image_swatch_on_card",
                     status: "active",
                 }
             });
@@ -1070,7 +1075,7 @@ export default function GroupDetail() {
     const [localGroupName, setLocalGroupName] = useState(group.name || "");
     const [localOptionName, setLocalOptionName] = useState(group.optionName || "Color");
     const [localSelectorStyle, setLocalSelectorStyle] = useState(group.selectorStyle || "image_swatch");
-    const [localCardSelectorStyle, setLocalCardSelectorStyle] = useState(group.cardSelectorStyle || "image_swatch_card");
+    const [localCardSelectorStyle, setLocalCardSelectorStyle] = useState(group.cardSelectorStyle || "image_swatch_on_card");
     const [localInventoryBehavior, setLocalInventoryBehavior] = useState(group.inventoryBehavior || "show");
     const [localStatus, setLocalStatus] = useState(group.status || "active");
     const [localProducts, setLocalProducts] = useState(group.products || []);

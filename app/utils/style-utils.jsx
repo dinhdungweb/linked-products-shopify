@@ -47,7 +47,30 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
   button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, label: { ...BASE_SETTINGS.label, show: false } },
   pill_button: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, padding: 8, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, label: { ...BASE_SETTINGS.label, show: false } },
   dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
-  image_dropdown: { ...BASE_SETTINGS, layout: { ...BASE_SETTINGS.layout, type: 'dropdown' } },
+  image_dropdown: {
+    ...BASE_SETTINGS,
+    swatch: { ...BASE_SETTINGS.swatch, size: 24, borderRadius: 4 },
+    label: { ...BASE_SETTINGS.label, show: true, fontSize: 14 }
+  },
+  button_on_card: {
+    ...BASE_SETTINGS,
+    swatch: { ...BASE_SETTINGS.swatch, size: 0, borderRadius: 0 },
+    label: { ...BASE_SETTINGS.label, show: true, fontSize: 12, border: true }
+  },
+  color_swatch_on_card: {
+    ...BASE_SETTINGS,
+    swatch: { ...BASE_SETTINGS.swatch, size: 24, borderRadius: 12 },
+    label: { ...BASE_SETTINGS.label, show: false }
+  },
+  image_swatch_on_card: {
+    ...BASE_SETTINGS,
+    swatch: { ...BASE_SETTINGS.swatch, size: 24, borderRadius: 12 },
+    label: { ...BASE_SETTINGS.label, show: false }
+  },
+  dropdown_on_card: {
+    ...BASE_SETTINGS,
+    label: { ...BASE_SETTINGS.label, show: true, fontSize: 13, border: true }
+  },
   image_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, gap: 8, padding: 8 }, variantName: { ...BASE_SETTINGS.variantName, show: true, fontSize: 10 } },
   color_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8, padding: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, variantName: { ...BASE_SETTINGS.variantName, show: true, fontSize: 10 } },
 };
@@ -133,9 +156,13 @@ export const renderBadge = (isActive, settings) => {
   const isDropdown = styleId.includes('dropdown');
   const isColor = styleId.includes('color');
   const isPillSwatch = styleId === 'pill_swatch';
+  const isCard = styleId.includes('_on_card');
+  const displayLimit = isCard ? 5 : 100;
+  const extraCount = displayProducts.length > displayLimit ? displayProducts.length - displayLimit : 0;
+  const itemsToRender = displayProducts.slice(0, displayLimit);
 
   if (isDropdown) {
-    const activeProduct = displayProducts[0] || PREVIEW_PRODUCTS[1]; // Giả lập biến thể đang chọn
+    const activeProduct = displayProducts[0] || PREVIEW_PRODUCTS[1];
     const isImageDropdown = styleId === 'image_dropdown';
     const borderRadius = `${settings.border.radius}px`;
     
@@ -208,7 +235,7 @@ export const renderBadge = (isActive, settings) => {
                 key={index} 
                 style={{ 
                     padding: '12px 14px', 
-                    borderBottom: index === PREVIEW_PRODUCTS.length - 1 ? 'none' : '1px solid #f1f1f1', 
+                    borderBottom: index === displayProducts.length - 1 ? 'none' : '1px solid #f1f1f1', 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'space-between',
