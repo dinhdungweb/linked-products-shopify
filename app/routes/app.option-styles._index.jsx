@@ -263,7 +263,7 @@ export default function OptionStylesPage() {
           borderRadius: '0 0 8px 8px'
         }}>
           <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'visible' }}>
-            <PreviewRenderer styleId={styleId} settings={settings} />
+            <PreviewRenderer styleId={styleId} settings={settings} appSettings={appSettings} />
           </div>
         </div>
         <Divider />

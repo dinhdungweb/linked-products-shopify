@@ -318,7 +318,8 @@ export async function loader({ request, params }) {
                 products: [],
             },
             shop: session.shop,
-            styleSettings: formattedSettings
+            styleSettings: formattedSettings,
+            appSettings
         });
     }
 
@@ -375,11 +376,12 @@ export async function loader({ request, params }) {
         });
     }
 
-    return { 
+    return json({ 
         group: { ...group, products: productDetails }, 
         shop: session.shop,
-        styleSettings: formattedSettings
-    };
+        styleSettings: formattedSettings,
+        appSettings
+    });
 }
 
 // Action - Add/remove products, sync metafields
@@ -603,7 +605,7 @@ const ImagePickerPopover = ({ imageUrl, onChange, productImages = [], radius = '
     );
 };
 export default function GroupDetail() {
-    const { group, shop, styleSettings } = useLoaderData();
+    const { group, shop, styleSettings, appSettings } = useLoaderData();
     const actionData = useActionData();
     const submit = useSubmit();
     const navigation = useNavigation();
@@ -817,7 +819,7 @@ export default function GroupDetail() {
                                 <Text variant="headingSm">Preview on product page</Text>
                                 <InlineStack gap="200" blockAlign="center"><Text variant="bodySm" tone="subdued">Style: {STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Text><div style={{ color: '#8c9196' }}>•</div><Button variant="plain" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button></InlineStack>
                                 <Divider />
-                                <BlockStack gap="200"><Text variant="bodySm" tone="subdued" fontWeight="semibold">{localOptionName}:</Text><PreviewRenderer styleId={localSelectorStyle} settings={styleSettings[localSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localSelectorStyle] || BASE_SETTINGS} products={localProducts} /></BlockStack>
+                                <BlockStack gap="200"><Text variant="bodySm" tone="subdued" fontWeight="semibold">{localOptionName}:</Text><PreviewRenderer styleId={localSelectorStyle} settings={styleSettings[localSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localSelectorStyle] || BASE_SETTINGS} products={localProducts} appSettings={appSettings} /></BlockStack>
                             </BlockStack>
                         </Card>
                         <Card>
@@ -865,6 +867,8 @@ export default function GroupDetail() {
                                                                 styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} 
                                                                 settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} 
                                                                 products={localProducts} 
+                                                                appSettings={appSettings}
+                                                                isCard={true}
                                                             />
                                                         </div>
                                                     </BlockStack>
@@ -874,6 +878,8 @@ export default function GroupDetail() {
                                                     styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} 
                                                     settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} 
                                                     products={localProducts} 
+                                                    appSettings={appSettings}
+                                                    isCard={true}
                                                 />
                                             )}
                                         </div>
