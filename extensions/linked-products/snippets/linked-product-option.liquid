@@ -213,9 +213,9 @@
       </a>
     </span>
 
-  {%- when 'button', 'pill_button' -%}
+  {%- when 'button', 'pill_button', 'button_card' -%}
     <a href="{{ url }}" 
-       class="linked-option linked-option--button {% if style == 'pill_button' %}is-pill{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+       class="linked-option linked-option--button {% if style == 'pill_button' or style == 'button_card' %}is-pill{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
        title="{{ value }}">
       {{ value }}
     </a>
@@ -263,7 +263,7 @@
       </a>
     </span>
 
-  {%- when 'dropdown', 'image_dropdown' -%}
+  {%- when 'dropdown', 'image_dropdown', 'dropdown_card' -%}
     <span class="dropdown-option-placeholder">Use block settings for dropdown</span>
 
   {%- else -%}

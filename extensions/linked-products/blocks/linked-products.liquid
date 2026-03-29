@@ -14,10 +14,19 @@
   {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
   
   {%- comment -%}Dynamic settings: prefer per-style customizations, fallback to hardcoded defaults (matches App BASE_SETTINGS){%- endcomment -%}
-  {%- assign meta_selector_style = product.metafields.linked_products.selector_style.value -%}
-  {%- assign meta_option_name = product.metafields.linked_products.option_name.value -%}
-  {%- assign active_selector_style = meta_selector_style | default: 'block' -%}
+  {%- assign active_selector_style = meta_selector_style | default: 'image_swatch' -%}
   {%- assign active_option_name = meta_option_name| default: 'Color' -%}
+
+  {%- comment -%}Auto-migrate legacy style ID{%- endcomment -%}
+  {%- if active_selector_style == 'image_swatch_on_card' -%}
+    {%- assign active_selector_style = 'image_swatch_card' -%}
+  {%- elsif active_selector_style == 'color_swatch_on_card' -%}
+    {%- assign active_selector_style = 'color_swatch_card' -%}
+  {%- elsif active_selector_style == 'button_on_card' -%}
+    {%- assign active_selector_style = 'button_card' -%}
+  {%- elsif active_selector_style == 'dropdown_on_card' -%}
+    {%- assign active_selector_style = 'dropdown_card' -%}
+  {%- endif -%}
 
   {%- assign active_style_settings = style_customizations[active_selector_style] -%}
   
@@ -50,9 +59,9 @@
   {%- elsif active_selector_style == 'pill_button' -%}
     {%- assign def_padding = 8 -%}{%- assign def_radius = 20 -%}
   {%- elsif active_selector_style == 'image_swatch_card' -%}
-    {%- assign def_size = 40 -%}{%- assign def_padding = 8 -%}{%- assign def_max_lines = 2 -%}
+    {%- assign def_size = 24 -%}{%- assign def_padding = 0 -%}
   {%- elsif active_selector_style == 'color_swatch_card' -%}
-    {%- assign def_size = 32 -%}{%- assign def_padding = 8 -%}{%- assign def_radius = 20 -%}{%- assign def_max_lines = 2 -%}
+    {%- assign def_size = 24 -%}{%- assign def_padding = 0 -%}{%- assign def_radius = 12 -%}
   {%- endif -%}
 
   {%- assign lp_swatch_size = active_style_settings.basic.swatchSize | default: def_size -%}
@@ -76,6 +85,9 @@
   {%- assign lp_hide_active = active_style_settings.basic.hideActiveSwatch | default: false -%}
   {%- assign lp_active_first = active_style_settings.basic.activeSwatchFirst | default: false -%}
   {%- assign lp_max_swatches = active_style_settings.layout.maxSwatches | default: 100 -%}
+  {%- if active_selector_style contains '_card' -%}
+    {%- assign lp_max_swatches = active_style_settings.basic.limitDesktop | default: 5 -%}
+  {%- endif -%}
 
   {%- assign lp_show_label = true -%}
   {%- if active_style_settings.label.show == false -%}
@@ -207,13 +219,20 @@
     <div class="variant-picker">
       <fieldset class="variant-picker__option" style="text-align: {{ lp_layout_align }};">
         {%- if lp_show_label and active_option_name != blank -%}
-          <div class="variant-picker__option-info" style="margin-bottom: {{ lp_label_gap }}px; justify-content: {{ lp_justify_content }};">
-            <div class="h-stack gap-2" style="flex-direction: {% if lp_label_layout == 'stack' %}column{% else %}row{% endif %}; align-items: {% if lp_layout_align == 'center' %}center{% elsif lp_layout_align == 'right' %}flex-end{% else %}flex-start{% endif %};">
-              {%- assign select_label = active_option_name -%}
-              <legend class="text-subdued" style="font-size: {{ lp_label_font_size }}px; font-weight: {{ lp_label_font_weight }};">{{ select_label }}:</legend>
-              <span class="selected-value" style="font-size: {{ lp_label_font_size }}px;">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
+          {%- assign final_show_label = lp_show_label -%}
+          {%- if active_selector_style contains '_card' and app_settings.cardShowLabel == false -%}
+             {%- assign final_show_label = false -%}
+          {%- endif -%}
+
+          {%- if final_show_label -%}
+            <div class="variant-picker__option-info" style="margin-bottom: {{ lp_label_gap }}px; justify-content: {{ lp_justify_content }};">
+                <div class="h-stack gap-2" style="flex-direction: {% if lp_label_layout == 'stack' %}column{% else %}row{% endif %}; align-items: {% if lp_layout_align == 'center' %}center{% elsif lp_layout_align == 'right' %}flex-end{% else %}flex-start{% endif %};">
+                {%- assign select_label = active_option_name -%}
+                <legend class="text-subdued" style="font-size: {{ lp_label_font_size }}px; font-weight: {{ lp_label_font_weight }};">{{ select_label }}:</legend>
+                <span class="selected-value" style="font-size: {{ lp_label_font_size }}px;">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
+                </div>
             </div>
-          </div>
+          {%- endif -%}
         {%- endif -%}
 
         {%- if active_selector_style contains 'dropdown' -%}
@@ -259,6 +278,12 @@
                   }
               });
           </script>
+        {%- elsif active_selector_style contains '_card' and app_settings.cardDisplayMode == 'count' -%}
+          <div class="lp-count-only" style="padding: 4px 0; border-bottom: 1px solid #eee;">
+             <span style="font-size: 13px; color: #666;">
+                {{ linked_handles_raw.size }} options
+             </span>
+          </div>
         {%- else -%}
           <div class="variant-picker__option-values {% unless lp_is_slide %}wrap{% endunless %} {% if lp_is_slide %}is-slide{% endif %}" style="gap: var(--lp-items-gap); justify-content: var(--lp-justify);">
             {%- assign rendered_count = 0 -%}
@@ -335,6 +360,18 @@
                 {%- endif -%}
               {%- endif -%}
             {%- endfor -%}
+
+            {%- assign total_items = linked_handles_raw.size -%}
+            {%- if lp_hide_active -%}
+               {%- assign total_items = total_items | minus: 1 -%}
+            {%- endif -%}
+
+            {%- if total_items > rendered_count -%}
+                {%- assign remaining = total_items | minus: rendered_count -%}
+                <span class="lp-more-count" style="font-size: 11px; font-weight: 600; color: #666; margin-left: 4px; display: flex; align-items: center;">
+                    +{{ remaining }}
+                </span>
+            {%- endif -%}
           </div>
         {%- endif -%}
       </fieldset>

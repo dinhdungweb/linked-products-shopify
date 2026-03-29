@@ -1,9 +1,7 @@
 {%- comment -%}
   Collection Swatches - Show linked product swatches on collection pages
   This block renders mini swatches below each product card in collection view.
-  
-  It reads the linked_products metafield and renders small color/image indicators
-  so customers can see available variants from the collection page itself.
+  It is now synchronized with the App Admin settings.
 {%- endcomment -%}
 
 {%- assign linked_handles_raw = product.metafields.linked_products.linked_list.value -%}
@@ -12,195 +10,125 @@
 {%- if linked_handles_raw != blank and linked_handles_raw.size > 1 and group_status == 'active' -%}
   {%- assign current_handle = product.handle -%}
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
+  {%- assign app_settings = shop.metafields.linked_products.settings.value -%}
+  {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
+
+  {%- comment -%}Determine which style to use for the card{%- endcomment -%}
+  {%- assign card_style = product.metafields.linked_products.card_selector_style.value | default: app_settings.defaultCardStyle | default: 'image_swatch_card' -%}
   
-  <div class="collection-swatches" style="
-    --cs-size: {{ block.settings.swatch_size }}px;
-    --cs-gap: {{ block.settings.gap }}px;
-    --cs-border-radius: {{ block.settings.border_radius }}px;
-    --cs-border-color: {{ block.settings.border_color }};
-    --cs-selected-border-color: {{ block.settings.selected_border_color }};
-  ">
-    <div class="collection-swatches__list">
-      {%- assign count = 0 -%}
-      {%- assign max_visible = block.settings.max_visible | default: 5 -%}
-      
-      {%- for item in linked_handles_raw -%}
-        {%- assign item_handle = item.handle -%}
-        {%- assign is_current = false -%}
-        {%- if item_handle == current_handle -%}
-          {%- assign is_current = true -%}
-        {%- endif -%}
-        
-        {%- unless is_current -%}
-          {%- assign linked_prod = all_products[item_handle] -%}
-          {%- if linked_prod != blank and linked_prod != empty -%}
-            {%- if inventory_behavior == 'hide' and linked_prod.available == false -%}
-              {%- continue -%}
+  {%- comment -%}Auto-migrate legacy style ID{%- endcomment -%}
+  {%- if card_style == 'image_swatch_on_card' -%}
+    {%- assign card_style = 'image_swatch_card' -%}
+  {%- elsif card_style == 'color_swatch_on_card' -%}
+    {%- assign card_style = 'color_swatch_card' -%}
+  {%- elsif card_style == 'button_on_card' -%}
+    {%- assign card_style = 'button_card' -%}
+  {%- elsif card_style == 'dropdown_on_card' -%}
+    {%- assign card_style = 'dropdown_card' -%}
+  {%- endif -%}
+
+  {%- assign active_style_settings = style_customizations[card_style] -%}
+
+  {%- comment -%}Style-specific Defaults (Sync with DEFAULT_SETTINGS_BY_STYLE in app/utils/style-utils.jsx){%- endcomment -%}
+  {%- assign def_size = 24 -%}{%- assign def_gap = 4 -%}{%- assign def_radius = 50 -%}{%- assign def_padding = 0 -%}
+  {%- if card_style == 'color_swatch_card' -%}
+    {%- assign def_radius = 12 -%}
+  {%- endif -%}
+
+  {%- assign lp_swatch_size = active_style_settings.basic.swatchSize | default: def_size -%}
+  {%- assign lp_items_gap = active_style_settings.basic.gap | default: def_gap -%}
+  {%- assign lp_padding = active_style_settings.basic.padding | default: def_padding -%}
+  {%- assign lp_border_radius = active_style_settings.border.radius | default: def_radius -%}
+  {%- assign lp_max_swatches = active_style_settings.basic.limitDesktop | default: 5 -%}
+  {%- assign lp_two_color_style = active_style_settings.basic.twoColorStyle | default: 'LT_RB' -%}
+
+  {%- assign lp_border_width = active_style_settings.border.width | default: 1 -%}
+  {%- assign lp_border_color = active_style_settings.border.color | default: '#dbdfe2' -%}
+  {%- assign lp_selected_border_color = active_style_settings.border.activeColor | default: '#000000' -%}
+  {%- assign lp_hover_border_color = active_style_settings.border.hoverColor | default: lp_border_color -%}
+
+  {%- assign lp_aspect_ratio = active_style_settings.basic.aspectRatio | replace: ':', '/' | default: '1/1' -%}
+  {%- assign lp_image_position = active_style_settings.basic.imagePosition | default: 'center' -%}
+  {%- assign lp_hover_effect = active_style_settings.basic.hoverEffect | default: 'none' -%}
+
+  {{ 'linked-products.css' | asset_url | stylesheet_tag }}
+
+  <div class="collection-swatches linked-products-picker" style="
+    --lp-swatch-size: {{ lp_swatch_size }}px;
+    --lp-items-gap: {{ lp_items_gap }}px;
+    --lp-swatch-padding: {{ lp_padding }}px;
+    --lp-border-radius: {{ lp_border_radius }}{% if card_style contains 'swatch' %}%{% else %}px{% endif %};
+    --lp-border-color: {{ lp_border_color }};
+    --lp-selected-border-color: {{ lp_selected_border_color }};
+    --lp-hover-border-color: {{ lp_hover_border_color }};
+    --lp-border-width: {{ lp_border_width }}px;
+    --lp-aspect-ratio: {{ lp_aspect_ratio }};
+    --lp-image-position: {{ lp_image_position }};
+    --lp-hover-effect: {{ lp_hover_effect }};
+  "
+  data-hover-effect="{{ lp_hover_effect }}"
+  >
+    {%- if app_settings.cardDisplayMode == 'count' -%}
+        <div class="lp-count-only" style="margin-top: 4px;">
+            <span style="font-size: 12px; color: #666; font-weight: 500;">
+                {{ linked_handles_raw.size }} options
+            </span>
+        </div>
+    {%- else -%}
+        <div class="variant-picker__option-values wrap" style="gap: var(--lp-items-gap); margin-top: 6px;">
+            {%- assign rendered_count = 0 -%}
+            {%- for item in linked_handles_raw -%}
+                {%- if rendered_count >= lp_max_swatches %}{% break %}{% endif -%}
+                
+                {%- assign item_handle = item.handle -%}
+                {%- if item_handle == current_handle -%}
+                    {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
+                    {%- render 'linked-product-option', 
+                        product_obj: product,
+                        value: current_value, 
+                        selected: true,
+                        style: card_style,
+                        settings: active_style_settings,
+                        custom_image: item.image,
+                        custom_color: item.color,
+                        custom_color2: item.color2,
+                        item_style: item.style,
+                        two_color_style: lp_two_color_style
+                    -%}
+                    {%- assign rendered_count = rendered_count | plus: 1 -%}
+                {%- else -%}
+                    {%- assign linked_prod = all_products[item_handle] -%}
+                    {%- if linked_prod != blank and linked_prod != empty -%}
+                        {%- if inventory_behavior == 'hide' and linked_prod.available == false %}{% continue %}{% endif -%}
+                        {%- assign value = item.title | default: linked_prod.title -%}
+                        {%- render 'linked-product-option', 
+                            product_obj: linked_prod,
+                            value: value, 
+                            selected: false,
+                            style: card_style,
+                            settings: active_style_settings,
+                            custom_image: item.image,
+                            custom_color: item.color,
+                            custom_color2: item.color2,
+                            item_style: item.style,
+                            two_color_style: lp_two_color_style
+                        -%}
+                        {%- assign rendered_count = rendered_count | plus: 1 -%}
+                    {%- endif -%}
+                {%- endif -%}
+            {%- endfor -%}
+
+            {%- assign total_items = linked_handles_raw.size -%}
+            {%- if total_items > rendered_count -%}
+                {%- assign remaining = total_items | minus: rendered_count -%}
+                <span class="lp-more-count" style="font-size: 10px; font-weight: 600; color: #999; display: flex; align-items: center;">
+                    +{{ remaining }}
+                </span>
             {%- endif -%}
-          {%- else -%}
-            {%- continue -%}
-          {%- endif -%}
-        {%- endunless -%}
-        
-        {%- assign count = count | plus: 1 -%}
-        {%- if count > max_visible -%}
-          {%- break -%}
-        {%- endif -%}
-        
-        {%- comment -%}Determine swatch appearance{%- endcomment -%}
-        {%- assign swatch_color = item.color -%}
-        {%- assign swatch_color2 = item.color2 -%}
-        {%- assign swatch_style = item.style -%}
-        {%- assign swatch_image = item.image -%}
-        {%- assign swatch_value = item.title -%}
-        
-        {%- if is_current -%}
-          {%- assign swatch_url = product.url -%}
-          {%- assign swatch_product = product -%}
-        {%- else -%}
-          {%- assign swatch_url = linked_prod.url -%}
-          {%- assign swatch_product = linked_prod -%}
-        {%- endif -%}
-        
-        {%- comment -%}Auto-detect color if no custom color set{%- endcomment -%}
-        {%- assign auto_color = "" -%}
-        {%- if swatch_color == blank -%}
-          {%- assign color_name = swatch_value | downcase | strip -%}
-          {%- case color_name -%}
-            {%- when 'red' -%}{%- assign auto_color = "#dc2626" -%}
-            {%- when 'blue' -%}{%- assign auto_color = "#2563eb" -%}
-            {%- when 'green' -%}{%- assign auto_color = "#16a34a" -%}
-            {%- when 'yellow' -%}{%- assign auto_color = "#eab308" -%}
-            {%- when 'orange' -%}{%- assign auto_color = "#ea580c" -%}
-            {%- when 'purple' -%}{%- assign auto_color = "#9333ea" -%}
-            {%- when 'pink' -%}{%- assign auto_color = "#ec4899" -%}
-            {%- when 'black' -%}{%- assign auto_color = "#171717" -%}
-            {%- when 'white' -%}{%- assign auto_color = "#ffffff" -%}
-            {%- when 'gray', 'grey' -%}{%- assign auto_color = "#6b7280" -%}
-            {%- when 'brown' -%}{%- assign auto_color = "#92400e" -%}
-            {%- when 'beige' -%}{%- assign auto_color = "#d4b896" -%}
-            {%- when 'navy' -%}{%- assign auto_color = "#1e3a5f" -%}
-            {%- when 'teal' -%}{%- assign auto_color = "#0d9488" -%}
-            {%- when 'gold' -%}{%- assign auto_color = "#d4af37" -%}
-            {%- when 'silver' -%}{%- assign auto_color = "#c0c0c0" -%}
-            {%- when 'cream' -%}{%- assign auto_color = "#fffdd0" -%}
-            {%- when 'coral' -%}{%- assign auto_color = "#ff7f50" -%}
-          {%- endcase -%}
-        {%- endif -%}
-        
-        {%- assign final_color = swatch_color | default: auto_color -%}
-        
-        <a href="{{ swatch_url }}" 
-           class="cs-swatch{% if is_current %} cs-swatch--active{% endif %}{% if swatch_product.available == false %} cs-swatch--unavailable{% endif %}"
-           title="{{ swatch_value }}{% if swatch_product.available == false %} (Sold out){% endif %}"
-           aria-label="{{ swatch_value }}">
-          
-          {%- if final_color != blank or swatch_style == 'two' -%}
-            <span class="cs-swatch__color" style="{% if swatch_style == 'two' %}background: linear-gradient(to right, {{ swatch_color | default: '#ccc' }} 50%, {{ swatch_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ final_color }};{% endif %}"></span>
-          {%- elsif swatch_image != blank -%}
-            <img src="{{ swatch_image }}" alt="{{ swatch_value }}" width="24" height="24" loading="lazy" class="cs-swatch__img">
-          {%- elsif swatch_product.featured_image != blank -%}
-            <img src="{{ swatch_product.featured_image | image_url: width: 60 }}" alt="{{ swatch_value }}" width="24" height="24" loading="lazy" class="cs-swatch__img">
-          {%- else -%}
-            <span class="cs-swatch__text">{{ swatch_value | slice: 0 }}</span>
-          {%- endif -%}
-        </a>
-      {%- endfor -%}
-      
-      {%- comment -%}Show "+N" indicator if there are more{%- endcomment -%}
-      {%- assign total_items = linked_handles_raw.size -%}
-      {%- if total_items > max_visible -%}
-        {%- assign remaining = total_items | minus: max_visible -%}
-        <span class="cs-swatch cs-swatch--more" title="{{ remaining }} more options">
-          +{{ remaining }}
-        </span>
-      {%- endif -%}
-    </div>
+        </div>
+    {%- endif -%}
   </div>
 {%- endif -%}
-
-<!--
-  © 2026 Bluepeaks Studio. All rights reserved.
-  This file is part of the Variants Linked Products Shopify App.
--->
-
-<style>
-  .collection-swatches {
-    margin-top: 6px;
-    --cs-size: 22px;
-    --cs-gap: 4px;
-    --cs-border-radius: 50%;
-    --cs-border-color: #e5e5e5;
-    --cs-selected-border-color: #000;
-  }
-  
-  .collection-swatches__list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--cs-gap);
-    align-items: center;
-  }
-  
-  .cs-swatch {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--cs-size);
-    height: var(--cs-size);
-    border-radius: var(--cs-border-radius);
-    border: 1.5px solid var(--cs-border-color);
-    overflow: hidden;
-    text-decoration: none;
-    transition: border-color 0.15s ease, transform 0.15s ease;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  
-  .cs-swatch:hover {
-    border-color: var(--cs-selected-border-color);
-    transform: scale(1.15);
-  }
-  
-  .cs-swatch--active {
-    border-color: var(--cs-selected-border-color);
-    border-width: 2px;
-  }
-  
-  .cs-swatch--unavailable {
-    opacity: 0.4;
-  }
-  
-  .cs-swatch__color {
-    display: block;
-    width: 100%;
-    height: 100%;
-    border-radius: inherit;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-  }
-  
-  .cs-swatch__img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: inherit;
-  }
-  
-  .cs-swatch__text {
-    font-size: 10px;
-    font-weight: 600;
-    color: #666;
-    text-transform: uppercase;
-  }
-  
-  .cs-swatch--more {
-    font-size: 10px;
-    font-weight: 600;
-    color: #666;
-    background: #f5f5f5;
-    border-color: transparent;
-    pointer-events: none;
-  }
-</style>
 
 {% schema %}
 {
@@ -209,77 +137,8 @@
   "stylesheet": "linked-products.css",
   "settings": [
     {
-      "type": "header",
-      "content": "Swatch Appearance"
-    },
-    {
-      "type": "select",
-      "id": "swatch_style",
-      "label": "Default Swatch Style",
-      "options": [
-        { "value": "swatch", "label": "Color Swatch" },
-        { "value": "variant_image", "label": "Product Image" },
-        { "value": "block", "label": "Text" }
-      ],
-      "default": "swatch",
-      "info": "Fallback style when no metafield setting exists"
-    },
-    {
-      "type": "range",
-      "id": "swatch_size",
-      "label": "Swatch size",
-      "min": 16,
-      "max": 36,
-      "step": 2,
-      "default": 22,
-      "unit": "px"
-    },
-    {
-      "type": "range",
-      "id": "gap",
-      "label": "Gap between swatches",
-      "min": 2,
-      "max": 10,
-      "step": 1,
-      "default": 4,
-      "unit": "px"
-    },
-    {
-      "type": "range",
-      "id": "border_radius",
-      "label": "Border radius",
-      "min": 0,
-      "max": 50,
-      "step": 2,
-      "default": 50,
-      "unit": "%",
-      "info": "50% = circle, 0 = square"
-    },
-    {
-      "type": "range",
-      "id": "max_visible",
-      "label": "Max visible swatches",
-      "min": 3,
-      "max": 10,
-      "step": 1,
-      "default": 5,
-      "info": "Show '+N' indicator for remaining"
-    },
-    {
-      "type": "header",
-      "content": "Colors"
-    },
-    {
-      "type": "color",
-      "id": "border_color",
-      "label": "Border color",
-      "default": "#e5e5e5"
-    },
-    {
-      "type": "color",
-      "id": "selected_border_color",
-      "label": "Active border color",
-      "default": "#000000"
+      "type": "paragraph",
+      "content": "Settings are now managed in the [App Admin](/apps/variants-linked-products/app/settings). This block will automatically respect the 'Product Card' style customized in the app."
     }
   ]
 }
