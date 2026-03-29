@@ -155,8 +155,6 @@ export default function OptionStylesPage() {
     { id: "pill_button", title: "Pill button" },
     { id: "dropdown", title: "Dropdown" },
     { id: "image_dropdown", title: "Image swatch in dropdown" },
-    { id: "image_swatch_card", title: "Image swatch card" },
-    { id: "color_swatch_card", title: "Color swatch card" },
   ];
 
   const productCardStyles = [
@@ -164,6 +162,8 @@ export default function OptionStylesPage() {
     { id: "color_swatch_on_card", title: "Color Swatch" },
     { id: "image_swatch_on_card", title: "Image Swatch" },
     { id: "dropdown_on_card", title: "Dropdown" },
+    { id: "image_swatch_card", title: "Image swatch card" },
+    { id: "color_swatch_card", title: "Color swatch card" },
   ];
 
   const renderStyleCard = (styleId, title) => {

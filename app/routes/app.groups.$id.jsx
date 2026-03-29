@@ -63,11 +63,9 @@ const STYLE_OPTIONS = [
     { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch', category: 'Image Swatch' },
     { id: 'slide_swatch', label: 'Slide swatch (Mobile only)', type: 'Image Swatch', category: 'Image Swatch' },
     { id: 'polaroid_swatch', label: 'Polaroid swatch', type: 'Image Swatch', category: 'Image Swatch' },
-    { id: 'image_swatch_card', label: 'Image swatch card', type: 'Image Swatch', category: 'Image Swatch' },
     { id: 'color_swatch', label: 'Color swatch', type: 'Color swatch', category: 'Color swatch' },
     { id: 'square_color_swatch', label: 'Square color swatch', type: 'Color swatch', category: 'Color swatch' },
     { id: 'pill_swatch', label: 'Color swatch in pill button', type: 'Color swatch', category: 'Color swatch' },
-    { id: 'color_swatch_card', label: 'Color swatch card', type: 'Color swatch', category: 'Color swatch' },
     { id: 'button', label: 'Button', type: 'Button', category: 'Button & Label' },
     { id: 'pill_button', label: 'Pill button', type: 'Button', category: 'Button & Label' },
     { id: 'dropdown', label: 'Dropdown', type: 'Dropdown', category: 'Dropdown' },
@@ -76,6 +74,8 @@ const STYLE_OPTIONS = [
     { id: 'color_swatch_on_card', label: 'Color Swatch (Collection)', type: 'Color swatch', category: 'Product Card' },
     { id: 'image_swatch_on_card', label: 'Image Swatch (Collection)', type: 'Image swatch', category: 'Product Card' },
     { id: 'dropdown_on_card', label: 'Dropdown (Collection)', type: 'Dropdown', category: 'Product Card' },
+    { id: 'image_swatch_card', label: 'Image swatch card', type: 'Image Swatch', category: 'Product Card' },
+    { id: 'color_swatch_card', label: 'Color swatch card', type: 'Color swatch', category: 'Product Card' },
 ];
 
 const STYLE_CATEGORIES = [
