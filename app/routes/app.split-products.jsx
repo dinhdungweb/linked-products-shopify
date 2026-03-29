@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { json } from "@remix-run/node";
 import { useSubmit, useNavigation, useActionData } from "@remix-run/react";
 import {
@@ -11,12 +11,12 @@ import {
   InlineStack,
   Banner,
   Box,
-  ProgressBar,
   Icon,
   List,
   CalloutCard,
+  Divider,
 } from "@shopify/polaris";
-import { ProductIcon, MagicIcon, AlertDiamondIcon, CheckCircleIcon } from "@shopify/polaris-icons";
+import { ProductIcon, MagicIcon, AlertDiamondIcon } from "@shopify/polaris-icons";
 import { useAppBridge, TitleBar } from "@shopify/app-bridge-react";
 
 export async function action({ request }) {

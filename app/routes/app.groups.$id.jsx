@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from "react";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation, useActionData, useRevalidator } from "@remix-run/react";
 import {
     Page,
@@ -18,7 +18,6 @@ import {
     Divider,
     Select,
     Tooltip,
-    ProgressBar,
     Icon,
     Checkbox,
     Grid,
@@ -614,11 +613,9 @@ const LivePreview = ({ style, optionName, products, inventoryBehavior }) => {
 
 // Loader - Get group info and product list
 export async function loader({ request, params }) {
-    const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_PRO } = await import("../shopify.server");
+    const { authenticate } = await import("../shopify.server");
     const { default: prisma } = await import("../db.server");
-    const { getUsageInfo, confirmSubscription } = await import("../billing.server");
-
-    const { admin, session, billing } = await authenticate.admin(request);
+    const { admin, session } = await authenticate.admin(request);
     const shop = session.shop;
     const { id: groupId } = params;
 

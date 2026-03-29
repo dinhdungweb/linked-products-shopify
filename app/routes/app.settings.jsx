@@ -17,20 +17,14 @@ import {
   Grid,
   Icon,
   Banner,
-  Popover,
-  ColorPicker,
 } from "@shopify/polaris";
 import {
   SettingsIcon,
   CheckCircleIcon,
   ExternalIcon,
   LanguageIcon,
-  AlertCircleIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
-// Server-only imports moved to loader/action to fix build error
-
-// Server-only imports moved to loader/action to fix build error
 
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
@@ -339,3 +333,4 @@ export default function SettingsPage() {
     </Page>
   );
 }
+捉

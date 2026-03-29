@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { json, redirect } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation, useActionData, useSearchParams } from "@remix-run/react";
 import {
   Page,
@@ -20,17 +20,16 @@ import {
   Banner,
   Link,
   Tooltip,
+  Grid,
 } from "@shopify/polaris";
 import {
-  ArrowLeftIcon,
   InfoIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { 
   BASE_SETTINGS, 
   DEFAULT_SETTINGS_BY_STYLE, 
-  PreviewRenderer,
-  PREVIEW_PRODUCTS
+  PreviewRenderer
 } from "../utils/style-utils";
 
 export const loader = async ({ request }) => {

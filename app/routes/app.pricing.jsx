@@ -6,14 +6,13 @@ import {
     Card,
     BlockStack,
     Text,
-    Button,
-    InlineStack,
     Badge,
     Banner,
-    Box,
     Divider,
     ProgressBar,
     InlineGrid,
+    Button,
+    InlineStack,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
@@ -151,8 +150,8 @@ export const action = async ({ request }) => {
 };
 
 export default function PricingPage() {
-    const { usageInfo, plans } = useLoaderData();
-    const actionData = useActionData(); // Added useActionData
+    const { usageInfo } = useLoaderData();
+    const actionData = useActionData();
     const submit = useSubmit();
     const navigation = useNavigation();
     const [searchParams] = useSearchParams();

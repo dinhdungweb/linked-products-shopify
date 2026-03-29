@@ -16,8 +16,8 @@ import {
   Popover,
   ActionList,
 } from "@shopify/polaris";
-import { LinkIcon, QuestionCircleIcon, PlusIcon, StoreIcon, MenuHorizontalIcon, StarIcon, DuplicateIcon, DeleteIcon } from "@shopify/polaris-icons";
-import { TitleBar, useSubmit } from "@shopify/app-bridge-react";
+import { LinkIcon, QuestionCircleIcon, PlusIcon, StoreIcon, MenuHorizontalIcon, StarIcon, DuplicateIcon, DeleteIcon, InfoIcon } from "@shopify/polaris-icons";
+import { TitleBar } from "@shopify/app-bridge-react";
 import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit as useRemixSubmit } from "@remix-run/react";
 import { 
@@ -25,10 +25,10 @@ import {
   DEFAULT_SETTINGS_BY_STYLE, 
   PreviewRenderer
 } from "../utils/style-utils";
+import prisma from "../db.server";
+import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
-  const { authenticate } = await import("../shopify.server");
-  const { default: prisma } = await import("../db.server");
   const { session } = await authenticate.admin(request);
   const shop = session.shop;
 
@@ -64,8 +64,6 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { authenticate } = await import("../shopify.server");
-  const { default: prisma } = await import("../db.server");
   const { session } = await authenticate.admin(request);
   const shop = session.shop;
   const formData = await request.formData();
