@@ -256,9 +256,9 @@
                         <a href="{{ linked_prod.url }}" class="lp-dropdown__item {% if linked_prod.available == false %}is-sold-out{% endif %}">
                             {%- if active_selector_style == 'image_dropdown' -%}
                                 {%- if item.image != blank -%}
-                                    <img src="{{ item.image }}" alt="" class="lp-dropdown__img" width="32" height="32">
+                                    <img src="{{ item.image }}" alt="" class="lp-dropdown__img" style="width: var(--lp-badge-size); height: var(--lp-badge-size); object-fit: cover;">
                                 {%- else -%}
-                                    <img src="{{ linked_prod.featured_image | image_url: width: 60 }}" alt="" class="lp-dropdown__img" width="32" height="32">
+                                    <img src="{{ linked_prod.featured_image | image_url: width: 60 }}" alt="" class="lp-dropdown__img" style="width: var(--lp-badge-size); height: var(--lp-badge-size); object-fit: cover;">
                                 {%- endif -%}
                             {%- endif -%}
                             <span class="lp-dropdown__text">{{ value }}</span>
@@ -308,12 +308,17 @@
 
             {%- comment -%}2. Main Loop for others{%- endcomment -%}
             {%- for item in linked_handles_raw -%}
-              {%- if rendered_count >= lp_max_swatches %}{% break %}{% endif -%}
+              {%- if rendered_count >= lp_max_swatches -%}
+                {%- assign remaining = linked_handles_raw.size | minus: rendered_count -%}
+                {%- if remaining > 0 -%}
+                    <span class="lp-more-count">+{{ remaining }}</span>
+                {%- endif -%}
+                {%- break -%}
+              {%- endif -%}
               
               {%- assign item_handle = item.handle -%}
               
               {%- if item_handle == current_handle_str -%}
-                {%- comment -%}Already rendered or should be hidden{%- endcomment -%}
                 {%- if lp_active_first or lp_hide_active %}{% continue %}{% endif -%}
                 
                 {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
@@ -333,9 +338,7 @@
               {%- else -%}
                 {%- assign linked_prod = all_products[item_handle] -%}
                 {%- if linked_prod != blank and linked_prod != empty -%}
-                  {%- if inventory_behavior == 'hide' and linked_prod.available == false -%}
-                    {%- continue -%}
-                  {%- endif -%}
+                  {%- if inventory_behavior == 'hide' and linked_prod.available == false -%}{%- continue -%}{%- endif -%}
 
                   {%- assign value = item.title | default: linked_prod.title -%}
                   {%- render 'linked-product-option', 

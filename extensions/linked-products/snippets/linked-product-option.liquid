@@ -194,7 +194,13 @@
         {%- elsif final_image_url != blank -%}
           <span class="swatch-bg" style="background-image: url({{ final_image_url }});"></span>
         {%- else -%}
-          <span class="swatch-bg swatch-bg--text">{{ value | slice: 0 }}</span>
+          <span class="swatch-bg swatch-bg--text" style="font-size: calc(var(--lp-swatch-size) * 0.4); color: var(--lp-price-color, #999);">{{ value | slice: 0 }}</span>
+        {%- endif -%}
+
+        {%- if selected -%}
+          <span class="swatch-check">
+            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: calc(var(--lp-swatch-size) * 0.45); height: calc(var(--lp-swatch-size) * 0.45);"><path d="M15.8333 5L7.5 13.3333L4.16667 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
         {%- endif -%}
       </a>
     </span>
@@ -250,11 +256,17 @@
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
         <div class="card-media is-color" 
-             style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: #f4f4f4;{% endif %}">
+             style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: var(--lp-border-color, #f4f4f4);{% endif %}">
           {%- if has_color or final_image_url != blank -%}
             <span class="swatch-anchor"></span>
           {%- else -%}
-            <span style="font-size: 10px; color: #999;">{{ value | slice: 0, 1 }}</span>
+            <span style="font-size: var(--lp-price-font-size, 10px); color: var(--lp-price-color, #999);">{{ value | slice: 0, 1 }}</span>
+          {%- endif -%}
+
+          {%- if selected -%}
+            <span class="swatch-check">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: calc(var(--lp-swatch-size) * 0.45); height: calc(var(--lp-swatch-size) * 0.45);"><path d="M15.8333 5L7.5 13.3333L4.16667 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
           {%- endif -%}
         </div>
         {%- if settings.variantName.show != false -%}
