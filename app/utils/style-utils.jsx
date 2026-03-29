@@ -56,18 +56,6 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
     basic: { ...BASE_SETTINGS.basic, swatchSize: 0, padding: 8, limitDesktop: 5 },
     label: { ...BASE_SETTINGS.label, show: true, fontSize: 12, border: true }
   },
-  color_swatch_on_card: {
-    ...BASE_SETTINGS,
-    basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, limitDesktop: 5 },
-    border: { ...BASE_SETTINGS.border, radius: 12 },
-    label: { ...BASE_SETTINGS.label, show: false }
-  },
-  image_swatch_on_card: {
-    ...BASE_SETTINGS,
-    basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, limitDesktop: 5 },
-    border: { ...BASE_SETTINGS.border, radius: 12 },
-    label: { ...BASE_SETTINGS.label, show: false }
-  },
   dropdown_on_card: {
     ...BASE_SETTINGS,
     basic: { ...BASE_SETTINGS.basic, padding: 8, limitDesktop: 5 },
