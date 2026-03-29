@@ -227,10 +227,7 @@
 }
 
 .linked-option--slide .slide-info {
-  margin-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 6px;
-  padding-right: 6px;
+  padding: 4px 6px; /* Padding creates internal space from border-top */
   min-height: 2.2em;
   text-align: center;
   width: 100%;
