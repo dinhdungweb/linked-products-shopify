@@ -31,11 +31,12 @@
   {%- assign def_outer_padding = 0 -%}
   {%- assign def_outer_radius = 4 -%}
   {%- assign def_shadow_show = false -%}
+  {%- assign def_max_lines = 1 -%}
 
   {%- if active_selector_style == 'image_swatch' -%}
     {%- assign def_size = 48 -%}{%- assign def_radius = 100 -%}
   {%- elsif active_selector_style == 'slide_swatch' -%}
-    {%- assign def_size = 90 -%}{%- assign def_radius = 0 -%}
+    {%- assign def_size = 90 -%}{%- assign def_radius = 0 -%}{%- assign def_padding = 8 -%}{%- assign def_max_lines = 2 -%}
   {%- elsif active_selector_style == 'polaroid_swatch' -%}
     {%- assign def_size = 52 -%}{%- assign def_padding = 4 -%}{%- assign def_radius = 0 -%}{%- assign def_shadow_show = true -%}
   {%- elsif active_selector_style == 'color_swatch' -%}
@@ -49,9 +50,9 @@
   {%- elsif active_selector_style == 'pill_button' -%}
     {%- assign def_padding = 8 -%}{%- assign def_radius = 20 -%}
   {%- elsif active_selector_style == 'image_swatch_card' -%}
-    {%- assign def_size = 40 -%}{%- assign def_padding = 8 -%}
+    {%- assign def_size = 40 -%}{%- assign def_padding = 8 -%}{%- assign def_max_lines = 2 -%}
   {%- elsif active_selector_style == 'color_swatch_card' -%}
-    {%- assign def_size = 32 -%}{%- assign def_padding = 8 -%}{%- assign def_radius = 20 -%}
+    {%- assign def_size = 32 -%}{%- assign def_padding = 8 -%}{%- assign def_radius = 20 -%}{%- assign def_max_lines = 2 -%}
   {%- endif -%}
 
   {%- assign lp_swatch_size = active_style_settings.basic.swatchSize | default: def_size -%}
@@ -120,7 +121,7 @@
     {%- when 'bolder' -%}{%- assign lp_variant_weight = 900 -%}
     {%- else -%}{%- assign lp_variant_weight = raw_variant_weight -%}
   {%- endcase -%}
-  {%- assign lp_max_lines = active_style_settings.variantName.maxLines | default: 1 -%}
+  {%- assign lp_max_lines = active_style_settings.variantName.maxLines | default: def_max_lines -%}
 
   {%- assign lp_price_font_size = active_style_settings.price.fontSize | default: 10 -%}
   {%- assign raw_price_weight = active_style_settings.price.fontWeight | default: 'normal' -%}

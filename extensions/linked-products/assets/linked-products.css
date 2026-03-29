@@ -101,7 +101,6 @@
   border-radius: var(--lp-outer-radius, 4px);
   transition: all 0.2s ease;
   box-sizing: border-box;
-  line-height: 0;
 }
 
 .lp-outer-swatch.is-selected {
@@ -229,9 +228,14 @@
 
 .linked-option--slide .slide-info {
   padding: var(--lp-swatch-padding, 8px);
+  min-height: 2.4em; /* Ensure some height even with short text */
   text-align: center;
   width: 100%;
   border-top: 1px solid #f0f0f0; /* Separator like Preview */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
 }
 
 .linked-option--slide .slide-title {
