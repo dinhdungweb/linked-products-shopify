@@ -1145,7 +1145,7 @@ export default function GroupDetail() {
                                             label="" 
                                             labelHidden 
                                             checked={localCardSelectorStyle !== "hidden"} 
-                                            onChange={(v) => setLocalCardSelectorStyle(v ? "same" : "hidden")} 
+                                            onChange={(v) => setLocalCardSelectorStyle(v ? "image_swatch_on_card" : "hidden")} 
                                         />
                                     </div>
                                 </InlineStack>
