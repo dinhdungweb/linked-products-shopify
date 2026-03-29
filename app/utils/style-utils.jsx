@@ -93,8 +93,8 @@ export const getOuterStyle = (isActive, settings, styleId) => {
   const isButton = styleId.includes('button');
   const isPillSwatch = styleId === 'pill_swatch';
   
-  const padding = settings.basic.padding || 0;
-  const swatchSize = settings.basic.swatchSize;
+  const padding = settings.swatch?.padding ?? settings.basic.padding ?? 0;
+  const swatchSize = settings.swatch?.size ?? settings.basic.swatchSize;
   
   return {
       position: 'relative',
@@ -138,8 +138,41 @@ export const renderBadge = (isActive, settings) => {
   );
 };
 
-export const renderSlashEffect = (isUnavailable) => {
-  if (!isUnavailable) return null;
+export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => {
+  if (!isUnavailable || style === "none" || style === "hide") return null;
+
+  if (style === "gray") {
+    return (
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+        zIndex: 5,
+        borderRadius: 'inherit',
+        backdropFilter: 'grayscale(1)'
+      }} />
+    );
+  }
+
+  if (style === "overlay") {
+    return (
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0,0,0,0.1)',
+        zIndex: 5,
+        borderRadius: 'inherit'
+      }} />
+    );
+  }
+
+  // Default: cross_mark
   return (
     <div style={{
       position: 'absolute',
@@ -166,7 +199,7 @@ export const renderSlashEffect = (isUnavailable) => {
   );
 };
 
- export const PreviewRenderer = ({ styleId, settings, products }) => {
+ export const PreviewRenderer = ({ styleId, settings, products, appSettings }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   
   const displayProducts = (products || PREVIEW_PRODUCTS).map(p => ({
@@ -185,12 +218,28 @@ export const renderSlashEffect = (isUnavailable) => {
   const isColor = styleId.includes('color');
   const isPillSwatch = styleId === 'pill_swatch';
   const isCard = styleId.includes('_on_card');
-  const displayLimit = isCard ? 5 : 100;
-  const extraCount = displayProducts.length > displayLimit ? displayProducts.length - displayLimit : 0;
-  const itemsToRender = displayProducts.slice(0, displayLimit);
+  const displayLimit = isCard ? (parseInt(settings.basic?.limitDesktop) || 5) : 100;
   
-  // Force hide labels for card-style swatches as per requested mockup
-  const shouldShowName = (settings.variantName?.show || isButton) && !isPillSwatch && !(isCard && (isColor || styleId.includes('image_swatch')));
+  // Clean up products based on unavailableStyle === 'hide'
+  const finalDisplayProducts = displayProducts.filter(p => !(p.isUnavailable && settings.basic?.unavailableStyle === 'hide'));
+  
+  const extraCount = finalDisplayProducts.length > displayLimit ? finalDisplayProducts.length - displayLimit : 0;
+  const itemsToRender = finalDisplayProducts.slice(0, displayLimit);
+  
+  // Count only mode
+  if (isCard && appSettings?.cardDisplayMode === 'count') {
+    return (
+        <div style={{ padding: '4px 0', borderBottom: settings.border?.width ? 'none' : '1px solid #eee' }}>
+            <Text variant="bodySm" tone="subdued">
+                {finalDisplayProducts.length === 1 ? '1 option' : `${finalDisplayProducts.length} options`}
+            </Text>
+        </div>
+    );
+  }
+
+  // Force hide labels based on app-level cardShowLabel and style settings
+  const showLabel = isCard ? (appSettings?.cardShowLabel ?? false) : settings.variantName?.show;
+  const shouldShowName = (showLabel || isButton) && !isPillSwatch && !(isCard && (isColor || styleId.includes('image_swatch')));
 
   if (isDropdown) {
     const activeProduct = displayProducts[0] || PREVIEW_PRODUCTS[1];
@@ -309,10 +358,10 @@ export const renderSlashEffect = (isUnavailable) => {
   return (
       <div style={{ 
           ...containerStyle,
-          marginTop: `${settings.layout?.marginTop || 0}px`,
-          marginBottom: `${settings.layout?.marginBottom || 0}px`
+          marginTop: isCard ? 0 : `${settings.layout?.marginTop || 0}px`,
+          marginBottom: isCard ? 0 : `${settings.layout?.marginBottom || 0}px`
       }}>
-          {displayProducts.map((p, i) => {
+          {itemsToRender.map((p, i) => {
               const isActive = i === 1;
               const aspectRatio = settings.basic.aspectRatio || "1:1";
               const [ratioW, ratioH] = aspectRatio.split(':').map(Number);
@@ -402,7 +451,7 @@ export const renderSlashEffect = (isUnavailable) => {
                       }}>
                           {isActive && renderBadge(isActive, settings)}
                           {!isButton && renderSwatchInner()}
-                          {renderSlashEffect(p.isUnavailable)}
+                          {renderUnavailableEffect(p.isUnavailable, settings.basic?.unavailableStyle ?? "cross_mark")}
                           {shouldShowName && (
                               <div style={{ 
                                   marginTop: isButton ? 0 : '8px', 
@@ -441,6 +490,17 @@ export const renderSlashEffect = (isUnavailable) => {
                   </div>
               );
           })}
+                   {extraCount > 0 && (
+                       <div style={{ 
+                           ...getSwatchStyle(false, settings, styleId), 
+                           border: 'none', 
+                           width: 'auto', 
+                           minWidth: '24px',
+                           padding: '0 4px' 
+                       }}>
+                           <Text variant="bodyXs" fontWeight="bold" tone="subdued">+{extraCount}</Text>
+                       </div>
+                   )}
       </div>
   );
 };
