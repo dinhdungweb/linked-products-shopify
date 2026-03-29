@@ -231,8 +231,10 @@ export default function StyleCustomizerPage() {
             
             {/* Basic Settings */}
             <Box padding="0">
-                <div onClick={() => toggleSection('basic')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="headingSm">Basic settings</Text>
+                <div onClick={() => toggleSection('basic')} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <div style={{ flex: 1 }}>
+                        <Text variant="headingSm">Basic settings</Text>
+                    </div>
                     <Icon source={openSections.basic ? ChevronUpIcon : ChevronDownIcon} />
                 </div>
                 <Collapsible open={openSections.basic}>
@@ -326,8 +328,10 @@ export default function StyleCustomizerPage() {
 
             {/* Border Settings */}
             <Box padding="0">
-                <div onClick={() => toggleSection('border')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="headingSm">Border settings</Text>
+                <div onClick={() => toggleSection('border')} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <div style={{ flex: 1 }}>
+                        <Text variant="headingSm">Border settings</Text>
+                    </div>
                     <Icon source={openSections.border ? ChevronUpIcon : ChevronDownIcon} />
                 </div>
                 <Collapsible open={openSections.border}>
@@ -363,8 +367,10 @@ export default function StyleCustomizerPage() {
 
             {/* Label Settings */}
             <Box padding="0">
-                <div onClick={() => toggleSection('label')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="headingSm">Label settings</Text>
+                <div onClick={() => toggleSection('label')} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <div style={{ flex: 1 }}>
+                        <Text variant="headingSm">Label settings</Text>
+                    </div>
                     <Icon source={openSections.label ? ChevronUpIcon : ChevronDownIcon} />
                 </div>
                 <Collapsible open={openSections.label}>
@@ -405,8 +411,10 @@ export default function StyleCustomizerPage() {
             
             {/* Variant name settings */}
             <Box padding="0">
-                <div onClick={() => toggleSection('variantName')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="headingSm">Variant name settings</Text>
+                <div onClick={() => toggleSection('variantName')} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <div style={{ flex: 1 }}>
+                        <Text variant="headingSm">Variant name settings</Text>
+                    </div>
                     <Icon source={openSections.variantName ? ChevronUpIcon : ChevronDownIcon} />
                 </div>
                 <Collapsible open={openSections.variantName}>
@@ -435,8 +443,10 @@ export default function StyleCustomizerPage() {
 
             {/* Price settings */}
             <Box padding="0">
-                <div onClick={() => toggleSection('price')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="headingSm">Price settings</Text>
+                <div onClick={() => toggleSection('price')} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <div style={{ flex: 1 }}>
+                        <Text variant="headingSm">Price settings</Text>
+                    </div>
                     <Icon source={openSections.price ? ChevronUpIcon : ChevronDownIcon} />
                 </div>
                 <Collapsible open={openSections.price}>
@@ -476,8 +486,10 @@ export default function StyleCustomizerPage() {
 
             {/* Text settings */}
             <Box padding="0">
-                <div onClick={() => toggleSection('text')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="headingSm">Text settings</Text>
+                <div onClick={() => toggleSection('text')} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <div style={{ flex: 1 }}>
+                        <Text variant="headingSm">Text settings</Text>
+                    </div>
                     <Icon source={openSections.text ? ChevronUpIcon : ChevronDownIcon} />
                 </div>
                 <Collapsible open={openSections.text}>
@@ -500,8 +512,10 @@ export default function StyleCustomizerPage() {
 
             {/* Layout settings */}
             <Box padding="0">
-                <div onClick={() => toggleSection('layout')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="headingSm">Layout settings</Text>
+                <div onClick={() => toggleSection('layout')} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <div style={{ flex: 1 }}>
+                        <Text variant="headingSm">Layout settings</Text>
+                    </div>
                     <Icon source={openSections.layout ? ChevronUpIcon : ChevronDownIcon} />
                 </div>
                 <Collapsible open={openSections.layout}>
@@ -542,8 +556,10 @@ export default function StyleCustomizerPage() {
 
             {/* Badge settings */}
             <Box padding="0">
-                <div onClick={() => toggleSection('badge')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="headingSm">Badge settings</Text>
+                <div onClick={() => toggleSection('badge')} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <div style={{ flex: 1 }}>
+                        <Text variant="headingSm">Badge settings</Text>
+                    </div>
                     <Icon source={openSections.badge ? ChevronUpIcon : ChevronDownIcon} />
                 </div>
                 <Collapsible open={openSections.badge}>
@@ -578,8 +594,10 @@ export default function StyleCustomizerPage() {
 
             {/* Shadow settings */}
             <Box padding="0">
-                <div onClick={() => toggleSection('shadow')} style={{ padding: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text variant="headingSm">Shadow settings</Text>
+                <div onClick={() => toggleSection('shadow')} style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <div style={{ flex: 1 }}>
+                        <Text variant="headingSm">Shadow settings</Text>
+                    </div>
                     <Icon source={openSections.shadow ? ChevronUpIcon : ChevronDownIcon} />
                 </div>
                 <Collapsible open={openSections.shadow}>
