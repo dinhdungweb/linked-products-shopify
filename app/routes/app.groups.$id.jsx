@@ -632,7 +632,7 @@ export async function loader({ request, params }) {
                 id: null,
                 name: "",
                 optionName: "Color",
-                selectorStyle: "block",
+                selectorStyle: "image_swatch",
                 status: "active",
                 products: [],
             },
@@ -725,7 +725,7 @@ export async function action({ request, params }) {
                     shop: session.shop,
                     name: "Untitled Group",
                     optionName: "Color",
-                    selectorStyle: "block",
+                    selectorStyle: "image_swatch",
                     status: "active",
                 }
             });
@@ -1060,7 +1060,7 @@ export default function GroupDetail() {
     // Local state for all group settings (Classic Save Pattern)
     const [localGroupName, setLocalGroupName] = useState(group.name || "");
     const [localOptionName, setLocalOptionName] = useState(group.optionName || "Color");
-    const [localSelectorStyle, setLocalSelectorStyle] = useState(group.selectorStyle || "block");
+    const [localSelectorStyle, setLocalSelectorStyle] = useState(group.selectorStyle || "image_swatch");
     const [localCardSelectorStyle, setLocalCardSelectorStyle] = useState(group.cardSelectorStyle || "swatch");
     const [localInventoryBehavior, setLocalInventoryBehavior] = useState(group.inventoryBehavior || "show");
     const [localStatus, setLocalStatus] = useState(group.status || "active");
