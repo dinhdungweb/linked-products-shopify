@@ -34,16 +34,28 @@ export const loader = async ({ request }) => {
     where: { shop },
   });
 
+  const productGroups = await prisma.productGroup.findMany({
+    where: { shop },
+    select: { selectorStyle: true, cardSelectorStyle: true }
+  });
+
+  const usedStyles = new Set();
+  productGroups.forEach(pg => {
+    if (pg.selectorStyle) usedStyles.add(pg.selectorStyle);
+    if (pg.cardSelectorStyle) usedStyles.add(pg.cardSelectorStyle);
+  });
+
   return json({ 
     styleSettings: styleSettings.reduce((acc, curr) => {
       acc[curr.styleId] = curr.settings;
       return acc;
-    }, {})
+    }, {}),
+    usedStyles: Array.from(usedStyles)
   });
 };
 
 export default function OptionStylesPage() {
-  const { styleSettings } = useLoaderData();
+  const { styleSettings, usedStyles } = useLoaderData();
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState('all');
 
@@ -61,15 +73,35 @@ export default function OptionStylesPage() {
     { label: 'Not in use', value: 'not_in_use' },
   ];
 
+  const productPageStyles = [
+    { id: "image_swatch", title: "Image swatch" },
+    { id: "slide_swatch", title: "Slide swatch (Mobile only)" },
+    { id: "polaroid_swatch", title: "Polaroid swatch" },
+    { id: "color_swatch", title: "Color swatch" },
+    { id: "square_color_swatch", title: "Square color swatch" },
+    { id: "pill_swatch", title: "Color swatch in pill button" },
+    { id: "button", title: "Button" },
+    { id: "pill_button", title: "Pill button" },
+    { id: "dropdown", title: "Dropdown" },
+    { id: "image_dropdown", title: "Image swatch in dropdown" },
+  ];
+
+  const productCardStyles = [
+    { id: "image_swatch_card", title: "Image swatch card" },
+    { id: "color_swatch_card", title: "Color swatch card" },
+  ];
+
   const renderStyleCard = (styleId, title) => {
     const settings = styleSettings[styleId] || DEFAULT_SETTINGS_BY_STYLE[styleId] || BASE_SETTINGS;
+    const isInUse = usedStyles.includes(styleId);
+
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'visible', position: 'relative', zIndex: styleId.includes('dropdown') ? 20 : 1 }}>
         <Box padding="300">
           <InlineStack align="space-between" blockAlign="center">
             <InlineStack gap="200" blockAlign="center">
               <Text variant="headingSm" as="h3">{title}</Text>
-              <Badge tone="new">Not in use</Badge>
+              <Badge tone={isInUse ? "success" : "new"}>{isInUse ? "In use" : "Not in use"}</Badge>
             </InlineStack>
             <InlineStack gap="100" blockAlign="center">
               <Button icon={LinkIcon} size="micro" url={`/app/option-styles/${styleId}`}>Customize</Button>
@@ -170,42 +202,19 @@ export default function OptionStylesPage() {
           </InlineStack>
 
           <Grid>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("image_swatch", "Image swatch")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("slide_swatch", "Slide swatch (Mobile only)")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("polaroid_swatch", "Polaroid swatch")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("color_swatch", "Color swatch")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("square_color_swatch", "Square color swatch")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("pill_swatch", "Color swatch in pill button")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("button", "Button")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("pill_button", "Pill button")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("image_swatch_card", "Image swatch card")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("color_swatch_card", "Color swatch card")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("dropdown", "Dropdown")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
-              {renderStyleCard("image_dropdown", "Image swatch in dropdown")}
-            </Grid.Cell>
+            {(selectedTab === 0 ? productPageStyles : productCardStyles)
+              .filter(style => {
+                const isInUse = usedStyles.includes(style.id);
+                if (selectedFilter === 'in_use') return isInUse;
+                if (selectedFilter === 'not_in_use') return !isInUse;
+                return true;
+              })
+              .map(style => (
+                <Grid.Cell key={style.id} columnSpan={{ xs: 6, sm: 6, md: 3, lg: 6, xl: 6 }}>
+                  {renderStyleCard(style.id, style.title)}
+                </Grid.Cell>
+              ))
+            }
           </Grid>
         </BlockStack>
 
