@@ -227,7 +227,7 @@
 }
 
 .linked-option--slide .slide-info {
-  padding: 4px 6px; /* Padding creates internal space from border-top */
+  padding: 6px; /* Increased vertical padding per user request */
   min-height: 2.2em;
   text-align: center;
   width: 100%;
