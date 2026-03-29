@@ -415,13 +415,13 @@ export default function ProductCardCustomizer() {
                                 <PreviewRenderer 
                                     styleId={activeStyleId} 
                                     settings={activeSettings} 
-                                    appSettings={appSettings}
+                                    appSettings={appSettings} isCard={true}
                                 />
                             ) : (
                                 <PreviewRenderer 
                                     styleId="color_swatch_on_card" 
                                     settings={styleSettings["color_swatch_on_card"]} 
-                                    appSettings={appSettings}
+                                    appSettings={appSettings} isCard={true}
                                 />
                             )}
                         </div>
@@ -433,3 +433,4 @@ export default function ProductCardCustomizer() {
     </Page>
   );
 }
+

@@ -70,14 +70,14 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
     ...BASE_SETTINGS,
     label: { ...BASE_SETTINGS.label, show: true, fontSize: 13, border: true }
   },
-  image_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 40, gap: 8, padding: 8 }, variantName: { ...BASE_SETTINGS.variantName, show: true, fontSize: 10 } },
-  color_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8, padding: 8 }, border: { ...BASE_SETTINGS.border, radius: 20 }, variantName: { ...BASE_SETTINGS.variantName, show: true, fontSize: 10 } },
+  image_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0 }, border: { ...BASE_SETTINGS.border, radius: 12 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
+  color_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0 }, border: { ...BASE_SETTINGS.border, radius: 20 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
 };
 
-export const getOuterStyle = (isActive, settings, styleId) => {
+export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
   const b = settings.border;
   if (!b || b.outerWidth <= 0) return { display: 'inline-flex' };
-  const isRound = styleId.includes('round') || styleId.includes('circle');
+  const isRound = isCard || (styleId.includes('round') || styleId.includes('circle'));
   return {
       padding: `${b.outerPadding || 0}px`,
       border: `${b.outerWidth || 1}px solid ${isActive ? (b.outerActiveColor || '#000') : (b.outerColor || '#ccc')}`,
@@ -86,15 +86,15 @@ export const getOuterStyle = (isActive, settings, styleId) => {
   };
 };
 
- export const getSwatchStyle = (isActive, settings, styleId) => {
+ export const getSwatchStyle = (isActive, settings, styleId, isCard = false) => {
   const b = settings.border;
   const s = settings.shadow;
-  const isRound = styleId.includes('round') || styleId.includes('circle');
+  const isRound = isCard || (styleId.includes('round') || styleId.includes('circle'));
   const isButton = styleId.includes('button');
   const isPillSwatch = styleId === 'pill_swatch';
   
-  const padding = settings.swatch?.padding ?? settings.basic.padding ?? 0;
-  const swatchSize = settings.swatch?.size ?? settings.basic.swatchSize;
+  const padding = isCard ? (settings.swatch?.padding ?? 0) : (settings.swatch?.padding ?? settings.basic.padding ?? 0);
+  const swatchSize = isCard ? (settings.swatch?.size ?? 24) : (settings.swatch?.size ?? settings.basic.swatchSize);
   
   return {
       position: 'relative',
@@ -102,7 +102,7 @@ export const getOuterStyle = (isActive, settings, styleId) => {
       width: (isButton || isPillSwatch) ? 'auto' : `${swatchSize + (padding * 2)}px`,
       padding: `${padding}px`,
       border: `${isActive ? (b.width + 1) : b.width || 1}px solid ${isActive ? (b.activeColor || '#000') : (b.color || '#ccc')}`,
-      borderRadius: isRound ? '50%' : `${b.radius || 0}px`,
+      borderRadius: isCard ? (b.radius || 12) : (isRound ? '50%' : `${b.radius || 0}px`),
       cursor: 'pointer',
       backgroundColor: '#fff',
       display: 'flex',
@@ -199,7 +199,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   );
 };
 
- export const PreviewRenderer = ({ styleId, settings, products, appSettings }) => {
+ export const PreviewRenderer = ({ styleId, settings, products, appSettings, isCard = false }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   
   const displayProducts = (products || PREVIEW_PRODUCTS).map(p => ({
@@ -217,7 +217,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   const isDropdown = styleId.includes('dropdown');
   const isColor = styleId.includes('color');
   const isPillSwatch = styleId === 'pill_swatch';
-  const isCard = styleId.includes('_on_card');
+  // isCard is now a prop
   const displayLimit = isCard ? (parseInt(settings.basic?.limitDesktop) || 5) : 100;
   
   // Clean up products based on unavailableStyle === 'hide'
@@ -444,9 +444,9 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
               const height = (size * ratioH / ratioW);
 
               return (
-                  <div key={i} style={getOuterStyle(isActive, settings, styleId)}>
+                  <div key={i} style={getOuterStyle(isActive, settings, styleId, isCard)}>
                       <div style={{ 
-                          ...getSwatchStyle(isActive, settings, styleId), 
+                          ...getSwatchStyle(isActive, settings, styleId, isCard), 
                           padding: isButton ? '8px 16px' : (isPillSwatch ? '6px 12px' : `${settings.basic.padding}px`),
                       }}>
                           {isActive && renderBadge(isActive, settings)}
@@ -504,3 +504,5 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
       </div>
   );
 };
+
+

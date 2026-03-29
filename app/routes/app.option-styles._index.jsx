@@ -53,6 +53,32 @@ export const loader = async ({ request }) => {
     data: { shop }
   });
 
+  // Self-heal default styles if they belong to wrong context
+  const validPageStyles = ["image_swatch", "slide_swatch", "polaroid_swatch", "color_swatch", "square_color_swatch", "pill_swatch", "button", "pill_button", "dropdown", "image_dropdown", "image_swatch_card", "color_swatch_card"];
+  const validCardStyles = ["button_on_card", "color_swatch_on_card", "image_swatch_on_card", "dropdown_on_card"];
+
+  let needsUpdate = false;
+  const updateData = {};
+
+  if (appSettings.defaultProductPageStyle && !validPageStyles.includes(appSettings.defaultProductPageStyle)) {
+    updateData.defaultProductPageStyle = "image_swatch";
+    needsUpdate = true;
+  }
+
+  if (appSettings.defaultProductCardStyle && !validCardStyles.includes(appSettings.defaultProductCardStyle)) {
+    updateData.defaultProductCardStyle = "image_swatch_on_card";
+    needsUpdate = true;
+  }
+
+  if (needsUpdate) {
+    await prisma.appSetting.update({
+      where: { shop },
+      data: updateData
+    });
+    // Update local object for the current request
+    Object.assign(appSettings, updateData);
+  }
+
   return json({ 
     styleSettings: styleSettings.reduce((acc, curr) => {
       acc[curr.styleId] = curr.settings;

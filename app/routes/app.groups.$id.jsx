@@ -634,13 +634,24 @@ export async function loader({ request, params }) {
     }, {});
 
     if (groupId === "new") {
+        let currentCardStyle = appSettings.defaultProductCardStyle || "image_swatch_on_card";
+        const isValidCardStyle = STYLE_OPTIONS.some(s => s.id === currentCardStyle && s.category === "Product Card");
+        
+        if (!isValidCardStyle) {
+            currentCardStyle = "image_swatch_on_card";
+            await prisma.appSetting.update({
+                where: { shop: session.shop },
+                data: { defaultProductCardStyle: currentCardStyle }
+            });
+        }
+
         return json({
             group: {
                 id: null,
                 name: "",
                 optionName: "Color",
                 selectorStyle: appSettings.defaultProductPageStyle || "image_swatch",
-                cardSelectorStyle: appSettings.defaultProductCardStyle || "image_swatch_on_card",
+                cardSelectorStyle: currentCardStyle,
                 status: "active",
                 products: [],
             },
@@ -727,13 +738,19 @@ export async function action({ request, params }) {
         let targetGroupId = groupId;
         if (groupId === "new") {
             const appSettings = await prisma.appSetting.findUnique({ where: { shop: session.shop } });
+            
+            // Clean up card style if it inherited a page style
+            let cardStyle = appSettings?.defaultProductCardStyle || "image_swatch_on_card";
+            const isValidCard = STYLE_OPTIONS.some(s => s.id === cardStyle && s.category === "Product Card");
+            if (!isValidCard) cardStyle = "image_swatch_on_card";
+
             const newGroup = await prisma.productGroup.create({
                 data: {
                     shop: session.shop,
                     name: "Untitled Group",
                     optionName: "Color",
                     selectorStyle: appSettings?.defaultProductPageStyle || "image_swatch",
-                    cardSelectorStyle: appSettings?.defaultProductCardStyle || "image_swatch_on_card",
+                    cardSelectorStyle: cardStyle,
                     status: "active",
                 }
             });
