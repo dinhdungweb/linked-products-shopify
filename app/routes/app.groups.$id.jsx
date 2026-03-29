@@ -621,6 +621,12 @@ export async function loader({ request, params }) {
         where: { shop },
     });
 
+    const appSettings = await prisma.appSetting.findUnique({
+        where: { shop },
+    }) || await prisma.appSetting.create({
+        data: { shop }
+    });
+
     const formattedSettings = styleSettings.reduce((acc, curr) => {
         acc[curr.styleId] = curr.settings;
         return acc;
@@ -632,7 +638,8 @@ export async function loader({ request, params }) {
                 id: null,
                 name: "",
                 optionName: "Color",
-                selectorStyle: "image_swatch",
+                selectorStyle: appSettings.defaultProductPageStyle || "image_swatch",
+                cardSelectorStyle: appSettings.defaultProductCardStyle || "image_swatch_card",
                 status: "active",
                 products: [],
             },
@@ -720,12 +727,14 @@ export async function action({ request, params }) {
         
         let targetGroupId = groupId;
         if (groupId === "new") {
+            const appSettings = await prisma.appSetting.findUnique({ where: { shop: session.shop } });
             const newGroup = await prisma.productGroup.create({
                 data: {
                     shop: session.shop,
                     name: "Untitled Group",
                     optionName: "Color",
-                    selectorStyle: "image_swatch",
+                    selectorStyle: appSettings?.defaultProductPageStyle || "image_swatch",
+                    cardSelectorStyle: appSettings?.defaultProductCardStyle || "image_swatch_card",
                     status: "active",
                 }
             });
@@ -1061,7 +1070,7 @@ export default function GroupDetail() {
     const [localGroupName, setLocalGroupName] = useState(group.name || "");
     const [localOptionName, setLocalOptionName] = useState(group.optionName || "Color");
     const [localSelectorStyle, setLocalSelectorStyle] = useState(group.selectorStyle || "image_swatch");
-    const [localCardSelectorStyle, setLocalCardSelectorStyle] = useState(group.cardSelectorStyle || "swatch");
+    const [localCardSelectorStyle, setLocalCardSelectorStyle] = useState(group.cardSelectorStyle || "image_swatch_card");
     const [localInventoryBehavior, setLocalInventoryBehavior] = useState(group.inventoryBehavior || "show");
     const [localStatus, setLocalStatus] = useState(group.status || "active");
     const [localProducts, setLocalProducts] = useState(group.products || []);

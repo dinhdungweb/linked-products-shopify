@@ -134,6 +134,8 @@ model AppSetting {
   selectedTextColor     String    @default("#000000")
   customCssProduct      String    @default("")
   customCssCollection   String    @default("")
+  defaultProductPageStyle String    @default("image_swatch")
+  defaultProductCardStyle String    @default("image_swatch_card")
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }

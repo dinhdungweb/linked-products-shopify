@@ -13,11 +13,13 @@ import {
   Grid,
   Tabs,
   Select,
+  Popover,
+  ActionList,
 } from "@shopify/polaris";
-import { LinkIcon, QuestionCircleIcon, PlusIcon, StoreIcon, MenuHorizontalIcon } from "@shopify/polaris-icons";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { LinkIcon, QuestionCircleIcon, PlusIcon, StoreIcon, MenuHorizontalIcon, StarIcon, CopyIcon, DeleteIcon } from "@shopify/polaris-icons";
+import { TitleBar, useSubmit } from "@shopify/app-bridge-react";
 import { json } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useSubmit as useRemixSubmit } from "@remix-run/react";
 import { 
   BASE_SETTINGS, 
   DEFAULT_SETTINGS_BY_STYLE, 
@@ -45,19 +47,64 @@ export const loader = async ({ request }) => {
     if (pg.cardSelectorStyle) usedStyles.add(pg.cardSelectorStyle);
   });
 
+  const appSettings = await prisma.appSetting.findUnique({
+    where: { shop },
+  }) || await prisma.appSetting.create({
+    data: { shop }
+  });
+
   return json({ 
     styleSettings: styleSettings.reduce((acc, curr) => {
       acc[curr.styleId] = curr.settings;
       return acc;
     }, {}),
-    usedStyles: Array.from(usedStyles)
+    usedStyles: Array.from(usedStyles),
+    appSettings
   });
 };
 
+export const action = async ({ request }) => {
+  const { authenticate } = await import("../shopify.server");
+  const { default: prisma } = await import("../db.server");
+  const { session } = await authenticate.admin(request);
+  const shop = session.shop;
+  const formData = await request.formData();
+  const actionType = formData.get("action");
+
+  if (actionType === "setDefaultStyle") {
+    const styleId = formData.get("styleId");
+    const isCard = formData.get("isCard") === "true";
+
+    await prisma.appSetting.update({
+      where: { shop },
+      data: isCard 
+        ? { defaultProductCardStyle: styleId }
+        : { defaultProductPageStyle: styleId }
+    });
+
+    return json({ success: true });
+  }
+
+  return json({ error: "Invalid action" }, { status: 400 });
+};
+
 export default function OptionStylesPage() {
-  const { styleSettings, usedStyles } = useLoaderData();
+  const { styleSettings, usedStyles, appSettings } = useLoaderData();
+  const submit = useRemixSubmit();
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [activeMenu, setActiveMenu] = useState(null);
+
+  const toggleMenu = (styleId) => setActiveMenu(activeMenu === styleId ? null : styleId);
+
+  const handleSetDefault = (styleId, isCard) => {
+    const formData = new FormData();
+    formData.append("action", "setDefaultStyle");
+    formData.append("styleId", styleId);
+    formData.append("isCard", isCard.toString());
+    submit(formData, { method: "POST" });
+    setActiveMenu(null);
+  };
 
   const handleTabChange = useCallback((selectedTabIndex) => setSelectedTab(selectedTabIndex), []);
   const handleFilterChange = useCallback((value) => setSelectedFilter(value), []);
@@ -94,18 +141,41 @@ export default function OptionStylesPage() {
   const renderStyleCard = (styleId, title) => {
     const settings = styleSettings[styleId] || DEFAULT_SETTINGS_BY_STYLE[styleId] || BASE_SETTINGS;
     const isInUse = usedStyles.includes(styleId);
+    const isDefault = selectedTab === 0 
+      ? appSettings.defaultProductPageStyle === styleId
+      : appSettings.defaultProductCardStyle === styleId;
 
     return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'visible', position: 'relative', zIndex: styleId.includes('dropdown') ? 20 : 1 }}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'visible', position: 'relative', zIndex: (styleId.includes('dropdown') || activeMenu === styleId) ? 20 : 1 }}>
         <Box padding="300">
           <InlineStack align="space-between" blockAlign="center">
             <InlineStack gap="200" blockAlign="center">
               <Text variant="headingSm" as="h3">{title}</Text>
-              <Badge tone={isInUse ? "success" : "new"}>{isInUse ? "In use" : "Not in use"}</Badge>
+              <InlineStack gap="100">
+                <Badge tone={isInUse ? "success" : "new"}>{isInUse ? "In use" : "Not in use"}</Badge>
+                {isDefault && <Badge tone="attention">Default</Badge>}
+              </InlineStack>
             </InlineStack>
             <InlineStack gap="100" blockAlign="center">
               <Button icon={LinkIcon} size="micro" url={`/app/option-styles/${styleId}`}>Customize</Button>
-              <Button variant="plain" icon={MenuHorizontalIcon} accessibilityLabel="Actions" />
+              <Popover
+                active={activeMenu === styleId}
+                activator={<Button variant="plain" icon={MenuHorizontalIcon} onClick={() => toggleMenu(styleId)} />}
+                onClose={() => setActiveMenu(null)}
+              >
+                <ActionList
+                  items={[
+                    { content: 'Duplicate', icon: CopyIcon, disabled: true },
+                    { 
+                      content: 'Set as default', 
+                      icon: StarIcon, 
+                      onAction: () => handleSetDefault(styleId, selectedTab === 1),
+                      disabled: isDefault
+                    },
+                    { content: 'Delete', icon: DeleteIcon, destructive: true, disabled: true },
+                  ]}
+                />
+              </Popover>
             </InlineStack>
           </InlineStack>
         </Box>
