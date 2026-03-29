@@ -169,7 +169,7 @@
     --lp-hover-border-color: {{ lp_hover_border_color }};
     --lp-border-width: {{ lp_border_width }}px;
     --lp-outer-width: {{ lp_outer_width }}px;
-    --lp-outer-padding: {{ lp_outer_padding }}px;
+    --lp-outer-padding: {% if lp_outer_width > 0 %}{{ lp_outer_padding }}{% else %}0{% endif %}px;
     --lp-outer-radius: {{ lp_outer_radius }}px;
     --lp-outer-color: {{ lp_outer_color }};
     --lp-outer-active-color: {{ lp_outer_active_color }};
