@@ -179,7 +179,7 @@
   {{ 'linked-products.css' | asset_url | stylesheet_tag }}
 
   <div class="linked-products-picker" style="
-    --lp-swatch-size: {{ lp_swatch_size }}px;
+    --lp-swatch-size: {{ lp_swatch_size | replace: 'px', '' }}px;
     --lp-items-gap: {{ lp_items_gap }}px;
     --lp-swatch-padding: {{ lp_padding }}px;
     --lp-border-radius: {{ lp_border_radius }}{{ lp_radius_unit }};
