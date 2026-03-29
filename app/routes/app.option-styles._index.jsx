@@ -153,10 +153,6 @@ export default function OptionStylesPage() {
           <InlineStack align="space-between" blockAlign="center">
             <InlineStack gap="200" blockAlign="center">
               <Text variant="headingSm" as="h3">{title}</Text>
-              <InlineStack gap="100">
-                <Badge tone={isInUse ? "success" : "new"}>{isInUse ? "In use" : "Not in use"}</Badge>
-                {isDefault && <Badge tone="attention">Default</Badge>}
-              </InlineStack>
             </InlineStack>
             <InlineStack gap="100" blockAlign="center">
               <Button 

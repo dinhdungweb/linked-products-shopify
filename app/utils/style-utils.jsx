@@ -16,12 +16,11 @@ export const IMAGES = [
 export const COLORS = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
 
 export const PREVIEW_PRODUCTS = [
-  { name: 'Beige Brown', color: IMAGES[0], colorHex: '#f5f5dc', style: 'one', price: '$12.88' },
-  { name: 'Black White', color: IMAGES[1], colorHex: '#a020f0', style: 'two', colorHex2: '#000000', price: '$15.99' },
-  { name: 'Red Rose', color: IMAGES[2], colorHex: '#ff0000', style: 'one', price: '$19.99' },
-  { name: 'Teal Lily', color: IMAGES[3], colorHex: '#008080', style: 'one', price: '$24.99' },
-  { name: 'Yellow Bloom', color: IMAGES[4], colorHex: '#ffff00', style: 'one', price: '$18.50' },
-  { name: 'Purple Mini', color: IMAGES[5], colorHex: '#800080', style: 'one', price: '$22.00' }
+  { name: 'Pink', color: IMAGES[4], colorHex: '#d85a7e', style: 'one', price: '$12.88' },
+  { name: 'Bright Navy Blue', color: IMAGES[1], colorHex: '#add8e6', style: 'one', price: '$15.99', isUnavailable: true },
+  { name: 'Orange', color: IMAGES[2], colorHex: '#d2691e', style: 'one', price: '$19.99' },
+  { name: 'Slate Blue', color: IMAGES[5], colorHex: '#483d8b', style: 'one', price: '$24.99' },
+  { name: 'Teal Blue', color: IMAGES[3], colorHex: '#008080', style: 'one', price: '$18.50' }
 ];
 
 export const BASE_SETTINGS = {
@@ -139,6 +138,34 @@ export const renderBadge = (isActive, settings) => {
   );
 };
 
+export const renderSlashEffect = (isUnavailable) => {
+  if (!isUnavailable) return null;
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none',
+      zIndex: 5,
+      overflow: 'hidden',
+      borderRadius: 'inherit'
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        width: '142%',
+        height: '1px',
+        backgroundColor: '#ff4d4f',
+        transform: 'translate(-50%, -50%) rotate(-45deg)',
+        boxShadow: '0 0 1px rgba(0,0,0,0.2)'
+      }} />
+    </div>
+  );
+};
+
  export const PreviewRenderer = ({ styleId, settings, products }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   
@@ -148,7 +175,8 @@ export const renderBadge = (isActive, settings) => {
     colorHex: p.customColor || p.colorHex || '#ffffff',
     colorHex2: p.customColor2 || p.colorHex2 || '#f5f5f5',
     style: p.style || 'one',
-    price: p.price || (p.variants?.[0]?.price ? `$${p.variants[0].price}` : '$12.88')
+    price: p.price || (p.variants?.[0]?.price ? `$${p.variants[0].price}` : '$12.88'),
+    isUnavailable: p.isUnavailable || false
   }));
 
   const isSlide = styleId.includes('slide');
@@ -160,6 +188,9 @@ export const renderBadge = (isActive, settings) => {
   const displayLimit = isCard ? 5 : 100;
   const extraCount = displayProducts.length > displayLimit ? displayProducts.length - displayLimit : 0;
   const itemsToRender = displayProducts.slice(0, displayLimit);
+  
+  // Force hide labels for card-style swatches as per requested mockup
+  const shouldShowName = (settings.variantName?.show || isButton) && !isPillSwatch && !(isCard && (isColor || styleId.includes('image_swatch')));
 
   if (isDropdown) {
     const activeProduct = displayProducts[0] || PREVIEW_PRODUCTS[1];
@@ -371,7 +402,8 @@ export const renderBadge = (isActive, settings) => {
                       }}>
                           {isActive && renderBadge(isActive, settings)}
                           {!isButton && renderSwatchInner()}
-                          {(settings.variantName?.show || isButton) && !isPillSwatch && (
+                          {renderSlashEffect(p.isUnavailable)}
+                          {shouldShowName && (
                               <div style={{ 
                                   marginTop: isButton ? 0 : '8px', 
                                   paddingBottom: isButton ? 0 : '8px',
