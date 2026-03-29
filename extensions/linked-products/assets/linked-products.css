@@ -96,11 +96,16 @@
 
 .lp-outer-swatch {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--lp-swatch-size); /* Restore width */
+  aspect-ratio: var(--lp-aspect-ratio, 1/1); /* Restore ratio flexibility */
   padding: var(--lp-outer-padding, 0);
   border: var(--lp-outer-width, 0) solid var(--lp-outer-color, transparent);
   border-radius: var(--lp-outer-radius, 4px);
   transition: all 0.2s ease;
   box-sizing: border-box;
+  flex-shrink: 0; /* Anti-stretch */
 }
 
 .lp-outer-swatch.is-selected {
@@ -180,7 +185,7 @@
 /* Swatch style - circular or square */
 .linked-option--swatch {
   width: 100%;
-  height: var(--lp-swatch-size); /* Pure swatches need fixed height */
+  height: 100%; /* Fill container */
   padding: var(--lp-swatch-padding, 0);
   border-radius: 50%;
   position: relative;

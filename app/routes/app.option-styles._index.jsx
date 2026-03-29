@@ -227,6 +227,7 @@ export default function OptionStylesPage() {
               settings={settings} 
               isCard={selectedTab === 1} 
               appSettings={appSettings}
+              hideLabel={true} 
             />
           </div>
         </div>
@@ -263,7 +264,7 @@ export default function OptionStylesPage() {
           borderRadius: '0 0 8px 8px'
         }}>
           <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'visible' }}>
-            <PreviewRenderer styleId={styleId} settings={settings} appSettings={appSettings} />
+            <PreviewRenderer styleId={styleId} settings={settings} appSettings={appSettings} hideLabel={true} />
           </div>
         </div>
         <Divider />

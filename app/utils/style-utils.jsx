@@ -193,7 +193,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   );
 };
 
- export const PreviewRenderer = ({ styleId, settings, products, appSettings, isCard = false }) => {
+ export const PreviewRenderer = ({ styleId, settings, products, appSettings, isCard = false, hideLabel = false }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   
   const displayProducts = (products || PREVIEW_PRODUCTS).map(p => ({
@@ -351,7 +351,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
 
   return (
       <div style={{ width: '100%' }}>
-          {settings.label?.show && (
+          {!hideLabel && settings.label?.show && (
               <div style={{ 
                   marginBottom: `${settings.label?.gap || 8}px`,
                   textAlign: settings.layout?.align || 'left',
