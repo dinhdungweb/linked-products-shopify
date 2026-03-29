@@ -16,7 +16,7 @@ import {
   Popover,
   ActionList,
 } from "@shopify/polaris";
-import { LinkIcon, QuestionCircleIcon, PlusIcon, StoreIcon, MenuHorizontalIcon, StarIcon, CopyIcon, DeleteIcon } from "@shopify/polaris-icons";
+import { LinkIcon, QuestionCircleIcon, PlusIcon, StoreIcon, MenuHorizontalIcon, StarIcon, DuplicateIcon, DeleteIcon } from "@shopify/polaris-icons";
 import { TitleBar, useSubmit } from "@shopify/app-bridge-react";
 import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit as useRemixSubmit } from "@remix-run/react";
@@ -165,7 +165,7 @@ export default function OptionStylesPage() {
               >
                 <ActionList
                   items={[
-                    { content: 'Duplicate', icon: CopyIcon, disabled: true },
+                    { content: 'Duplicate', icon: DuplicateIcon, disabled: true },
                     { 
                       content: 'Set as default', 
                       icon: StarIcon, 
