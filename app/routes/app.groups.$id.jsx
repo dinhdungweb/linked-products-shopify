@@ -857,7 +857,8 @@ export async function action({ request, params }) {
             // 2. Update Product Items
             if (productsJson) {
                 const products = JSON.parse(productsJson);
-                for (const item of products) {
+                for (let i = 0; i < products.length; i++) {
+                    const item = products[i];
                     await tx.productGroupItem.update({
                         where: { groupId_productId: { groupId, productId: item.productId } },
                         data: {
@@ -866,6 +867,7 @@ export async function action({ request, params }) {
                             customColor: item.customColor || (item.style === 'one' ? "#FFFFFF" : null),
                             customColor2: item.customColor2 || (item.style === 'two' ? "#F5F5F5" : null),
                             style: item.style || "one",
+                            position: i + 1,
                         }
                     });
                 }
