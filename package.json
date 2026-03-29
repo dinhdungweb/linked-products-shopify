@@ -16,7 +16,8 @@
     "shopify": "shopify",
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
-    "vite": "vite"
+    "vite": "vite",
+    "db:reset-app": "node scripts/reset-app-data.js"
   },
   "type": "module",
   "engines": {
