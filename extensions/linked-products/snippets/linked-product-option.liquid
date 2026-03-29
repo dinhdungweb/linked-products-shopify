@@ -137,7 +137,7 @@
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
         {%- if final_image_url != blank -%}
-          <img src="{{ final_image_url }}" alt="{{ value }}" width="80" height="80" loading="lazy">
+          <img src="{{ final_image_url }}" alt="{{ value }}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
         {%- else -%}
           <span class="no-image">{{ value | slice: 0, 2 }}</span>
         {%- endif -%}

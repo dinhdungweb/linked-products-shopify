@@ -429,3 +429,47 @@
 .lp-count-only {
   padding: 4px 0;
 }
+
+/* Badges */
+.lp-badge {
+  position: absolute;
+  padding: 2px 6px;
+  font-size: var(--lp-badge-size, 10px);
+  font-weight: 700;
+  background-color: var(--lp-badge-bg, #000);
+  color: var(--lp-badge-color, #fff);
+  border-radius: 10px;
+  z-index: 10;
+  line-height: 1.2;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.lp-badge--top-right { top: -8px; right: -8px; }
+.lp-badge--top-left { top: -8px; left: -8px; }
+.lp-badge--bottom-right { bottom: -8px; right: -8px; }
+.lp-badge--bottom-left { bottom: -8px; left: -8px; }
+
+/* Empty States */
+.no-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f4f4f4;
+  color: #999;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Typography Sync */
+.text-subdued {
+  font-weight: var(--lp-label-weight, 500) !important;
+}
+
+/* Prices */
+.slide-price {
+  font-size: var(--lp-price-font-size, 10px);
+  font-weight: var(--lp-price-weight, 500);
+  color: var(--lp-price-color, #666);
+}

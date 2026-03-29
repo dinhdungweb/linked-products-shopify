@@ -209,21 +209,15 @@
     --lp-price-color: {{ lp_price_color }};
     --lp-aspect-ratio: {{ lp_aspect_ratio }};
     --lp-image-position: {{ lp_image_position }};
-    --lp-hover-effect: {{ lp_hover_effect }};
-    --lp-selected-weight: {{ lp_selected_weight }};
-    --lp-show-selected: {% if lp_show_selected_variant %}block{% else %}none{% endif %};
-    --lp-unavailable-style: {{ active_style_settings.unavailable.style | default: 'cross_mark' }};
-    {% if lp_shadow_show %}
-    --lp-shadow: {{ lp_shadow_x }}px {{ lp_shadow_y }}px {{ lp_shadow_blur }}px {{ lp_shadow_spread }}px {{ lp_shadow_color }};
-    {% else %}
-    --lp-shadow: none;
-    {% endif %}
-    --lp-badge-size: {{ lp_badge_size }}px;
-    --lp-badge-color: {{ lp_badge_color }};
+    --lp-shadow: {% if lp_shadow_show %}{{ lp_shadow_x }}px {{ lp_shadow_y }}px {{ lp_shadow_blur }}px {{ lp_shadow_spread }}px {{ lp_shadow_color }}{% else %}none{% endif %};
     --lp-badge-bg: {{ lp_badge_bg }};
+    --lp-badge-color: {{ lp_badge_color }};
+    --lp-badge-size: {{ lp_badge_size }}px;
+    --lp-show-selected: {% if lp_show_selected_variant %}block{% else %}none{% endif %};
+    --lp-selected-weight: {{ lp_selected_weight }};
   "
   data-hover-effect="{{ lp_hover_effect }}"
-  data-unavailable-style="{{ active_style_settings.unavailable.style | default: 'cross_mark' }}"
+  data-unavailable-style="{{ active_style_settings.basic.unavailableStyle | default: 'cross_mark' }}"
   >
     <div class="variant-picker">
       <fieldset class="variant-picker__option" style="text-align: {{ lp_layout_align }};">
