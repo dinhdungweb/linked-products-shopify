@@ -81,6 +81,28 @@
    Linked Option Styles (new)
    ============================================ */
 
+/* ============================================
+   Linked Option Styles (new)
+   ============================================ */
+
+.lp-outer-swatch {
+  display: inline-flex;
+  padding: var(--lp-outer-padding, 0);
+  border: var(--lp-outer-width, 0) solid var(--lp-outer-color, transparent);
+  border-radius: var(--lp-outer-radius, 4px);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  line-height: 0;
+}
+
+.lp-outer-swatch.is-selected {
+  border-color: var(--lp-outer-active-color, #000);
+}
+
+.lp-outer-swatch:hover {
+  border-color: var(--lp-outer-hover-color, var(--lp-outer-color));
+}
+
 /* Base linked option */
 .linked-option {
   display: inline-flex;
@@ -95,25 +117,39 @@
   background: #ffffff;
   overflow: hidden;
   box-shadow: var(--lp-shadow, none);
+  box-sizing: border-box;
 }
 
 .linked-option:hover {
-  border-color: var(--lp-selected-border-color);
+  border-color: var(--lp-hover-border-color, var(--lp-selected-border-color));
 }
 
-.linked-products-picker[style*="--lp-hover-effect: zoom"] .linked-option:hover {
+.linked-products-picker[style*="--lp-hover-effect: zoom"] .lp-outer-swatch:hover {
   transform: scale(1.1);
   z-index: 10;
 }
 
-.linked-products-picker[style*="--lp-hover-effect: lift"] .linked-option:hover {
+.linked-products-picker[style*="--lp-hover-effect: lift"] .lp-outer-swatch:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  z-index: 10;
+}
+
+/* Base hover effect for non-lp-outer-swatch options */
+.linked-products-picker[style*="--lp-hover-effect: zoom"] .linked-option:hover:not(.lp-outer-swatch *) {
+  transform: scale(1.1);
+  z-index: 10;
+}
+
+.linked-products-picker[style*="--lp-hover-effect: lift"] .linked-option:hover:not(.lp-outer-swatch *) {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0,0,0,0.15);
   z-index: 10;
 }
 
 /* Disable hover effects */
-.no-hover-effect .linked-option:hover {
+.no-hover-effect .linked-option:hover,
+.no-hover-effect .lp-outer-swatch:hover {
   transform: none;
   box-shadow: none;
 }
@@ -135,11 +171,11 @@
 }
 
 .linked-option--swatch.is-square {
-  border-radius: 4px;
+  border-radius: var(--lp-border-radius, 4px);
 }
 
 .linked-option--swatch.is-square .swatch-bg {
-  border-radius: 2px;
+  border-radius: calc(var(--lp-border-radius, 4px) - 2px);
 }
 
 .linked-option--swatch .swatch-bg {

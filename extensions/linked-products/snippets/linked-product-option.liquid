@@ -129,79 +129,89 @@
 {%- case style -%}
 
   {%- when 'image_swatch' -%}
-    <a href="{{ url }}" 
-       class="linked-option linked-option--image {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-       title="{{ value }}{% if is_unavailable %} (Sold out){% endif %}">
-      {%- if settings.badge.show -%}
-        <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
-      {%- endif -%}
-      {%- if final_image_url != blank -%}
-        <img src="{{ final_image_url }}" alt="{{ value }}" width="80" height="80" loading="lazy">
-      {%- else -%}
-        <span class="no-image">{{ value | slice: 0, 2 }}</span>
-      {%- endif -%}
-    </a>
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
+      <a href="{{ url }}" 
+         class="linked-option linked-option--image {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         title="{{ value }}{% if is_unavailable %} (Sold out){% endif %}">
+        {%- if settings.badge.show -%}
+          <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
+        {%- endif -%}
+        {%- if final_image_url != blank -%}
+          <img src="{{ final_image_url }}" alt="{{ value }}" width="80" height="80" loading="lazy">
+        {%- else -%}
+          <span class="no-image">{{ value | slice: 0, 2 }}</span>
+        {%- endif -%}
+      </a>
+    </span>
 
   {%- when 'slide_swatch' -%}
-    <a href="{{ url }}" 
-       class="linked-option linked-option--slide {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-       title="{{ value }}">
-      {%- if settings.badge.show -%}
-        <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
-      {%- endif -%}
-      <div class="slide-media">
-        {%- if final_image_url != blank -%}
-          <img src="{{ final_image_url }}" alt="{{ value }}" width="120" height="150" loading="lazy">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size, 100px);">
+      <a href="{{ url }}" 
+         class="linked-option linked-option--slide {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         title="{{ value }}">
+        {%- if settings.badge.show -%}
+          <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
-      </div>
-      <div class="slide-info">
-        {%- if settings.variantName.show != false -%}
-          <span class="slide-title">{{ value }}</span>
-        {%- endif -%}
-        {%- if settings.price.show -%}
-          <span class="slide-price">{{ product_obj.price | money }}</span>
-        {%- endif -%}
-      </div>
-    </a>
+        <div class="slide-media">
+          {%- if final_image_url != blank -%}
+            <img src="{{ final_image_url }}" alt="{{ value }}" width="120" height="150" loading="lazy">
+          {%- endif -%}
+        </div>
+        <div class="slide-info">
+          {%- if settings.variantName.show != false -%}
+            <span class="slide-title">{{ value }}</span>
+          {%- endif -%}
+          {%- if settings.price.show -%}
+            <span class="slide-price">{{ product_obj.price | money }}</span>
+          {%- endif -%}
+        </div>
+      </a>
+    </span>
 
   {%- when 'polaroid_swatch' -%}
-    <a href="{{ url }}" 
-       class="linked-option linked-option--polaroid {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-       title="{{ value }}">
-      {%- if settings.badge.show -%}
-        <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
-      {%- endif -%}
-      <div class="polaroid-inner">
-        {%- if final_image_url != blank -%}
-          <img src="{{ final_image_url }}" alt="{{ value }}" width="100" height="120" loading="lazy">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
+      <a href="{{ url }}" 
+         class="linked-option linked-option--polaroid {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         title="{{ value }}">
+        {%- if settings.badge.show -%}
+          <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
-      </div>
-    </a>
+        <div class="polaroid-inner">
+          {%- if final_image_url != blank -%}
+            <img src="{{ final_image_url }}" alt="{{ value }}" width="100" height="120" loading="lazy">
+          {%- endif -%}
+        </div>
+      </a>
+    </span>
 
   {%- when 'color_swatch', 'square_color_swatch' -%}
-    <a href="{{ url }}" 
-       class="linked-option linked-option--swatch {% if style == 'square_color_swatch' %}is-square{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-       title="{{ value }}">
-      {%- if has_color -%}
-        <span class="swatch-bg swatch-bg--color" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
-      {%- elsif final_image_url != blank -%}
-        <span class="swatch-bg" style="background-image: url({{ final_image_url }});"></span>
-      {%- else -%}
-        <span class="swatch-bg swatch-bg--text">{{ value | slice: 0 }}</span>
-      {%- endif -%}
-    </a>
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
+      <a href="{{ url }}" 
+         class="linked-option linked-option--swatch {% if style == 'square_color_swatch' %}is-square{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         title="{{ value }}">
+        {%- if has_color -%}
+          <span class="swatch-bg swatch-bg--color" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
+        {%- elsif final_image_url != blank -%}
+          <span class="swatch-bg" style="background-image: url({{ final_image_url }});"></span>
+        {%- else -%}
+          <span class="swatch-bg swatch-bg--text">{{ value | slice: 0 }}</span>
+        {%- endif -%}
+      </a>
+    </span>
 
   {%- when 'pill_swatch' -%}
-    <a href="{{ url }}" 
-       class="linked-option linked-option--pill-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-       title="{{ value }}">
-      {%- if has_color -%}
-        <span class="pill-dot" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
-      {%- endif -%}
-      {%- if settings.variantName.show != false -%}
-        <span class="pill-label">{{ value }}</span>
-      {%- endif -%}
-    </a>
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="border-radius: 30px;">
+      <a href="{{ url }}" 
+         class="linked-option linked-option--pill-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         title="{{ value }}">
+        {%- if has_color -%}
+          <span class="pill-dot" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
+        {%- endif -%}
+        {%- if settings.variantName.show != false -%}
+          <span class="pill-label">{{ value }}</span>
+        {%- endif -%}
+      </a>
+    </span>
 
   {%- when 'button', 'pill_button' -%}
     <a href="{{ url }}" 
@@ -211,56 +221,59 @@
     </a>
 
   {%- when 'image_swatch_card' -%}
-    <a href="{{ url }}" 
-       class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-       title="{{ value }}">
-      {%- if settings.badge.show -%}
-        <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
-      {%- endif -%}
-      <div class="card-media">
-        {%- if final_image_url != blank -%}
-          <img src="{{ final_image_url }}" alt="{{ value }}" width="80" height="80" loading="lazy">
-        {%- else -%}
-          <span class="no-image">{{ value | slice: 0, 1 }}</span>
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size, 80px);">
+      <a href="{{ url }}" 
+         class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         title="{{ value }}">
+        {%- if settings.badge.show -%}
+          <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
-      </div>
-      {%- if settings.variantName.show != false -%}
-        <span class="card-label">{{ value }}</span>
-      {%- endif -%}
-      {%- if settings.price.show -%}
-        <span class="slide-price" style="font-size: var(--lp-price-font-size, 10px);">{{ product_obj.price | money }}</span>
-      {%- endif -%}
-    </a>
+        <div class="card-media">
+          {%- if final_image_url != blank -%}
+            <img src="{{ final_image_url }}" alt="{{ value }}" width="80" height="80" loading="lazy">
+          {%- else -%}
+            <span class="no-image">{{ value | slice: 0, 1 }}</span>
+          {%- endif -%}
+        </div>
+        {%- if settings.variantName.show != false -%}
+          <span class="card-label">{{ value }}</span>
+        {%- endif -%}
+        {%- if settings.price.show -%}
+          <span class="slide-price" style="font-size: var(--lp-price-font-size, 10px);">{{ product_obj.price | money }}</span>
+        {%- endif -%}
+      </a>
+    </span>
 
   {%- when 'color_swatch_card' -%}
-    <a href="{{ url }}" 
-       class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-       title="{{ value }}">
-      <div class="card-media is-color" 
-           style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: #f4f4f4;{% endif %}">
-        {%- if has_color or final_image_url != blank -%}
-          <span class="swatch-anchor"></span>
-        {%- else -%}
-          <span style="font-size: 10px; color: #999;">{{ value | slice: 0, 1 }}</span>
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size, 80px);">
+      <a href="{{ url }}" 
+         class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         title="{{ value }}">
+        <div class="card-media is-color" 
+             style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: #f4f4f4;{% endif %}">
+          {%- if has_color or final_image_url != blank -%}
+            <span class="swatch-anchor"></span>
+          {%- else -%}
+            <span style="font-size: 10px; color: #999;">{{ value | slice: 0, 1 }}</span>
+          {%- endif -%}
+        </div>
+        {%- if settings.variantName.show != false -%}
+          <span class="card-label">{{ value }}</span>
         {%- endif -%}
-      </div>
-      {%- if settings.variantName.show != false -%}
-        <span class="card-label">{{ value }}</span>
-      {%- endif -%}
-    </a>
-    <!-- Debug: Style is color_swatch_card, has_color: {{ has_color }}, custom_color: {{ custom_color }} -->
+      </a>
+    </span>
 
   {%- when 'dropdown', 'image_dropdown' -%}
-    {%- comment -%}Dropdown is handled in the main block file, but we keep this for consistency if needed{%- endcomment -%}
     <span class="dropdown-option-placeholder">Use block settings for dropdown</span>
 
   {%- else -%}
-    {%- comment -%}Fallback to original blocks style{%- endcomment -%}
-    <a href="{{ url }}" 
-       class="linked-option linked-option--block {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-       title="{% if is_unavailable %}{{ value }} (Sold out){% else %}{{ value }}{% endif %}">
-        <span class="color-dot" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
-      {{ value }}
-    </a>
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
+      <a href="{{ url }}" 
+         class="linked-option linked-option--block {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         title="{% if is_unavailable %}{{ value }} (Sold out){% else %}{{ value }}{% endif %}">
+          <span class="color-dot" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
+        {{ value }}
+      </a>
+    </span>
 
 {%- endcase -%}

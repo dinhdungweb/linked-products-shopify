@@ -30,7 +30,19 @@
   {%- assign lp_border_width = active_style_settings.border.width | default: 1 -%}
   {%- assign lp_border_color = active_style_settings.border.color | default: '#dbdfe2' -%}
   {%- assign lp_selected_border_color = active_style_settings.border.activeColor | default: '#000000' -%}
+  {%- assign lp_hover_border_color = active_style_settings.border.hoverColor | default: lp_border_color -%}
+
+  {%- assign lp_outer_width = active_style_settings.border.outerWidth | default: 0 -%}
+  {%- assign lp_outer_padding = active_style_settings.border.outerPadding | default: 0 -%}
+  {%- assign lp_outer_radius = active_style_settings.border.outerRadius | default: 4 -%}
+  {%- assign lp_outer_color = active_style_settings.border.outerColor | default: '#dbdfe2' -%}
+  {%- assign lp_outer_active_color = active_style_settings.border.outerActiveColor | default: '#000000' -%}
+  {%- assign lp_outer_hover_color = active_style_settings.border.outerHoverColor | default: lp_outer_color -%}
   
+  {%- assign lp_hide_active = active_style_settings.basic.hideActiveSwatch | default: false -%}
+  {%- assign lp_active_first = active_style_settings.basic.activeSwatchFirst | default: false -%}
+  {%- assign lp_max_swatches = active_style_settings.layout.maxSwatches | default: 100 -%}
+
   {%- assign lp_show_label = true -%}
   {%- if active_style_settings.label.show == false -%}
     {%- assign lp_show_label = false -%}
@@ -120,7 +132,14 @@
     --lp-border-radius: {{ lp_border_radius }}px;
     --lp-border-color: {{ lp_border_color }};
     --lp-selected-border-color: {{ lp_selected_border_color }};
+    --lp-hover-border-color: {{ lp_hover_border_color }};
     --lp-border-width: {{ lp_border_width }}px;
+    --lp-outer-width: {{ lp_outer_width }}px;
+    --lp-outer-padding: {{ lp_outer_padding }}px;
+    --lp-outer-radius: {{ lp_outer_radius }}px;
+    --lp-outer-color: {{ lp_outer_color }};
+    --lp-outer-active-color: {{ lp_outer_active_color }};
+    --lp-outer-hover-color: {{ lp_outer_hover_color }};
     --lp-margin-top: {{ lp_layout_margin_top }}px;
     --lp-margin-bottom: {{ lp_layout_margin_bottom }}px;
     --lp-justify: {{ lp_justify_content }};
@@ -204,11 +223,42 @@
           </script>
         {%- else -%}
           <div class="variant-picker__option-values {% unless lp_is_slide %}wrap{% endunless %} {% if lp_is_slide %}is-slide{% endif %}" style="gap: var(--lp-items-gap); justify-content: var(--lp-justify);">
-            {%- assign current_rendered = false -%}
+            {%- assign rendered_count = 0 -%}
+            {%- assign current_handle_str = product.handle -%}
             
+            {%- comment -%}1. Render Active First if enabled and not hidden{%- endcomment -%}
+            {%- if lp_active_first and lp_hide_active == false -%}
+                {%- for item in linked_handles_raw -%}
+                    {%- if item.handle == current_handle_str -%}
+                        {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
+                        {%- render 'linked-product-option', 
+                            product_obj: product,
+                            value: current_value, 
+                            selected: true,
+                            style: active_selector_style,
+                            settings: active_style_settings,
+                            custom_image: item.image,
+                            custom_color: item.color,
+                            custom_color2: item.color2,
+                            item_style: item.style,
+                            two_color_style: lp_two_color_style
+                        -%}
+                        {%- assign rendered_count = 1 -%}
+                        {%- break -%}
+                    {%- endif -%}
+                {%- endfor -%}
+            {%- endif -%}
+
+            {%- comment -%}2. Main Loop for others{%- endcomment -%}
             {%- for item in linked_handles_raw -%}
+              {%- if rendered_count >= lp_max_swatches %}{% break %}{% endif -%}
+              
               {%- assign item_handle = item.handle -%}
-              {%- if item_handle == current_handle -%}
+              
+              {%- if item_handle == current_handle_str -%}
+                {%- comment -%}Already rendered or should be hidden{%- endcomment -%}
+                {%- if lp_active_first or lp_hide_active %}{% continue %}{% endif -%}
+                
                 {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
                 {%- render 'linked-product-option', 
                     product_obj: product,
@@ -222,7 +272,7 @@
                     item_style: item.style,
                     two_color_style: lp_two_color_style
                 -%}
-                {%- assign current_rendered = true -%}
+                {%- assign rendered_count = rendered_count | plus: 1 -%}
               {%- else -%}
                 {%- assign linked_prod = all_products[item_handle] -%}
                 {%- if linked_prod != blank and linked_prod != empty -%}
@@ -243,20 +293,10 @@
                       item_style: item.style,
                       two_color_style: lp_two_color_style
                   -%}
+                  {%- assign rendered_count = rendered_count | plus: 1 -%}
                 {%- endif -%}
               {%- endif -%}
             {%- endfor -%}
-            
-            {%- unless current_rendered -%}
-              {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
-              {%- render 'linked-product-option', 
-                  product_obj: product,
-                  value: current_value, 
-                  selected: true,
-                  style: active_selector_style,
-                  settings: active_style_settings
-              -%}
-            {%- endunless -%}
           </div>
         {%- endif -%}
       </fieldset>
