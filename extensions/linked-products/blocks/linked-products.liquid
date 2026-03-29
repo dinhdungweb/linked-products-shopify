@@ -190,7 +190,8 @@
     --lp-image-position: {{ lp_image_position }};
     --lp-hover-effect: {{ lp_hover_effect }};
     --lp-selected-weight: {{ lp_selected_weight }};
-    {% if lp_show_selected_variant %}-show-selected: block{% else %}-show-selected: none{% endif %};
+    --lp-show-selected: {% if lp_show_selected_variant %}block{% else %}none{% endif %};
+    --lp-unavailable-style: {{ active_style_settings.unavailable.style | default: 'cross_mark' }};
     {% if lp_shadow_show %}
     --lp-shadow: {{ lp_shadow_x }}px {{ lp_shadow_y }}px {{ lp_shadow_blur }}px {{ lp_shadow_spread }}px {{ lp_shadow_color }};
     {% else %}
@@ -199,7 +200,10 @@
     --lp-badge-size: {{ lp_badge_size }}px;
     --lp-badge-color: {{ lp_badge_color }};
     --lp-badge-bg: {{ lp_badge_bg }};
-  ">
+  "
+  data-hover-effect="{{ lp_hover_effect }}"
+  data-unavailable-style="{{ active_style_settings.unavailable.style | default: 'cross_mark' }}"
+  >
     <div class="variant-picker">
       <fieldset class="variant-picker__option" style="text-align: {{ lp_layout_align }};">
         {%- if lp_show_label and active_option_name != blank -%}

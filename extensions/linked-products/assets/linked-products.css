@@ -140,24 +140,24 @@
   border-color: var(--lp-hover-border-color, var(--lp-selected-border-color));
 }
 
-.linked-products-picker[style*="--lp-hover-effect: zoom"] .lp-outer-swatch:hover {
+.linked-products-picker[data-hover-effect="zoom"] .lp-outer-swatch:hover {
   transform: scale(1.1);
   z-index: 10;
 }
 
-.linked-products-picker[style*="--lp-hover-effect: lift"] .lp-outer-swatch:hover {
+.linked-products-picker[data-hover-effect="lift"] .lp-outer-swatch:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0,0,0,0.15);
   z-index: 10;
 }
 
 /* Base hover effect for non-lp-outer-swatch options */
-.linked-products-picker[style*="--lp-hover-effect: zoom"] .linked-option:hover:not(.lp-outer-swatch *) {
+.linked-products-picker[data-hover-effect="zoom"] .linked-option:hover:not(.lp-outer-swatch *) {
   transform: scale(1.1);
   z-index: 10;
 }
 
-.linked-products-picker[style*="--lp-hover-effect: lift"] .linked-option:hover:not(.lp-outer-swatch *) {
+.linked-products-picker[data-hover-effect="lift"] .linked-option:hover:not(.lp-outer-swatch *) {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0,0,0,0.15);
   z-index: 10;
@@ -452,12 +452,12 @@
   overflow: hidden;
 }
 
-/* Diagonal line for swatch and image styles */
-.linked-option--swatch.is-unavailable::after,
-.linked-option--image.is-unavailable::after,
-.linked-option--card.is-unavailable .card-media::after,
-.linked-option--slide.is-unavailable .slide-media::after,
-.linked-option--polaroid.is-unavailable .polaroid-inner::after {
+/* Diagonal line for swatch and image styles - Only if style is cross_mark */
+.linked-products-picker[data-unavailable-style="cross_mark"] .linked-option--swatch.is-unavailable::after,
+.linked-products-picker[data-unavailable-style="cross_mark"] .linked-option--image.is-unavailable::after,
+.linked-products-picker[data-unavailable-style="cross_mark"] .linked-option--card.is-unavailable .card-media::after,
+.linked-products-picker[data-unavailable-style="cross_mark"] .linked-option--slide.is-unavailable .slide-media::after,
+.linked-products-picker[data-unavailable-style="cross_mark"] .linked-option--polaroid.is-unavailable .polaroid-inner::after {
   content: "";
   position: absolute;
   top: 0;
@@ -616,4 +616,42 @@
   .linked-products-dropdown {
     max-width: 100%;
   }
+}
+/* ============================================
+   Badges
+   ============================================ */
+.lp-badge {
+  position: absolute;
+  background-color: var(--lp-badge-bg, #000);
+  color: var(--lp-badge-color, #fff);
+  font-size: var(--lp-badge-size, 10px);
+  padding: 2px 6px;
+  border-radius: 10px;
+  z-index: 20;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  line-height: 1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.lp-badge--top-right { top: -8px; right: -8px; }
+.lp-badge--top-left { top: -8px; left: -8px; }
+.lp-badge--bottom-right { bottom: -8px; right: -8px; }
+.lp-badge--bottom-left { bottom: -8px; left: -8px; }
+
+/* ============================================
+   Unavailable Styles
+   ============================================ */
+.linked-products-picker[data-unavailable-style='opacity'] .is-unavailable {
+  opacity: 0.4;
+  filter: grayscale(0.5);
+}
+
+.linked-products-picker[data-unavailable-style='strike'] .is-unavailable .slide-title,
+.linked-products-picker[data-unavailable-style='strike'] .is-unavailable .card-label,
+.linked-products-picker[data-unavailable-style='strike'] .is-unavailable .pill-label,
+.linked-products-picker[data-unavailable-style='strike'] .is-unavailable.linked-option--block {
+  text-decoration: line-through;
+  opacity: 0.7;
 }
