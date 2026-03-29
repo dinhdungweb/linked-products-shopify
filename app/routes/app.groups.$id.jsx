@@ -36,6 +36,23 @@ import {
     DragHandleIcon,
     ChevronDownIcon,
 } from "@shopify/polaris-icons";
+import { 
+    DndContext, 
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { syncGroupMetafields } from "../sync.server";
 import { 
     BASE_SETTINGS, 
@@ -239,6 +256,119 @@ const getSwatchStyle = (p) => {
         };
     }
     return { background: p.customColor || '#F5F5F5' };
+};
+
+const SortableItem = ({ product, idx, isLast, shop, handleRemoveProduct, handleUpdateField, getBorderRadius, localSelectorStyle }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: product.productId });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        backgroundColor: isDragging ? 'var(--p-color-bg-surface-secondary, #f4f6f8)' : 'transparent',
+        zIndex: isDragging ? 1 : 0,
+        position: 'relative',
+    };
+
+    return (
+        <div ref={setNodeRef} style={style}>
+            <Box padding="400">
+                <InlineStack gap="300" blockAlign="center" wrap={false}>
+                    <div {...attributes} {...listeners} style={{ cursor: 'grab', padding: '8px' }}>
+                        <Icon source={DragHandleIcon} tone="subdued" />
+                    </div>
+                    <Thumbnail
+                        source={product.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"}
+                        size="medium"
+                        alt=""
+                    />
+                    <div style={{ flex: 1 }}>
+                        <BlockStack gap="200">
+                            <InlineStack gap="200" blockAlign="center">
+                                <Badge tone={product.status === "ACTIVE" ? "success" : "info"}>
+                                    {product.status === "ACTIVE" ? "Active" : "Draft"}
+                                </Badge>
+                                <Text fontWeight="semibold" variant="bodyMd">{product.title}</Text>
+                            </InlineStack>
+                            <InlineStack gap="200" blockAlign="center">
+                                <div style={{ width: '180px' }}>
+                                    <TextField
+                                        id={`ov-${product.productId}`}
+                                        label="Option value"
+                                        labelHidden
+                                        placeholder="Option value"
+                                        value={product.optionValue || ""}
+                                        onChange={(v) => handleUpdateField(product.productId, "optionValue", v)}
+                                        autoComplete="off"
+                                    />
+                                </div>
+                                <div style={{ width: '130px' }}>
+                                    <Select
+                                        label="Style"
+                                        labelHidden
+                                        options={[
+                                            { label: 'One color', value: 'one' },
+                                            { label: 'Two colors', value: 'two' },
+                                            { label: 'Image', value: 'image' },
+                                        ]}
+                                        value={product.style || "one"}
+                                        onChange={(v) => handleUpdateField(product.productId, "style", v)}
+                                    />
+                                </div>
+                                <InlineStack gap="100">
+                                    {product.style === 'two' ? (
+                                        <InlineStack gap="100">
+                                            <ColorPickerPopover 
+                                                color={product.customColor || '#F5F5F5'} 
+                                                onChange={(v) => handleUpdateField(product.productId, "customColor", v)} 
+                                                radius={getBorderRadius(localSelectorStyle)}
+                                            />
+                                            <ColorPickerPopover 
+                                                color={product.customColor2 || '#D0D0D0'} 
+                                                onChange={(v) => handleUpdateField(product.productId, "customColor2", v)} 
+                                                radius={getBorderRadius(localSelectorStyle)}
+                                            />
+                                        </InlineStack>
+                                    ) : product.style === 'image' ? (
+                                        <ImagePickerPopover 
+                                            imageUrl={product.customImageUrl} 
+                                            onChange={(v) => handleUpdateField(product.productId, "customImageUrl", v)}
+                                            productImages={product.allImages || []}
+                                            radius={getBorderRadius(localSelectorStyle)}
+                                        />
+                                    ) : (
+                                        <ColorPickerPopover 
+                                            color={product.customColor || '#F5F5F5'} 
+                                            onChange={(v) => handleUpdateField(product.productId, "customColor", v)} 
+                                            radius={getBorderRadius(localSelectorStyle)}
+                                        />
+                                    )}
+                                </InlineStack>
+                            </InlineStack>
+                        </BlockStack>
+                    </div>
+                    <div style={{ minWidth: '80px' }}>
+                        <InlineStack gap="100" align="end" blockAlign="center">
+                            <Tooltip content="Preview product">
+                                <Button icon={ViewIcon} variant="tertiary" url={`https://${shop}/products/${product.handle}`} target="_blank" />
+                            </Tooltip>
+                            <Tooltip content="Remove">
+                                <Button icon={DeleteIcon} tone="critical" onClick={() => handleRemoveProduct(product.productId)} />
+                            </Tooltip>
+                        </InlineStack>
+                    </div>
+                </InlineStack>
+            </Box>
+            {!isLast && <Divider />}
+        </div>
+    );
 };
 
 const renderSidebarPreview = (styleId, isCard = false, products = []) => {
@@ -776,7 +906,8 @@ const ColorPickerPopover = ({ color, onChange, radius = '8px' }) => {
                 <div
                     onClick={toggleActive}
                     style={{ 
-                        padding: '6px',
+                        height: '32px',
+                        padding: '4px 8px',
                         border: '1px solid #dcdcdc',
                         borderRadius: radius,
                         cursor: 'pointer',
@@ -831,9 +962,9 @@ const ImagePickerPopover = ({ imageUrl, onChange, productImages = [], radius = '
                 <div
                     onClick={toggleActive}
                     style={{ 
-                        width: '34px', 
-                        height: '34px', 
-                        minWidth: '34px',
+                        width: '32px', 
+                        height: '32px', 
+                        minWidth: '32px',
                         background: '#f4f4f4',
                         border: '1px solid #dcdcdc',
                         borderRadius: radius,
@@ -1041,6 +1172,24 @@ export default function GroupDetail() {
             setLocalCardSelectorStyle(styleId);
         }
         setShowStyleModal(false);
+    };
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (active.id !== over.id) {
+            setLocalProducts((items) => {
+                const oldIndex = items.findIndex((i) => i.productId === active.id);
+                const newIndex = items.findIndex((i) => i.productId === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
     };
 
 
@@ -1251,99 +1400,33 @@ export default function GroupDetail() {
                                     </BlockStack>
                                 </Box>
                             ) : (
-                                <BlockStack>
-                                    {localProducts.map((product, idx) => (
-                                        <div key={product.productId}>
-                                            <Box padding="400">
-                                                <InlineStack gap="300" blockAlign="start" wrap={false}>
-                                                    <div style={{ paddingBlockStart: '12px' }}>
-                                                        <Icon source={DragHandleIcon} tone="subdued" />
-                                                    </div>
-                                                    <Thumbnail
-                                                        source={product.image || "https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png"}
-                                                        size="medium"
-                                                        alt=""
-                                                    />
-                                                    <div style={{ flex: 1 }}>
-                                                        <BlockStack gap="200">
-                                                            <InlineStack gap="200" blockAlign="center">
-                                                                <Badge tone={product.status === "ACTIVE" ? "success" : "info"}>
-                                                                    {product.status === "ACTIVE" ? "Active" : "Draft"}
-                                                                </Badge>
-                                                                <Text fontWeight="semibold" variant="bodyMd">{product.title}</Text>
-                                                            </InlineStack>
-                                                            <InlineStack gap="200" blockAlign="end">
-                                                                <div style={{ width: '180px' }}>
-                                                                    <TextField
-                                                                        id={`ov-${product.productId}`}
-                                                                        label="Option value"
-                                                                        placeholder="Option value"
-                                                                        value={product.optionValue || ""}
-                                                                        onChange={(v) => handleUpdateField(product.productId, "optionValue", v)}
-                                                                        autoComplete="off"
-                                                                    />
-                                                                </div>
-                                                                <div style={{ width: '130px' }}>
-                                                                    <Select
-                                                                        label="Style"
-                                                                        options={[
-                                                                            { label: 'One color', value: 'one' },
-                                                                            { label: 'Two colors', value: 'two' },
-                                                                            { label: 'Image', value: 'image' },
-                                                                        ]}
-                                                                        value={product.style || "one"}
-                                                                        onChange={(v) => handleUpdateField(product.productId, "style", v)}
-                                                                    />
-                                                                </div>
-                                                                {/* Swatch Pickers */}
-                                                                <InlineStack gap="100">
-                                                                    {product.style === 'two' ? (
-                                                                        <InlineStack gap="100">
-                                                                            <ColorPickerPopover 
-                                                                                color={product.customColor || '#F5F5F5'} 
-                                                                                onChange={(v) => handleUpdateField(product.productId, "customColor", v)} 
-                                                                                radius={getBorderRadius(localSelectorStyle)}
-                                                                            />
-                                                                            <ColorPickerPopover 
-                                                                                color={product.customColor2 || '#D0D0D0'} 
-                                                                                onChange={(v) => handleUpdateField(product.productId, "customColor2", v)} 
-                                                                                radius={getBorderRadius(localSelectorStyle)}
-                                                                            />
-                                                                        </InlineStack>
-                                                                    ) : product.style === 'image' ? (
-                                                                        <ImagePickerPopover 
-                                                                            imageUrl={product.customImageUrl} 
-                                                                            onChange={(v) => handleUpdateField(product.productId, "customImageUrl", v)}
-                                                                            productImages={product.allImages || []}
-                                                                            radius={getBorderRadius(localSelectorStyle)}
-                                                                        />
-                                                                    ) : (
-                                                                        <ColorPickerPopover 
-                                                                            color={product.customColor || '#F5F5F5'} 
-                                                                            onChange={(v) => handleUpdateField(product.productId, "customColor", v)} 
-                                                                            radius={getBorderRadius(localSelectorStyle)}
-                                                                        />
-                                                                    )}
-                                                                </InlineStack>
-                                                            </InlineStack>
-                                                        </BlockStack>
-                                                    </div>
-                                                    <div style={{ minWidth: '100px' }}>
-                                                        <InlineStack gap="100" align="end">
-                                                            <Tooltip content="Preview product">
-                                                                <Button icon={ViewIcon} variant="tertiary" url={`https://${shop}/products/${product.handle}`} target="_blank" />
-                                                            </Tooltip>
-                                                            <Tooltip content="Remove">
-                                                                <Button icon={DeleteIcon} tone="critical" onClick={() => handleRemoveProduct(product.productId)} />
-                                                            </Tooltip>
-                                                        </InlineStack>
-                                                    </div>
-                                                </InlineStack>
-                                            </Box>
-                                            {idx < localProducts.length - 1 && <Divider />}
-                                        </div>
-                                    ))}
-                                </BlockStack>
+                                <DndContext 
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleDragEnd}
+                                    modifiers={[restrictToVerticalAxis]}
+                                >
+                                    <SortableContext 
+                                        items={localProducts.map(p => p.productId)}
+                                        strategy={verticalListSortingStrategy}
+                                    >
+                                        <BlockStack>
+                                            {localProducts.map((product, idx) => (
+                                                <SortableItem 
+                                                    key={product.productId}
+                                                    product={product}
+                                                    idx={idx}
+                                                    isLast={idx === localProducts.length - 1}
+                                                    shop={shop}
+                                                    handleRemoveProduct={handleRemoveProduct}
+                                                    handleUpdateField={handleUpdateField}
+                                                    getBorderRadius={getBorderRadius}
+                                                    localSelectorStyle={localSelectorStyle}
+                                                />
+                                            ))}
+                                        </BlockStack>
+                                    </SortableContext>
+                                </DndContext>
                             )}
                         </Card>
                     </BlockStack>
