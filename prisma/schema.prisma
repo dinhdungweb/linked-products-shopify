@@ -135,7 +135,12 @@ model AppSetting {
   customCssProduct      String    @default("")
   customCssCollection   String    @default("")
   defaultProductPageStyle String    @default("image_swatch")
-  defaultProductCardStyle String    @default("image_swatch_card")
+  defaultProductCardStyle String    @default("image_swatch_on_card")
+  cardAlign             String    @default("left")
+  cardMarginTop         Int       @default(10)
+  cardMarginBottom      Int       @default(10)
+  cardDisplayMode       String    @default("swatches")
+  cardShowLabel         Boolean   @default(false)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }

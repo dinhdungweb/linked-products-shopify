@@ -161,7 +161,16 @@ export default function OptionStylesPage() {
               </InlineStack>
             </InlineStack>
             <InlineStack gap="100" blockAlign="center">
-              <Button icon={LinkIcon} size="micro" url={`/app/option-styles/${styleId}`}>Customize</Button>
+              <Button 
+                icon={LinkIcon} 
+                size="micro" 
+                url={selectedTab === 1 
+                  ? `/app/option-styles/product-card?tab=${styleId}`
+                  : `/app/option-styles/${styleId}`
+                }
+              >
+                Customize
+              </Button>
               <Popover
                 active={activeMenu === styleId}
                 activator={<Button variant="plain" icon={MenuHorizontalIcon} onClick={() => toggleMenu(styleId)} />}
