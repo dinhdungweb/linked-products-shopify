@@ -129,7 +129,7 @@
 {%- case style -%}
 
   {%- when 'image_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
       <a href="{{ url }}" 
          class="linked-option linked-option--image {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}{% if is_unavailable %} (Sold out){% endif %}">
@@ -145,7 +145,7 @@
     </span>
 
   {%- when 'slide_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
       <a href="{{ url }}" 
          class="linked-option linked-option--slide {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
@@ -169,7 +169,7 @@
     </span>
 
   {%- when 'polaroid_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
       <a href="{{ url }}" 
          class="linked-option linked-option--polaroid {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
@@ -185,7 +185,7 @@
     </span>
 
   {%- when 'color_swatch', 'square_color_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
       <a href="{{ url }}" 
          class="linked-option linked-option--swatch {% if style == 'square_color_swatch' %}is-square{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
@@ -222,7 +222,7 @@
     </a>
 
   {%- when 'image_swatch_card' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
       <a href="{{ url }}" 
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
@@ -246,7 +246,7 @@
     </span>
 
   {%- when 'color_swatch_card' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
       <a href="{{ url }}" 
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
