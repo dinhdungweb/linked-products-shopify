@@ -617,6 +617,15 @@ export async function loader({ request, params }) {
     const shop = session.shop;
     const { id: groupId } = params;
 
+    const styleSettings = await prisma.optionStyleSetting.findMany({
+        where: { shop },
+    });
+
+    const formattedSettings = styleSettings.reduce((acc, curr) => {
+        acc[curr.styleId] = curr.settings;
+        return acc;
+    }, {});
+
     if (groupId === "new") {
         return json({
             group: {
@@ -628,6 +637,7 @@ export async function loader({ request, params }) {
                 products: [],
             },
             shop: session.shop,
+            styleSettings: formattedSettings
         });
     }
 
@@ -684,17 +694,10 @@ export async function loader({ request, params }) {
         });
     }
 
-    const styleSettings = await prisma.optionStyleSetting.findMany({
-        where: { shop },
-    });
-
     return { 
         group: { ...group, products: productDetails }, 
         shop: session.shop,
-        styleSettings: styleSettings.reduce((acc, curr) => {
-            acc[curr.styleId] = curr.settings;
-            return acc;
-        }, {})
+        styleSettings: formattedSettings
     };
 }
 
