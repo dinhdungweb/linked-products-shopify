@@ -96,7 +96,7 @@
 
 .lp-outer-swatch {
   width: var(--lp-swatch-size);
-  height: var(--lp-swatch-size);
+  height: auto; /* Allow height to expand for cards/labels */
   flex-shrink: 0;
   display: inline-flex;
   padding: var(--lp-outer-padding, 0);
@@ -185,7 +185,7 @@
 /* Swatch style - circular or square */
 .linked-option--swatch {
   width: 100%;
-  height: 100%;
+  height: var(--lp-swatch-size); /* Pure swatches need fixed height */
   padding: var(--lp-swatch-padding, 0);
   border-radius: 50%;
   position: relative;
@@ -325,7 +325,7 @@
   padding: var(--lp-swatch-padding, 10px 8px) !important;
   gap: var(--lp-items-gap, 8px);
   background: #fff;
-  width: var(--lp-swatch-size, 80px);
+  width: 100% !important; /* Force take parent's swatch size */
   align-items: center;
 }
 
@@ -405,7 +405,7 @@
 .linked-option--image {
   padding: var(--lp-swatch-padding, 0);
   width: 100%;
-  height: 100%;
+  height: var(--lp-swatch-size); /* Image swatches need fixed height */
   border-radius: var(--lp-border-radius, 50%);
 }
 
