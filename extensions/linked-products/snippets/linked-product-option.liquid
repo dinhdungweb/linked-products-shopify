@@ -169,7 +169,7 @@
     </span>
 
   {%- when 'polaroid_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size) !important;">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size);">
       <a href="{{ url }}" 
          class="linked-option linked-option--polaroid {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
@@ -206,7 +206,7 @@
     </span>
 
   {%- when 'pill_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="border-radius: var(--lp-border-radius); height: var(--lp-swatch-size) !important;">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="border-radius: var(--lp-border-radius);">
       <a href="{{ url }}" 
          class="linked-option linked-option--pill-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
@@ -279,7 +279,7 @@
     <span class="dropdown-option-placeholder">Use block settings for dropdown</span>
 
   {%- else -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size); height: var(--lp-swatch-size);">
       <a href="{{ url }}" 
          class="linked-option linked-option--block {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{% if is_unavailable %}{{ value }} (Sold out){% else %}{{ value }}{% endif %}">

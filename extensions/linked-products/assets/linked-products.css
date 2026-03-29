@@ -95,17 +95,12 @@
    ============================================ */
 
 .lp-outer-swatch {
-  width: var(--lp-swatch-size);
-  height: auto; /* Allow height to expand for cards/labels */
-  flex-shrink: 0;
   display: inline-flex;
   padding: var(--lp-outer-padding, 0);
   border: var(--lp-outer-width, 0) solid var(--lp-outer-color, transparent);
   border-radius: var(--lp-outer-radius, 4px);
   transition: all 0.2s ease;
   box-sizing: border-box;
-  align-items: center;
-  justify-content: center;
 }
 
 .lp-outer-swatch.is-selected {
