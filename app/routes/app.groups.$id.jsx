@@ -610,7 +610,6 @@ const LivePreview = ({ style, optionName, products, inventoryBehavior }) => {
         </Box>
     );
 };
-
 // Loader - Get group info and product list
 export async function loader({ request, params }) {
     const { authenticate } = await import("../shopify.server");
@@ -714,8 +713,6 @@ export async function loader({ request, params }) {
 export async function action({ request, params }) {
     const { authenticate } = await import("../shopify.server");
     const { default: prisma } = await import("../db.server");
-    const { canAddLinks } = await import("../billing.server");
-
     const { session, admin } = await authenticate.admin(request);
     const { id: groupId } = params;
     const formData = await request.formData();
@@ -780,24 +777,6 @@ export async function action({ request, params }) {
         return json({ success: true, message: "Product removed!" });
     }
 
-    if (actionType === "updateProductItem") {
-        const productId = formData.get("productId");
-        const updateData = {};
-        
-        if (formData.has("optionValue")) updateData.optionValue = formData.get("optionValue");
-        if (formData.has("customImageUrl")) updateData.customImageUrl = formData.get("customImageUrl");
-        if (formData.has("customColor")) updateData.customColor = formData.get("customColor");
-
-        console.log(`[Update Item] Product: ${productId}, Data:`, updateData);
-
-        await prisma.productGroupItem.update({
-            where: { groupId_productId: { groupId, productId } },
-            data: updateData,
-        });
-        await syncGroupMetafields(admin, prisma, groupId);
-        return json({ success: true });
-    }
-
     if (actionType === "updateGroupSettings") {
         const optionName = formData.get("optionName");
         const selectorStyle = formData.get("selectorStyle");
@@ -805,9 +784,7 @@ export async function action({ request, params }) {
         const groupName = formData.get("groupName");
         const status = formData.get("status");
 
-        if (groupId === "new") {
-             return json({ success: true });
-        }
+        if (groupId === "new") return json({ success: true });
 
         const updateData = {};
         if (optionName !== null) updateData.optionName = optionName;
@@ -828,11 +805,7 @@ export async function action({ request, params }) {
     }
 
     if (actionType === "autoFill") {
-        const group = await prisma.productGroup.findUnique({
-            where: { id: groupId },
-            include: { products: true }
-        });
-        
+        const group = await prisma.productGroup.findUnique({ where: { id: groupId }, include: { products: true } });
         for (const item of group.products) {
             if (!item.optionValue) {
                 await prisma.productGroupItem.update({
@@ -855,20 +828,13 @@ export async function action({ request, params }) {
         const productsJson = formData.get("products");
 
         await prisma.$transaction(async (tx) => {
-            // 1. Update Group Settings
             await tx.productGroup.update({
                 where: { id: groupId },
                 data: {
-                    name: groupName,
-                    optionName: optionName,
-                    selectorStyle: selectorStyle,
-                    cardSelectorStyle: cardSelectorStyle,
-                    inventoryBehavior: inventoryBehavior,
-                    status: status,
+                    name: groupName, optionName, selectorStyle, cardSelectorStyle, inventoryBehavior, status,
                 }
             });
 
-            // 2. Update Product Items
             if (productsJson) {
                 const products = JSON.parse(productsJson);
                 for (let i = 0; i < products.length; i++) {
@@ -892,55 +858,22 @@ export async function action({ request, params }) {
         return json({ success: true, message: "All changes saved and synced!" });
     }
 
-    if (actionType === "sync") {
-        await syncGroupMetafields(admin, prisma, groupId);
-        return json({ success: true, message: "Synced successfully!" });
-    }
-
     return json({ error: "Invalid action" }, { status: 400 });
 }
 
 const ColorPickerPopover = ({ color, onChange, radius = '8px' }) => {
     const [active, setActive] = useState(false);
     const toggleActive = useCallback(() => setActive((active) => !active), []);
-
     const hsb = hexToHsb(color || '#000000');
-    
-    const handleColorChange = (newHsb) => {
-        onChange(hsbToHex(newHsb));
-    };
-
-    const handleHexChange = (newHex) => {
-        // Luôn cho phép cập nhật nháp để người dùng gõ được (ví dụ: #, #f, #ff...)
-        onChange(newHex);
-    };
+    const handleColorChange = (newHsb) => onChange(hsbToHex(newHsb));
+    const handleHexChange = (newHex) => onChange(newHex);
 
     return (
         <Popover
             active={active}
             activator={
-                <div
-                    onClick={toggleActive}
-                    style={{ 
-                        height: '32px',
-                        padding: '4px 8px',
-                        border: '1px solid #dcdcdc',
-                        borderRadius: radius,
-                        cursor: 'pointer',
-                        background: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        minWidth: '110px'
-                    }}
-                >
-                    <div style={{ 
-                        width: '22px', 
-                        height: '22px', 
-                        borderRadius: '2px', 
-                        background: color || '#000000',
-                        border: '1px solid rgba(0,0,0,0.1)'
-                    }} />
+                <div onClick={toggleActive} style={{ height: '32px', padding: '4px 8px', border: '1px solid #dcdcdc', borderRadius: radius, cursor: 'pointer', background: '#fff', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '110px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '2px', background: color || '#000000', border: '1px solid rgba(0,0,0,0.1)' }} />
                     <span style={{ fontSize: '12px', color: '#666', fontFamily: 'monospace' }}>{color || '#000000'}</span>
                 </div>
             }
@@ -949,13 +882,7 @@ const ColorPickerPopover = ({ color, onChange, radius = '8px' }) => {
             <Box padding="300">
                 <BlockStack gap="300">
                     <ColorPicker onChange={handleColorChange} color={hsb} allowAlpha={false} />
-                    <TextField
-                        label="HEX"
-                        labelHidden
-                        value={color || '#000000'}
-                        onChange={handleHexChange}
-                        autoComplete="off"
-                    />
+                    <TextField label="HEX" labelHidden value={color || '#000000'} onChange={handleHexChange} autoComplete="off" />
                 </BlockStack>
             </Box>
         </Popover>
@@ -965,48 +892,15 @@ const ColorPickerPopover = ({ color, onChange, radius = '8px' }) => {
 const ImagePickerPopover = ({ imageUrl, onChange, productImages = [], radius = '4px' }) => {
     const [active, setActive] = useState(false);
     const toggleActive = useCallback(() => setActive((active) => !active), []);
-
-    const handleSelectImage = (url) => {
-        onChange(url);
-        setActive(false);
-    };
+    const handleSelectImage = (url) => { onChange(url); setActive(false); };
 
     return (
         <Popover
             active={active}
             activator={
-                <div
-                    onClick={toggleActive}
-                    style={{ 
-                        width: '32px', 
-                        height: '32px', 
-                        minWidth: '32px',
-                        background: '#f4f4f4',
-                        border: '1px solid #dcdcdc',
-                        borderRadius: radius,
-                        cursor: 'pointer',
-                        overflow: 'hidden',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
-                    }}
-                >
-                    <div style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        borderRadius: radius, 
-                        overflow: 'hidden',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: '1px solid rgba(0,0,0,0.1)'
-                    }}>
-                        {imageUrl ? (
-                            <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                            <Text variant="bodyXs" tone="subdued">+</Text>
-                        )}
+                <div onClick={toggleActive} style={{ width: '32px', height: '32px', minWidth: '32px', background: '#f4f4f4', border: '1px solid #dcdcdc', borderRadius: radius, cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ width: '100%', height: '100%', borderRadius: radius, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,0,0,0.1)' }}>
+                        {imageUrl ? <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Text variant="bodyXs" tone="subdued">+</Text>}
                     </div>
                 </div>
             }
@@ -1017,36 +911,18 @@ const ImagePickerPopover = ({ imageUrl, onChange, productImages = [], radius = '
                     <Text variant="headingSm">Select image</Text>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
                         {productImages.map((img, i) => (
-                            <div 
-                                key={i} 
-                                onClick={() => handleSelectImage(img)}
-                                style={{ 
-                                    aspectRatio: '1/1', 
-                                    cursor: 'pointer', 
-                                    border: imageUrl === img ? '2px solid #008060' : '1px solid #ccc',
-                                    borderRadius: '4px',
-                                    overflow: 'hidden'
-                                }}
-                            >
+                            <div key={i} onClick={() => handleSelectImage(img)} style={{ aspectRatio: '1/1', cursor: 'pointer', border: imageUrl === img ? '2px solid #008060' : '1px solid #ccc', borderRadius: '4px', overflow: 'hidden' }}>
                                 <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                         ))}
                     </div>
                     <Divider />
-                    <TextField
-                        label="Or enter image URL"
-                        labelHidden
-                        value={imageUrl || ''}
-                        onChange={onChange}
-                        autoComplete="off"
-                        placeholder="https://..."
-                    />
+                    <TextField label="Or enter image URL" labelHidden value={imageUrl || ''} onChange={onChange} autoComplete="off" placeholder="https://..." />
                 </BlockStack>
             </Box>
         </Popover>
     );
-}
-
+};
 export default function GroupDetail() {
     const { group, shop, styleSettings } = useLoaderData();
     const actionData = useActionData();
@@ -1060,15 +936,10 @@ export default function GroupDetail() {
     const [editOptionValue, setEditOptionValue] = useState("");
     const [editCustomImageUrl, setEditCustomImageUrl] = useState("");
     const [editCustomColor, setEditCustomColor] = useState("");
-    
-    // Style Modal State
     const [showStyleModal, setShowStyleModal] = useState(false);
     const [selectingFor, setSelectingFor] = useState("productPage"); // productPage or productCard
-    
-    // UI State for Preview
     const [previewOnProductCard, setPreviewOnProductCard] = useState(true);
 
-    // Local state for all group settings (Classic Save Pattern)
     const [localGroupName, setLocalGroupName] = useState(group.name || "");
     const [localOptionName, setLocalOptionName] = useState(group.optionName || "Color");
     const [localSelectorStyle, setLocalSelectorStyle] = useState(group.selectorStyle || "image_swatch");
@@ -1077,21 +948,18 @@ export default function GroupDetail() {
     const [localStatus, setLocalStatus] = useState(group.status || "active");
     const [localProducts, setLocalProducts] = useState(group.products || []);
 
-    // Sync local state when group data changes from server (Loader refresh)
     useEffect(() => {
         setLocalGroupName(group.name || "");
         setLocalOptionName(group.optionName || "Color");
-        setLocalSelectorStyle(group.selectorStyle || "block");
-        setLocalCardSelectorStyle(group.cardSelectorStyle || "swatch");
+        setLocalSelectorStyle(group.selectorStyle || "image_swatch");
+        setLocalCardSelectorStyle(group.cardSelectorStyle || "image_swatch_on_card");
         setLocalInventoryBehavior(group.inventoryBehavior || "show");
         setLocalStatus(group.status || "active");
         setLocalProducts(group.products || []);
     }, [group]);
 
     useEffect(() => {
-        if (actionData?.success && actionData?.message) {
-            shopify.toast.show(actionData.message, { duration: 3000 });
-        }
+        if (actionData?.success && actionData?.message) shopify.toast.show(actionData.message, { duration: 3000 });
     }, [actionData, shopify]);
 
     const isLoading = navigation.state !== "idle";
@@ -1109,21 +977,15 @@ export default function GroupDetail() {
     }, [shopify, submit]);
 
     const handleRemoveProduct = (productId) => {
-        if (!confirm("Remove this product from group?")) return;
+        if (!confirm("Remove this product?")) return;
         const formData = new FormData();
         formData.append("action", "removeProduct");
         formData.append("productId", productId);
         submit(formData, { method: "POST" });
     };
 
-    const handleUpdateField = (productId, field, value) => {
-        setLocalProducts(prev => prev.map(p => 
-            p.productId === productId ? { ...p, [field]: value } : p
-        ));
-    };
-
-    const handleGroupStatusChange = (value) => {
-        setLocalStatus(value);
+    const handleUpdateField = (id, field, value) => {
+        setLocalProducts(prev => prev.map(p => p.productId === id ? { ...p, [field]: value } : p));
     };
 
     const handleAutoFill = () => {
@@ -1141,23 +1003,16 @@ export default function GroupDetail() {
         formData.append("cardSelectorStyle", localCardSelectorStyle);
         formData.append("inventoryBehavior", localInventoryBehavior);
         formData.append("status", localStatus);
-        
-        // Prepare products list for saving
         const productsToSave = localProducts.map(p => ({
-            productId: p.productId,
-            optionValue: p.optionValue,
-            customImageUrl: p.customImageUrl,
-            customColor: p.customColor,
-            customColor2: p.customColor2,
-            style: p.style
+            productId: p.productId, optionValue: p.optionValue, customImageUrl: p.customImageUrl,
+            customColor: p.customColor, customColor2: p.customColor2, style: p.style
         }));
         formData.append("products", JSON.stringify(productsToSave));
-
         submit(formData, { method: "POST" });
     };
 
     const handleDeleteGroup = () => {
-        if (!confirm("Are you sure you want to delete this entire group? This action cannot be undone.")) return;
+        if (!confirm("Delete this group?")) return;
         const formData = new FormData();
         formData.append("action", "deleteGroup");
         submit(formData, { method: "POST" });
@@ -1166,23 +1021,12 @@ export default function GroupDetail() {
     const handleStyleSelect = (styleId) => {
         if (selectingFor === "productPage") {
             setLocalSelectorStyle(styleId);
-            
-            // Auto-update product styles based on selection
             const styleInfo = STYLE_OPTIONS.find(s => s.id === styleId);
             if (styleInfo) {
                 let targetProductStyle = null;
-                if (styleInfo.category === 'Image Swatch' || styleId === 'image_dropdown') {
-                    targetProductStyle = 'image';
-                } else if (styleInfo.category === 'Color swatch') {
-                    targetProductStyle = 'one';
-                }
-
-                if (targetProductStyle) {
-                    setLocalProducts(current => current.map(p => ({
-                        ...p,
-                        style: targetProductStyle
-                    })));
-                }
+                if (styleInfo.category === 'Image Swatch' || styleId === 'image_dropdown') targetProductStyle = 'image';
+                else if (styleInfo.category === 'Color swatch') targetProductStyle = 'one';
+                if (targetProductStyle) setLocalProducts(current => current.map(p => ({ ...p, style: targetProductStyle })));
             }
         } else {
             setLocalCardSelectorStyle(styleId);
@@ -1190,12 +1034,7 @@ export default function GroupDetail() {
         setShowStyleModal(false);
     };
 
-    const sensors = useSensors(
-        useSensor(PointerSensor),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
+    const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
@@ -1208,78 +1047,39 @@ export default function GroupDetail() {
         }
     };
 
-
-
     return (
         <Page fullWidth>
-            {/* Style Selection Modal */}
-            <Modal
-                open={showStyleModal}
-                onClose={() => setShowStyleModal(false)}
-                title="LineOption Combined Listings"
-                size="large"
-            >
+            <Modal open={showStyleModal} onClose={() => setShowStyleModal(false)} title={selectingFor === "productPage" ? "Select Product Page Style" : "Select Product Card Style"} size="large">
                 <Modal.Section>
                     <Box paddingBlockEnd="400">
-                         <Banner icon={MagicIcon} tone="info">
+                        <Banner icon={MagicIcon} tone="info">
                             <InlineStack align="space-between" blockAlign="center">
                                 <p>Choose a style to start with. You can customize it later.</p>
-                                <Button 
-                                    size="slim" 
-                                    onClick={() => revalidator.revalidate()} 
-                                    loading={revalidator.state === "loading"}
-                                    icon={MagicIcon}
-                                >
-                                    Refresh latest styles
-                                </Button>
+                                <Button size="slim" onClick={() => revalidator.revalidate()} loading={revalidator.state === "loading"} icon={MagicIcon}>Refresh latest styles</Button>
                             </InlineStack>
-                         </Banner>
+                        </Banner>
                     </Box>
                     <div style={{ width: '100%' }}>
                         <BlockStack gap="600">
-                            {STYLE_CATEGORIES.map((cat) => (
+                            {STYLE_CATEGORIES.filter(cat => selectingFor === "productCard" ? cat === "Product Card" : cat !== "Product Card").map((cat) => (
                                 <BlockStack gap="300" key={cat}>
-                                    <Box paddingBlockStart="200" paddingBlockEnd="100">
-                                        <Text variant="headingMd" as="h2">{cat}</Text>
-                                    </Box>
+                                    <Box paddingBlockStart="200" paddingBlockEnd="100"><Text variant="headingMd" as="h2">{cat}</Text></Box>
                                     <Grid>
                                         {STYLE_OPTIONS.filter(s => s.category === cat).map((style) => (
                                             <Grid.Cell key={style.id} columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6 }}>
-                                                <div 
-                                                    onClick={() => handleStyleSelect(style.id)}
-                                                    style={{ 
-                                                        height: '100%', 
-                                                        display: 'flex', 
-                                                        flexDirection: 'column', 
-                                                        backgroundColor: 'var(--p-color-bg-surface, #fff)', 
-                                                        borderRadius: 'var(--p-border-radius-200, 8px)', 
-                                                        boxShadow: (selectingFor === "productPage" ? localSelectorStyle : localCardSelectorStyle) === style.id ? 'var(--p-shadow-300, 0 4px 12px rgba(0,0,0,0.15))' : 'var(--p-shadow-100, 0 1px 2px rgba(0,0,0,0.05))', 
-                                                        overflow: 'hidden',
-                                                        cursor: 'pointer',
-                                                        border: (selectingFor === "productPage" ? localSelectorStyle : localCardSelectorStyle) === style.id ? '2px solid var(--p-color-border-info, #008060)' : '1px solid var(--p-color-border-subdued, #ebebeb)',
-                                                        transition: 'all 0.15s ease'
-                                                    }}
-                                                >
+                                                <div onClick={() => handleStyleSelect(style.id)} style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', borderRadius: '8px', boxShadow: (selectingFor === "productPage" ? localSelectorStyle : localCardSelectorStyle) === style.id ? '0 4px 12px rgba(0,0,0,0.15)' : '0 1px 2px rgba(0,0,0,0.05)', cursor: 'pointer', border: (selectingFor === "productPage" ? localSelectorStyle : localCardSelectorStyle) === style.id ? '2px solid #008060' : '1px solid #ebebeb', transition: 'all 0.15s ease' }}>
                                                     <Box padding="300">
-                                                        <InlineStack align="space-between" blockAlign="center">
-                                                            <InlineStack gap="200" blockAlign="center">
-                                                                <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                    {(selectingFor === "productPage" ? localSelectorStyle : localCardSelectorStyle) === style.id && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#008060' }} />}
-                                                                </div>
-                                                                <BlockStack gap="050">
-                                                                    <Text variant="headingSm" as="h3">{style.label}</Text>
-                                                                    <Text variant="bodySm" tone="subdued">Display as {style.type}</Text>
-                                                                </BlockStack>
-                                                            </InlineStack>
+                                                        <InlineStack gap="200" blockAlign="center">
+                                                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                {(selectingFor === "productPage" ? localSelectorStyle : localCardSelectorStyle) === style.id && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#008060' }} />}
+                                                            </div>
+                                                            <BlockStack gap="050"><Text variant="headingSm" as="h3">{style.label}</Text><Text variant="bodySm" tone="subdued">Display as {style.type}</Text></BlockStack>
                                                         </InlineStack>
                                                     </Box>
                                                     <Divider />
-                                                    <div style={{ flex: 1, backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
+                                                    <div style={{ flex: 1, backgroundColor: '#f4f6f8', padding: '16px', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
                                                         <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'visible', paddingBottom: '4px' }}>
-                                                            <PreviewRenderer 
-                                                                styleId={style.id} 
-                                                                settings={styleSettings[style.id] || DEFAULT_SETTINGS_BY_STYLE[style.id] || BASE_SETTINGS} 
-                                                            />
+                                                            <PreviewRenderer styleId={style.id} settings={styleSettings[style.id] || DEFAULT_SETTINGS_BY_STYLE[style.id] || BASE_SETTINGS} />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1293,154 +1093,30 @@ export default function GroupDetail() {
                 </Modal.Section>
             </Modal>
             
-            {/* Swatch Edit Modal */}
-            <Modal
-                open={showEditModal}
-                onClose={() => setShowEditModal(false)}
-                title="Edit Product Appearance"
-                primaryAction={{ 
-                    content: "Save", 
-                    onAction: () => {
-                        handleUpdateField(editingProduct.productId, "optionValue", editOptionValue);
-                        handleUpdateField(editingProduct.productId, "customImageUrl", editCustomImageUrl);
-                        handleUpdateField(editingProduct.productId, "customColor", editCustomColor);
-                        setShowEditModal(false);
-                    },
-                    loading: isLoading
-                }}
-            >
-                <Modal.Section>
-                    <BlockStack gap="400">
-                        <TextField 
-                            label="Option Value" 
-                            value={editOptionValue} 
-                            onChange={setEditOptionValue} 
-                            autoComplete="off" 
-                            placeholder="e.g. Red, Blue, etc."
-                        />
-                        <TextField 
-                            label="Custom Color (HEX)" 
-                            value={editCustomColor} 
-                            onChange={setEditCustomColor} 
-                            autoComplete="off" 
-                            placeholder="#000000" 
-                        />
-                        <Divider />
-                        <Text variant="headingSm">Select Image from Product</Text>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-                            {editingProduct?.allImages?.map((url, i) => (
-                                <Box 
-                                    key={i} 
-                                    onClick={() => setEditCustomImageUrl(url)}
-                                    borderColor={editCustomImageUrl === url ? "border-info" : "border"} 
-                                    borderWidth={editCustomImageUrl === url ? "050" : "025"}
-                                    borderRadius="200"
-                                    overflow="hidden"
-                                    cursor="pointer"
-                                    height="60px"
-                                >
-                                    <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                </Box>
-                            ))}
-                        </div>
-                        <TextField 
-                            label="Custom Image URL" 
-                            value={editCustomImageUrl} 
-                            onChange={setEditCustomImageUrl} 
-                            autoComplete="off" 
-                            placeholder="https://..." 
-                        />
-                    </BlockStack>
-                </Modal.Section>
-            </Modal>
             <Box paddingBlockEnd="400">
                 <BlockStack gap="200">
-                    <InlineStack gap="200" align="start" blockAlign="center">
-                        <Button icon={ChevronLeftIcon} variant="tertiary" url="/app/groups" />
-                        <Text variant="headingLg">{group.id ? "Edit product group" : "New product group"}</Text>
-                    </InlineStack>
-                    <Box paddingInlineStart="1000">
-                        <Text variant="bodyMd" tone="subdued">Combine multiple products into a single option</Text>
-                    </Box>
+                    <InlineStack gap="200" align="start" blockAlign="center"><Button icon={ChevronLeftIcon} variant="tertiary" url="/app/groups" /><Text variant="headingLg">{group.id ? "Edit product group" : "New product group"}</Text></InlineStack>
+                    <Box paddingInlineStart="1000"><Text variant="bodyMd" tone="subdued">Combine multiple products into a single option</Text></Box>
                 </BlockStack>
             </Box>
 
             <Layout>
-                {/* Main Column */}
                 <Layout.Section>
                     <BlockStack gap="400">
-                        {/* Group Info Card */}
                         <Card>
                             <BlockStack gap="400">
-                                <TextField
-                                    id="groupName"
-                                    label="Product group name (optional)"
-                                    value={localGroupName}
-                                    onChange={setLocalGroupName}
-                                    helpText="For internal use only"
-                                    autoComplete="off"
-                                    maxLength={255}
-                                    suffix={<Text tone="subdued">{localGroupName.length}/255</Text>}
-                                />
-                                <TextField
-                                    id="optionName"
-                                    label="Option name"
-                                    value={localOptionName}
-                                    onChange={setLocalOptionName}
-                                    autoComplete="off"
-                                    maxLength={255}
-                                    suffix={<Text tone="subdued">{localOptionName.length}/255</Text>}
-                                />
+                                <TextField id="groupName" label="Product group name (optional)" value={localGroupName} onChange={setLocalGroupName} helpText="For internal use only" autoComplete="off" maxLength={255} suffix={<Text tone="subdued">{localGroupName.length}/255</Text>} />
+                                <TextField id="optionName" label="Option name" value={localOptionName} onChange={setLocalOptionName} autoComplete="off" maxLength={255} suffix={<Text tone="subdued">{localOptionName.length}/255</Text>} />
                             </BlockStack>
                         </Card>
 
-                        {/* Products Card */}
                         <Card padding="0">
-                            <Box padding="400">
-                                <InlineStack align="space-between" blockAlign="center">
-                                    <Text variant="headingMd">Products</Text>
-                                    <InlineStack gap="200">
-                                        <Button icon={MagicIcon} onClick={handleAutoFill} variant="tertiary" disabled={localProducts.length === 0}>Auto-fill</Button>
-                                        <Button icon={PlusCircleIcon} onClick={handleOpenResourcePicker}>Add products</Button>
-                                        <Button icon={OrderIcon} variant="tertiary" />
-                                    </InlineStack>
-                                </InlineStack>
-                            </Box>
+                            <Box padding="400"><InlineStack align="space-between" blockAlign="center"><Text variant="headingMd">Products</Text><InlineStack gap="200"><Button icon={MagicIcon} onClick={handleAutoFill} variant="tertiary" disabled={localProducts.length === 0}>Auto-fill</Button><Button icon={PlusCircleIcon} onClick={handleOpenResourcePicker}>Add products</Button><Button icon={OrderIcon} variant="tertiary" /></InlineStack></InlineStack></Box>
                             <Divider />
-                            
-                            {localProducts.length === 0 ? (
-                                <Box padding="1000">
-                                    <BlockStack gap="200" align="center">
-                                        <Text variant="bodyMd" tone="subdued">No products added yet.</Text>
-                                        <Button onClick={handleOpenResourcePicker}>Add products</Button>
-                                    </BlockStack>
-                                </Box>
-                            ) : (
-                                <DndContext 
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleDragEnd}
-                                    modifiers={[restrictToVerticalAxis]}
-                                >
-                                    <SortableContext 
-                                        items={localProducts.map(p => p.productId)}
-                                        strategy={verticalListSortingStrategy}
-                                    >
-                                        <BlockStack>
-                                            {localProducts.map((product, idx) => (
-                                                <SortableItem 
-                                                    key={product.productId}
-                                                    product={product}
-                                                    idx={idx}
-                                                    isLast={idx === localProducts.length - 1}
-                                                    shop={shop}
-                                                    handleRemoveProduct={handleRemoveProduct}
-                                                    handleUpdateField={handleUpdateField}
-                                                    getBorderRadius={getBorderRadius}
-                                                    localSelectorStyle={localSelectorStyle}
-                                                />
-                                            ))}
-                                        </BlockStack>
+                            {localProducts.length === 0 ? <Box padding="1000"><BlockStack gap="200" align="center"><Text variant="bodyMd" tone="subdued">No products added yet.</Text><Button onClick={handleOpenResourcePicker}>Add products</Button></BlockStack></Box> : (
+                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
+                                    <SortableContext items={localProducts.map(p => p.productId)} strategy={verticalListSortingStrategy}>
+                                        <BlockStack>{localProducts.map((p, idx) => <SortableItem key={p.productId} product={p} idx={idx} isLast={idx === localProducts.length - 1} shop={shop} handleRemoveProduct={handleRemoveProduct} handleUpdateField={handleUpdateField} getBorderRadius={getBorderRadius} localSelectorStyle={localSelectorStyle} />)}</BlockStack>
                                     </SortableContext>
                                 </DndContext>
                             )}
@@ -1448,127 +1124,42 @@ export default function GroupDetail() {
                     </BlockStack>
                 </Layout.Section>
 
-                {/* Sidebar Column */}
                 <Layout.Section variant="oneThird">
                     <BlockStack gap="400">
-                        {/* Group Status */}
-                        <Card>
-                            <BlockStack gap="200">
-                                <InlineStack align="space-between" blockAlign="center">
-                                    <Text variant="headingSm">Group status</Text>
-                                    <Badge tone={localStatus === "active" ? "success" : "info"}>
-                                        {localStatus === "active" ? "Active" : "Draft"}
-                                    </Badge>
-                                </InlineStack>
-                                <Select
-                                    label="Group Status"
-                                    labelHidden
-                                    options={[
-                                        { label: 'Active', value: 'active' },
-                                        { label: 'Draft', value: 'draft' },
-                                    ]}
-                                    value={localStatus}
-                                    onChange={setLocalStatus}
-                                />
-                            </BlockStack>
-                        </Card>
-
-                        {/* Appearance Card */}
-                        <Card>
-                            <BlockStack gap="300">
-                                <Text variant="headingSm">Appearance</Text>
-                                <Select
-                                    label="Inventory behavior"
-                                    options={[
-                                        { label: 'Show out of stock', value: 'show' },
-                                        { label: 'Hide out of stock', value: 'hide' },
-                                    ]}
-                                    value={localInventoryBehavior}
-                                    onChange={setLocalInventoryBehavior}
-                                />
-                            </BlockStack>
-                        </Card>
-
-                        {/* Preview Product Page */}
+                        <Card><BlockStack gap="200"><InlineStack align="space-between" blockAlign="center"><Text variant="headingSm">Group status</Text><Badge tone={localStatus === "active" ? "success" : "info"}>{localStatus === "active" ? "Active" : "Draft"}</Badge></InlineStack><Select label="Group Status" labelHidden options={[{ label: 'Active', value: 'active' }, { label: 'Draft', value: 'draft' }]} value={localStatus} onChange={setLocalStatus} /></BlockStack></Card>
+                        <Card><BlockStack gap="300"><Text variant="headingSm">Appearance</Text><Select label="Inventory behavior" options={[{ label: 'Show out of stock', value: 'show' }, { label: 'Hide out of stock', value: 'hide' }]} value={localInventoryBehavior} onChange={setLocalInventoryBehavior} /></BlockStack></Card>
                         <Card>
                             <BlockStack gap="200">
                                 <Text variant="headingSm">Preview on product page</Text>
-                                <InlineStack gap="200" blockAlign="center">
-                                    <Text variant="bodySm" tone="subdued">Style: {STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Text>
-                                    <div style={{ color: '#8c9196' }}>•</div>
-                                    <Button variant="plain" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button>
-                                </InlineStack>
+                                <InlineStack gap="200" blockAlign="center"><Text variant="bodySm" tone="subdued">Style: {STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Text><div style={{ color: '#8c9196' }}>•</div><Button variant="plain" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button></InlineStack>
                                 <Divider />
-                                <BlockStack gap="200">
-                                    <Text variant="bodySm" tone="subdued" fontWeight="semibold">{localOptionName || "Color"}:</Text>
-                                    <PreviewRenderer 
-                                        styleId={localSelectorStyle} 
-                                        settings={styleSettings[localSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localSelectorStyle] || BASE_SETTINGS} 
-                                        products={localProducts} 
-                                    />
-                                    <Box paddingBlockStart="400" />
-                                </BlockStack>
+                                <BlockStack gap="200"><Text variant="bodySm" tone="subdued" fontWeight="semibold">{localOptionName}:</Text><PreviewRenderer styleId={localSelectorStyle} settings={styleSettings[localSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localSelectorStyle] || BASE_SETTINGS} products={localProducts} /></BlockStack>
                             </BlockStack>
                         </Card>
-
-                        {/* Preview Product Card */}
                         <Card>
                             <BlockStack gap="200">
-                                <InlineStack align="space-between" blockAlign="center">
-                                    <Text variant="headingSm">Preview on product card</Text>
-                                    <div style={{ transform: 'scale(1.2)' }}>
-                                        <Checkbox
-                                            label=""
-                                            labelHidden
-                                            checked={localCardSelectorStyle === "same"}
-                                            onChange={(v) => setLocalCardSelectorStyle(v ? "same" : "swatch")}
-                                        />
-                                    </div>
-                                </InlineStack>
-                                <InlineStack gap="200" blockAlign="center">
-                                    <Text variant="bodySm" tone="subdued">Style: {localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Text>
-                                    <div style={{ color: '#8c9196' }}>•</div>
-                                    <Button variant="plain" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button>
-                                </InlineStack>
+                                <InlineStack align="space-between" blockAlign="center"><Text variant="headingSm">Preview on product card</Text><div style={{ transform: 'scale(1.2)' }}><Checkbox label="" labelHidden checked={localCardSelectorStyle !== "same"} onChange={(v) => setLocalCardSelectorStyle(v ? "image_swatch_on_card" : "same")} /></div></InlineStack>
+                                <InlineStack gap="200" blockAlign="center"><Text variant="bodySm" tone="subdued">Style: {localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Text>{localCardSelectorStyle !== "same" && <><div style={{ color: '#8c9196' }}>•</div><Button variant="plain" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button></>}</InlineStack>
                                 <Divider />
-                                <PreviewRenderer 
-                                    styleId={previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localCardSelectorStyle} 
-                                    settings={styleSettings[previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[previewOnProductCard ? (localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle) : localCardSelectorStyle] || BASE_SETTINGS} 
-                                    products={localProducts} 
-                                />
-                                <Box paddingBlockStart="400">
-                                    <InlineStack align="space-between">
-                                        <Text variant="bodySm" tone="subdued">Preview on:</Text>
-                                        <InlineStack gap="200">
-                                            <Button size="micro" pressed={!previewOnProductCard} onClick={() => setPreviewOnProductCard(false)}>Product Page</Button>
-                                            <Button size="micro" pressed={previewOnProductCard} onClick={() => setPreviewOnProductCard(true)}>Collection</Button>
-                                        </InlineStack>
-                                    </InlineStack>
-                                </Box>
+                                {previewOnProductCard ? (
+                                    <Box padding="400" background="bg-surface-secondary" borderRadius="200" borderWidth="025" borderColor="border">
+                                        <BlockStack gap="200">
+                                            <div style={{ aspectRatio: '1/1', backgroundColor: '#eee', borderRadius: '4px', overflow: 'hidden' }}><img src={localProducts[0]?.image || PREVIEW_IMAGES[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
+                                            <Text variant="bodySm" fontWeight="medium">Product Name Example</Text>
+                                            <Text variant="bodyXs" tone="subdued">$49.00 USD</Text>
+                                            <div style={{ marginTop: '8px' }}><PreviewRenderer styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} products={localProducts} /></div>
+                                        </BlockStack>
+                                    </Box>
+                                ) : <PreviewRenderer styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} products={localProducts} />}
+                                <Box paddingBlockStart="400"><InlineStack align="space-between"><Text variant="bodySm" tone="subdued">Preview on:</Text><InlineStack gap="200"><Button size="micro" pressed={!previewOnProductCard} onClick={() => setPreviewOnProductCard(false)}>Product Page</Button><Button size="micro" pressed={previewOnProductCard} onClick={() => setPreviewOnProductCard(true)}>Collection</Button></InlineStack></InlineStack></Box>
                             </BlockStack>
                         </Card>
                     </BlockStack>
                 </Layout.Section>
             </Layout>
 
-            {/* Sticky Footer Action Bar */}
-            <Box 
-                 padding="400" 
-                 background="bg-surface" 
-                 borderColor="border" 
-                 borderWidth="025" 
-                 borderRadius="300"
-                 position="sticky" 
-                 insetBlockEnd="0" 
-                 zIndex="10"
-                 marginBlockStart="800"
-            >
-                <InlineStack align="space-between" blockAlign="center">
-                    <Button variant="primary" tone="critical" onClick={handleDeleteGroup} loading={isLoading && navigation.formData?.get("action") === "deleteGroup"}>Delete</Button>
-                    <InlineStack gap="300">
-                        <Button variant="primary" size="large" onClick={handleSync} loading={isLoading && navigation.formData?.get("action") === "saveAll"}>Save</Button>
-                    </InlineStack>
-                </InlineStack>
+            <Box padding="400" background="bg-surface" borderColor="border" borderWidth="025" borderRadius="300" position="sticky" insetBlockEnd="0" zIndex="10" marginBlockStart="800">
+                <InlineStack align="space-between" blockAlign="center"><Button variant="primary" tone="critical" onClick={handleDeleteGroup} loading={isLoading && navigation.formData?.get("action") === "deleteGroup"}>Delete</Button><Button variant="primary" size="large" onClick={handleSync} loading={isLoading && navigation.formData?.get("action") === "saveAll"}>Save</Button></InlineStack>
             </Box>
         </Page>
     );
