@@ -211,16 +211,16 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   const isDropdown = styleId.includes('dropdown');
   const isColor = styleId.includes('color');
   const isPillSwatch = styleId === 'pill_swatch';
-  // isCard is now a prop
-  const displayLimit = isCard ? (parseInt(settings.basic?.limitDesktop) || 5) : 100;
   
-  // Clean up products based on unavailableStyle === 'hide'
+  // Separation of limits: maxSwatches for Product Page, limitDesktop for Card
+  const displayLimit = isCard 
+    ? (parseInt(settings.basic?.limitDesktop) || 5) 
+    : (parseInt(settings.layout?.maxSwatches) || 100);
+  
   const finalDisplayProducts = displayProducts.filter(p => !(p.isUnavailable && settings.basic?.unavailableStyle === 'hide'));
-  
   const extraCount = finalDisplayProducts.length > displayLimit ? finalDisplayProducts.length - displayLimit : 0;
   const itemsToRender = finalDisplayProducts.slice(0, displayLimit);
   
-  // Count only mode
   if (isCard && appSettings?.cardDisplayMode === 'count') {
     return (
         <div style={{ padding: '4px 0', borderBottom: settings.border?.width ? 'none' : '1px solid #eee' }}>
@@ -231,7 +231,6 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
     );
   }
 
-  // Force hide labels based on app-level cardShowLabel and style settings
   const showLabel = isCard ? (appSettings?.cardShowLabel ?? false) : settings.variantName?.show;
   const shouldShowName = (showLabel || isButton) && !isPillSwatch && !(isCard && (isColor || styleId.includes('image_swatch')));
 
@@ -296,7 +295,6 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
             left: '0',
             width: '100%', 
             marginTop: '8px',
-            backgroundColor: '#fff',
             border: '1px solid #dbdfe2',
             borderRadius: '8px',
             boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
@@ -339,6 +337,8 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
     );
   }
 
+  const activeOptionName = isCard ? 'Options' : (appSettings?.optionName || 'Color');
+
   const containerStyle = { 
       display: 'flex', 
       gap: `${settings.basic.gap}px`, 
@@ -350,151 +350,92 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   };
 
   return (
-      <div style={{ 
-          ...containerStyle,
-          marginTop: isCard ? 0 : `${settings.layout?.marginTop || 0}px`,
-          marginBottom: isCard ? 0 : `${settings.layout?.marginBottom || 0}px`
-      }}>
-          {itemsToRender.map((p, i) => {
-              const isActive = i === 1;
-              const aspectRatio = settings.basic.aspectRatio || "1:1";
-              const [ratioW, ratioH] = aspectRatio.split(':').map(Number);
-              
-              const isRound = (aspectRatio === "1:1") && (styleId.includes('round') || styleId.includes('circle'));
-              const isTwoColor = p.style === 'two';
-              
-              const renderSwatchInner = () => {
-                const isTwoColor = p.style === 'two';
-                const size = settings.basic.swatchSize || settings.swatch?.size || 32;
-                const height = (size * ratioH / ratioW);
-                const radius = isRound ? '50%' : `${settings.border.radius}px`;
+      <div style={{ width: '100%' }}>
+          {settings.label?.show && (
+              <div style={{ 
+                  marginBottom: `${settings.label?.gap || 8}px`,
+                  textAlign: settings.layout?.align || 'left',
+                  display: 'flex',
+                  justifyContent: settings.layout?.align === 'center' ? 'center' : (settings.layout?.align === 'right' ? 'flex-end' : 'flex-start')
+              }}>
+                   <div style={{ 
+                       display: 'flex', 
+                       flexDirection: (settings.label?.layout === 'stack' ? 'column' : 'row'),
+                       alignItems: (settings.label?.layout === 'stack' ? (settings.layout?.align === 'center' ? 'center' : (settings.layout?.align === 'right' ? 'flex-end' : 'flex-start')) : 'center'),
+                       gap: '8px'
+                   }}>
+                        <Text variant="bodyMd" tone="subdued" fontWeight={settings.label?.fontWeight}>{activeOptionName}:</Text>
+                        {settings.label?.showSelectedVariant && (
+                            <Text variant="bodyMd" fontWeight={settings.label?.selectedVariantFontWeight || 'semibold'}>
+                                {displayProducts[1]?.name || 'Liquid'}
+                            </Text>
+                        )}
+                   </div>
+              </div>
+          )}
 
-                 if (isColor) {
-                    const directions = {
-                        L_R: "to right",
-                        LT_RB: "to bottom right",
-                        T_B: "to bottom",
-                        LB_RT: "to top right"
-                    };
-                    const direction = directions[settings.basic.twoColorStyle] || "to bottom right";
+          <div style={{ ...containerStyle, marginTop: isCard ? 0 : `${settings.layout?.marginTop || 0}px`, marginBottom: isCard ? 0 : `${settings.layout?.marginBottom || 0}px` }}>
+              {itemsToRender.map((p, i) => {
+                  const isActive = i === 1;
+                  const aspectRatio = settings.basic.aspectRatio || "1:1";
+                  const [ratioW, ratioH] = aspectRatio.split(':').map(Number);
+                  
+                  const isRound = (aspectRatio === "1:1") && (styleId.includes('round') || styleId.includes('circle'));
+                  
+                  const renderSwatchInner = () => {
+                    const size = settings.basic.swatchSize || settings.swatch?.size || 32;
+                    const radius = isRound ? '50%' : `${settings.border.radius}px`;
+
+                     if (isColor) {
+                        const directions = { L_R: "to right", LT_RB: "to bottom right", T_B: "to bottom", LB_RT: "to top right" };
+                        const direction = directions[settings.basic.twoColorStyle] || "to bottom right";
+                        return ( <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: radius, background: p.style === 'two' ? `linear-gradient(${direction}, ${p.colorHex} 50%, ${p.colorHex2} 50%)` : p.colorHex, border: '1px solid rgba(0,0,0,0.05)' }} /> );
+                    }
+
+                    if (isPillSwatch) {
+                        return (
+                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: p.colorHex }} />
+                                {(settings.variantName?.show) && (
+                                    <div style={{ fontSize: `${settings.variantName?.fontSize}px`, fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'), display: '-webkit-box', WebkitLineClamp: settings.variantName?.maxLines || 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                        {p.name.split(' ')[0]}
+                                    </div>
+                                )}
+                             </div>
+                        );
+                    }
 
                     return (
-                        <div style={{ 
-                            width: '100%', 
-                            aspectRatio: '1/1',
-                            borderRadius: radius, 
-                            background: isTwoColor ? `linear-gradient(${direction}, ${p.colorHex} 50%, ${p.colorHex2} 50%)` : p.colorHex,
-                            border: '1px solid rgba(0,0,0,0.05)'
-                        }} />
+                        <div style={{ width: '100%', aspectRatio: `${ratioW}/${ratioH}`, backgroundColor: '#eee', borderRadius: radius, border: '1px solid rgba(0,0,0,0.1)', position: 'relative', overflow: 'hidden' }}>
+                            <img src={p.color} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: settings.basic.imagePosition || 'center' }} />
+                        </div>
                     );
-                }
+                  };
 
-                if (isPillSwatch) {
-                    return (
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: p.colorHex }} />
-                            {(settings.variantName?.show) && (
-                                <div style={{ 
-                                    fontSize: `${settings.variantName?.fontSize}px`, 
-                                    fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'),
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: settings.variantName?.maxLines || 1,
-                                    WebkitBoxOrient: 'vertical',
-                                    overflow: 'hidden'
-                                }}>
-                                    {p.name.split(' ')[0]}
-                                </div>
-                            )}
-                         </div>
-                    );
-                }
-
-                // Default: Image
-                return (
-                    <div style={{ 
-                        width: '100%', 
-                        aspectRatio: `${ratioW}/${ratioH}`,
-                        backgroundColor: '#eee',
-                        borderRadius: radius,
-                        border: '1px solid rgba(0,0,0,0.1)',
-                        position: 'relative',
-                        overflow: 'hidden'
-                    }}>
-                        <img 
-                          src={p.color} 
-                          alt="" 
-                          style={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            objectFit: 'cover',
-                            objectPosition: settings.basic.imagePosition || 'center'
-                          }} 
-                        />
-                    </div>
-                );
-              };
-
-              const size = settings.basic.swatchSize || settings.swatch?.size || 32;
-              const height = (size * ratioH / ratioW);
-
-              return (
-                  <div key={i} style={getOuterStyle(isActive, settings, styleId, isCard)}>
-                      <div style={{ 
-                          ...getSwatchStyle(isActive, settings, styleId, isCard), 
-                          padding: isButton ? '8px 16px' : (isPillSwatch ? '6px 12px' : `${settings.basic.padding ?? settings.swatch?.padding ?? 0}px`),
-                      }}>
-                          {isActive && renderBadge(isActive, settings)}
-                          {!isButton && renderSwatchInner()}
-                          {renderUnavailableEffect(p.isUnavailable, settings.basic?.unavailableStyle ?? "cross_mark")}
-                          {shouldShowName && (
-                              <div style={{ 
-                                  marginTop: isButton ? 0 : '8px', 
-                                  paddingBottom: isButton ? 0 : '8px',
-                                  textAlign: 'center',
-                                  width: '100%',
-                                  maxWidth: '100%',
-                                  lineHeight: '1.2',
-                                  wordBreak: 'break-word'
-                              }}>
-                                  <div style={{
-                                      fontSize: `${settings.variantName?.fontSize}px`,
-                                      fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'),
-                                      display: '-webkit-box',
-                                      WebkitLineClamp: settings.variantName?.maxLines || 1,
-                                      WebkitBoxOrient: 'vertical',
-                                      overflow: 'hidden',
-                                      textOverflow: 'ellipsis',
-                                  }}>
-                                      {isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}
-                                  </div>
-                                  
-                                  {settings.price?.show && (
-                                      <div style={{ 
-                                          fontSize: `${settings.price?.fontSize || 10}px`, 
-                                          fontWeight: settings.price?.fontWeight || 'normal',
-                                          color: settings.price?.color || '#6d7175',
-                                          marginTop: '2px' 
-                                      }}>
-                                          {p.price}
+                  return (
+                      <div key={i} style={getOuterStyle(isActive, settings, styleId, isCard)}>
+                          <div style={{ ...getSwatchStyle(isActive, settings, styleId, isCard), padding: isButton ? '8px 16px' : (isPillSwatch ? '6px 12px' : `${settings.basic.padding ?? settings.swatch?.padding ?? 0}px`) }}>
+                              {isActive && renderBadge(isActive, settings)}
+                              {!isButton && renderSwatchInner()}
+                              {renderUnavailableEffect(p.isUnavailable, settings.basic?.unavailableStyle ?? "cross_mark")}
+                              {shouldShowName && (
+                                  <div style={{ marginTop: isButton ? 0 : '8px', paddingBottom: isButton ? 0 : '8px', textAlign: 'center', width: '100%', maxWidth: '100%', lineHeight: '1.2', wordBreak: 'break-word' }}>
+                                      <div style={{ fontSize: `${settings.variantName?.fontSize}px`, fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'), display: '-webkit-box', WebkitLineClamp: settings.variantName?.maxLines || 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                          {isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}
                                       </div>
-                                  )}
-                              </div>
-                          )}
+                                      {settings.price?.show && ( <div style={{ fontSize: `${settings.price?.fontSize || 10}px`, fontWeight: settings.price?.fontWeight || 'normal', color: settings.price?.color || '#6d7175', marginTop: '2px' }}>{p.price}</div> )}
+                                  </div>
+                              )}
+                          </div>
                       </div>
+                  );
+              })}
+              {extraCount > 0 && (
+                  <div style={{ ...getSwatchStyle(false, settings, styleId, isCard), border: 'none', width: 'auto', minWidth: '24px', padding: '0 4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text variant="bodyXs" fontWeight="bold" tone="subdued">+{extraCount}</Text>
                   </div>
-              );
-          })}
-                   {extraCount > 0 && (
-                       <div style={{ 
-                           ...getSwatchStyle(false, settings, styleId, isCard), 
-                           border: 'none', 
-                           width: 'auto', 
-                           minWidth: '24px',
-                           padding: '0 4px' 
-                       }}>
-                           <Text variant="bodyXs" fontWeight="bold" tone="subdued">+{extraCount}</Text>
-                       </div>
-                   )}
+              )}
+          </div>
       </div>
   );
 };
