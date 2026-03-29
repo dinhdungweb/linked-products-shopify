@@ -190,7 +190,7 @@
 /* Slide Style (Card) */
 .linked-option--slide {
   flex-direction: column;
-  width: var(--lp-swatch-size, 100px);
+  width: var(--lp-swatch-size);
   background: #fff;
 }
 
@@ -210,7 +210,7 @@
 }
 
 .linked-option--slide .slide-info {
-  padding: 8px;
+  padding: var(--lp-swatch-padding, 8px);
   text-align: center;
   width: 100%;
 }
@@ -237,10 +237,10 @@
 
 /* Polaroid Style */
 .linked-option--polaroid {
-  padding: 6px;
+  padding: var(--lp-swatch-padding, 6px);
   background: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  border-radius: 2px;
+  box-shadow: var(--lp-shadow, 0 2px 6px rgba(0,0,0,0.1));
+  border-radius: var(--lp-border-radius, 2px);
   width: var(--lp-swatch-size, 80px);
 }
 
@@ -259,9 +259,9 @@
 
 /* Pill Swatch Style */
 .linked-option--pill-swatch {
-  padding: 6px 12px !important;
-  border-radius: 30px;
-  gap: 8px;
+  padding: var(--lp-swatch-padding, 6px 12px) !important;
+  border-radius: var(--lp-border-radius, 30px);
+  gap: var(--lp-items-gap, 8px);
 }
 
 .linked-option--pill-swatch .pill-dot {
@@ -287,7 +287,7 @@
 }
 
 .linked-option--button.is-pill {
-  border-radius: 30px;
+  border-radius: var(--lp-border-radius, 30px);
 }
 
 /* Card Style (Image/Color) */
@@ -344,7 +344,7 @@
 }
 
 .linked-option--swatch .swatch-bg--color {
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: var(--lp-border-width, 1px) solid rgba(0, 0, 0, 0.1);
 }
 
 .linked-option--swatch .swatch-bg--color+.swatch-check {

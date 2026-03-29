@@ -21,20 +21,53 @@
 
   {%- assign active_style_settings = style_customizations[active_selector_style] -%}
   
-  {%- assign lp_swatch_size = active_style_settings.basic.swatchSize | default: 50 -%}
-  {%- assign lp_items_gap = active_style_settings.basic.gap | default: 8 -%}
-  {%- assign lp_padding = active_style_settings.basic.padding | default: 0 -%}
+  {%- comment -%}Style-specific Defaults (Sync with DEFAULT_SETTINGS_BY_STYLE in app/utils/style-utils.jsx){%- endcomment -%}
+  {%- assign def_size = 32 -%}
+  {%- assign def_gap = 8 -%}
+  {%- assign def_padding = 0 -%}
+  {%- assign def_radius = 4 -%}
+  {%- assign def_width = 1 -%}
+  {%- assign def_outer_width = 0 -%}
+  {%- assign def_outer_padding = 0 -%}
+  {%- assign def_outer_radius = 4 -%}
+  {%- assign def_shadow_show = false -%}
+
+  {%- if active_selector_style == 'image_swatch' -%}
+    {%- assign def_size = 48 -%}{%- assign def_radius = 100 -%}
+  {%- elsif active_selector_style == 'slide_swatch' -%}
+    {%- assign def_size = 90 -%}{%- assign def_radius = 0 -%}
+  {%- elsif active_selector_style == 'polaroid_swatch' -%}
+    {%- assign def_size = 52 -%}{%- assign def_padding = 4 -%}{%- assign def_radius = 0 -%}{%- assign def_shadow_show = true -%}
+  {%- elsif active_selector_style == 'color_swatch' -%}
+    {%- assign def_size = 32 -%}{%- assign def_radius = 20 -%}{%- assign def_width = 2 -%}{%- assign def_outer_width = 2 -%}{%- assign def_outer_padding = 2 -%}{%- assign def_outer_radius = 20 -%}
+  {%- elsif active_selector_style == 'square_color_swatch' -%}
+    {%- assign def_size = 32 -%}{%- assign def_radius = 4 -%}{%- assign def_width = 2 -%}{%- assign def_outer_width = 2 -%}{%- assign def_outer_padding = 2 -%}{%- assign def_outer_radius = 6 -%}
+  {%- elsif active_selector_style == 'pill_swatch' -%}
+    {%- assign def_padding = 6 -%}{%- assign def_radius = 20 -%}
+  {%- elsif active_selector_style == 'button' -%}
+    {%- assign def_padding = 8 -%}{%- assign def_radius = 0 -%}
+  {%- elsif active_selector_style == 'pill_button' -%}
+    {%- assign def_padding = 8 -%}{%- assign def_radius = 20 -%}
+  {%- elsif active_selector_style == 'image_swatch_card' -%}
+    {%- assign def_size = 40 -%}{%- assign def_padding = 8 -%}
+  {%- elsif active_selector_style == 'color_swatch_card' -%}
+    {%- assign def_size = 32 -%}{%- assign def_padding = 8 -%}{%- assign def_radius = 20 -%}
+  {%- endif -%}
+
+  {%- assign lp_swatch_size = active_style_settings.basic.swatchSize | default: def_size -%}
+  {%- assign lp_items_gap = active_style_settings.basic.gap | default: def_gap -%}
+  {%- assign lp_padding = active_style_settings.basic.padding | default: def_padding -%}
   {%- assign lp_two_color_style = active_style_settings.basic.twoColorStyle | default: 'LT_RB' -%}
   
-  {%- assign lp_border_radius = active_style_settings.border.radius | default: 4 -%}
-  {%- assign lp_border_width = active_style_settings.border.width | default: 1 -%}
+  {%- assign lp_border_radius = active_style_settings.border.radius | default: def_radius -%}
+  {%- assign lp_border_width = active_style_settings.border.width | default: def_width -%}
   {%- assign lp_border_color = active_style_settings.border.color | default: '#dbdfe2' -%}
   {%- assign lp_selected_border_color = active_style_settings.border.activeColor | default: '#000000' -%}
   {%- assign lp_hover_border_color = active_style_settings.border.hoverColor | default: lp_border_color -%}
 
-  {%- assign lp_outer_width = active_style_settings.border.outerWidth | default: 0 -%}
-  {%- assign lp_outer_padding = active_style_settings.border.outerPadding | default: 0 -%}
-  {%- assign lp_outer_radius = active_style_settings.border.outerRadius | default: 4 -%}
+  {%- assign lp_outer_width = active_style_settings.border.outerWidth | default: def_outer_width -%}
+  {%- assign lp_outer_padding = active_style_settings.border.outerPadding | default: def_outer_padding -%}
+  {%- assign lp_outer_radius = active_style_settings.border.outerRadius | default: def_outer_radius -%}
   {%- assign lp_outer_color = active_style_settings.border.outerColor | default: '#dbdfe2' -%}
   {%- assign lp_outer_active_color = active_style_settings.border.outerActiveColor | default: '#000000' -%}
   {%- assign lp_outer_hover_color = active_style_settings.border.outerHoverColor | default: lp_outer_color -%}
@@ -104,7 +137,7 @@
   {%- assign lp_aspect_ratio = active_style_settings.basic.aspectRatio | replace: ':', '/' | default: '1/1' -%}
   {%- assign lp_image_position = active_style_settings.basic.imagePosition | default: 'center' -%}
 
-  {%- assign lp_shadow_show = active_style_settings.shadow.show | default: false -%}
+  {%- assign lp_shadow_show = active_style_settings.shadow.show | default: def_shadow_show -%}
   {%- assign lp_shadow_color = active_style_settings.shadow.color | default: 'rgba(0,0,0,0.1)' -%}
   {%- assign lp_shadow_blur = active_style_settings.shadow.blur | default: 4 -%}
   {%- assign lp_shadow_spread = active_style_settings.shadow.spread | default: 0 -%}

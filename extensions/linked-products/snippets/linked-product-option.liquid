@@ -145,7 +145,7 @@
     </span>
 
   {%- when 'slide_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size, 100px);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size);">
       <a href="{{ url }}" 
          class="linked-option linked-option--slide {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
@@ -200,7 +200,7 @@
     </span>
 
   {%- when 'pill_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="border-radius: 30px;">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="border-radius: var(--lp-border-radius);">
       <a href="{{ url }}" 
          class="linked-option linked-option--pill-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
@@ -221,7 +221,7 @@
     </a>
 
   {%- when 'image_swatch_card' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size, 80px);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size);">
       <a href="{{ url }}" 
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
@@ -245,7 +245,7 @@
     </span>
 
   {%- when 'color_swatch_card' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size, 80px);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size);">
       <a href="{{ url }}" 
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
