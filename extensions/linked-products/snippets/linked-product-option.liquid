@@ -137,7 +137,7 @@
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
         {%- if final_image_url != blank -%}
-          <img src="{{ final_image_url }}" alt="{{ value }}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
+          <img src="{{ final_image_url }}" alt="{{ value }}" width="80" height="80" loading="lazy">
         {%- else -%}
           <span class="no-image">{{ value | slice: 0, 2 }}</span>
         {%- endif -%}
@@ -196,12 +196,6 @@
         {%- else -%}
           <span class="swatch-bg swatch-bg--text">{{ value | slice: 0 }}</span>
         {%- endif -%}
-
-        {%- if selected -%}
-          <span class="swatch-check">
-            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;"><path d="M15.8333 5L7.5 13.3333L4.16667 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-        {%- endif -%}
       </a>
     </span>
 
@@ -219,9 +213,9 @@
       </a>
     </span>
 
-  {%- when 'button', 'pill_button', 'button_card' -%}
+  {%- when 'button', 'pill_button' -%}
     <a href="{{ url }}" 
-       class="linked-option linked-option--button {% if style == 'pill_button' or style == 'button_card' %}is-pill{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+       class="linked-option linked-option--button {% if style == 'pill_button' %}is-pill{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
        title="{{ value }}">
       {{ value }}
     </a>
@@ -262,12 +256,6 @@
           {%- else -%}
             <span style="font-size: 10px; color: #999;">{{ value | slice: 0, 1 }}</span>
           {%- endif -%}
-
-          {%- if selected -%}
-            <span class="swatch-check">
-                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;"><path d="M15.8333 5L7.5 13.3333L4.16667 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-          {%- endif -%}
         </div>
         {%- if settings.variantName.show != false -%}
           <span class="card-label">{{ value }}</span>
@@ -275,7 +263,7 @@
       </a>
     </span>
 
-  {%- when 'dropdown', 'image_dropdown', 'dropdown_card' -%}
+  {%- when 'dropdown', 'image_dropdown' -%}
     <span class="dropdown-option-placeholder">Use block settings for dropdown</span>
 
   {%- else -%}
