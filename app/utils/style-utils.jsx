@@ -249,7 +249,11 @@ export const renderBadge = (isActive, settings) => {
   };
 
   return (
-      <div style={containerStyle}>
+      <div style={{ 
+          ...containerStyle,
+          marginTop: `${settings.layout?.marginTop || 0}px`,
+          marginBottom: `${settings.layout?.marginBottom || 0}px`
+      }}>
           {displayProducts.map((p, i) => {
               const isActive = i === 1;
               const aspectRatio = settings.basic.aspectRatio || "1:1";

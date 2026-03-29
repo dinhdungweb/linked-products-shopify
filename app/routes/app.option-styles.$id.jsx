@@ -630,7 +630,7 @@ export default function StyleCustomizerPage() {
                 <BlockStack gap="400" overflow="visible">
                     <Text variant="headingMd">Preview</Text>
                     
-                    <BlockStack gap="400" overflow="visible">
+                    <div style={{ overflow: 'visible' }}>
                         {settings.label.show && !styleId.includes('dropdown') && (
                             <div style={{ 
                                 marginBottom: `${settings.label.gap}px`,
@@ -650,7 +650,7 @@ export default function StyleCustomizerPage() {
                         )}
                         
                         <div style={{ 
-                            padding: '16px 0', 
+                            padding: '0', 
                             width: '100%', 
                             display: 'flex', 
                             justifyContent: 'flex-start',
@@ -659,7 +659,7 @@ export default function StyleCustomizerPage() {
                         }}>
                             {renderPreview()}
                         </div>
-                    </BlockStack>
+                    </div>
                 </BlockStack>
           </div>
         </div>
