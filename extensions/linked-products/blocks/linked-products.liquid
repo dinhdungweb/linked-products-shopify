@@ -70,6 +70,13 @@
   {%- assign lp_two_color_style = active_style_settings.basic.twoColorStyle | default: 'LT_RB' -%}
   
   {%- assign lp_border_radius = active_style_settings.border.radius | default: def_radius -%}
+  {%- assign lp_radius_unit = 'px' -%}
+  {%- if active_selector_style == 'image_swatch' or active_selector_style == 'color_swatch' or active_selector_style == 'pill_button' -%}
+    {%- if active_style_settings.border.radius == blank or active_style_settings.border.radius >= 20 -%}
+       {%- assign lp_border_radius = 50 -%}
+       {%- assign lp_radius_unit = '%' -%}
+    {%- endif -%}
+  {%- endif -%}
   {%- assign lp_border_width = active_style_settings.border.width | default: def_width -%}
   {%- assign lp_border_color = active_style_settings.border.color | default: '#dbdfe2' -%}
   {%- assign lp_selected_border_color = active_style_settings.border.activeColor | default: '#000000' -%}
@@ -175,7 +182,7 @@
     --lp-swatch-size: {{ lp_swatch_size }}px;
     --lp-items-gap: {{ lp_items_gap }}px;
     --lp-swatch-padding: {{ lp_padding }}px;
-    --lp-border-radius: {{ lp_border_radius }}px;
+    --lp-border-radius: {{ lp_border_radius }}{{ lp_radius_unit }};
     --lp-border-color: {{ lp_border_color }};
     --lp-selected-border-color: {{ lp_selected_border_color }};
     --lp-hover-border-color: {{ lp_hover_border_color }};
