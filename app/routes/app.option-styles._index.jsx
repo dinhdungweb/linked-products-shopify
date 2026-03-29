@@ -159,11 +159,9 @@ export default function OptionStylesPage() {
 
   const productCardStyles = [
     { id: "button_on_card", title: "Button" },
-    { id: "color_swatch_on_card", title: "Color Swatch" },
-    { id: "image_swatch_on_card", title: "Image Swatch" },
-    { id: "dropdown_on_card", title: "Dropdown" },
-    { id: "image_swatch_card", title: "Image swatch card" },
     { id: "color_swatch_card", title: "Color swatch card" },
+    { id: "image_swatch_card", title: "Image swatch card" },
+    { id: "dropdown_on_card", title: "Dropdown" },
   ];
 
   const renderStyleCard = (styleId, title) => {
@@ -224,7 +222,12 @@ export default function OptionStylesPage() {
           borderRadius: '0 0 8px 8px' // Thêm bo góc dưới để không bị mất khung box
         }}>
           <div style={{ flex: '1 1 0%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'visible' }}>
-            <PreviewRenderer styleId={styleId} settings={settings} />
+            <PreviewRenderer 
+              styleId={styleId} 
+              settings={settings} 
+              isCard={selectedTab === 1} 
+              appSettings={appSettings}
+            />
           </div>
         </div>
       </div>

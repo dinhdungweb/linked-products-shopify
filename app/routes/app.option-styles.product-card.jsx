@@ -42,7 +42,7 @@ export const loader = async ({ request }) => {
     where: { shop },
   }) || await prisma.appSetting.create({ data: { shop } });
 
-  const styleIds = ["button_on_card", "color_swatch_on_card", "image_swatch_on_card", "dropdown_on_card"];
+  const styleIds = ["button_on_card", "color_swatch_card", "image_swatch_card", "dropdown_on_card"];
   const styleSettings = await prisma.optionStyleSetting.findMany({
     where: { shop, styleId: { in: styleIds } },
   });
@@ -154,8 +154,8 @@ export default function ProductCardCustomizer() {
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "color_swatch_on_card") setSelectedTab(1);
-    else if (tab === "image_swatch_on_card") setSelectedTab(2);
+    if (tab === "color_swatch_card") setSelectedTab(1);
+    else if (tab === "image_swatch_card") setSelectedTab(2);
     else if (tab === "dropdown_on_card") setSelectedTab(3);
     else if (tab === "button_on_card") setSelectedTab(4);
   }, [searchParams]);
@@ -357,8 +357,8 @@ export default function ProductCardCustomizer() {
 
   const activeStyleId = [
     null,
-    "color_swatch_on_card",
-    "image_swatch_on_card",
+    "color_swatch_card",
+    "image_swatch_card",
     "dropdown_on_card",
     "button_on_card"
   ][selectedTab];
@@ -389,8 +389,8 @@ export default function ProductCardCustomizer() {
                 {/* Left: Settings */}
                 <div style={{ width: '450px', borderRight: '1px solid #e1e3e5', padding: '24px', maxHeight: '800px', overflowY: 'auto' }}>
                     {selectedTab === 0 && renderGeneralTab()}
-                    {selectedTab === 1 && renderSwatchTab("color_swatch_on_card")}
-                    {selectedTab === 2 && renderSwatchTab("image_swatch_on_card")}
+                    {selectedTab === 1 && renderSwatchTab("color_swatch_card")}
+                    {selectedTab === 2 && renderSwatchTab("image_swatch_card")}
                     {selectedTab === 3 && renderDropdownTab()}
                     {selectedTab === 4 && renderButtonTab()}
                 </div>
@@ -419,8 +419,8 @@ export default function ProductCardCustomizer() {
                                 />
                             ) : (
                                 <PreviewRenderer 
-                                    styleId="color_swatch_on_card" 
-                                    settings={styleSettings["color_swatch_on_card"]} 
+                                    styleId="color_swatch_card" 
+                                    settings={styleSettings["color_swatch_card"]} 
                                     appSettings={appSettings} isCard={true}
                                 />
                             )}

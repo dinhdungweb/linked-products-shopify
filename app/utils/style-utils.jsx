@@ -74,17 +74,20 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
     label: { ...BASE_SETTINGS.label, show: true, fontSize: 13, border: true }
   },
   image_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0, limitDesktop: 5 }, border: { ...BASE_SETTINGS.border, radius: 12 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
-  color_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0, limitDesktop: 5 }, border: { ...BASE_SETTINGS.border, radius: 20 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
+  color_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0, limitDesktop: 5 }, border: { ...BASE_SETTINGS.border, radius: 12 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
 };
 
 export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
   const b = settings.border;
   if (!b || b.outerWidth <= 0) return { display: 'inline-flex' };
-  const isRound = isCard || (styleId.includes('round') || styleId.includes('circle'));
+  
+  // Use radius from settings if available, otherwise fallback to circle for specific styles
+  const radius = b.outerRadius !== undefined ? `${b.outerRadius}px` : (styleId.includes('round') || styleId.includes('circle') ? '50%' : '2px');
+  
   return {
       padding: `${b.outerPadding || 0}px`,
       border: `${b.outerWidth || 1}px solid ${isActive ? (b.outerActiveColor || '#000') : (b.outerColor || '#ccc')}`,
-      borderRadius: isRound ? '50%' : `${b.outerRadius || 0}px`,
+      borderRadius: radius,
       display: 'inline-flex',
   };
 };
@@ -92,7 +95,7 @@ export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
  export const getSwatchStyle = (isActive, settings, styleId, isCard = false) => {
   const b = settings.border;
   const s = settings.shadow;
-  const isRound = isCard || (styleId.includes('round') || styleId.includes('circle'));
+  const isRound = styleId.includes('round') || styleId.includes('circle');
   const isButton = styleId.includes('button');
   const isPillSwatch = styleId === 'pill_swatch';
   
@@ -105,7 +108,7 @@ export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
       width: (isButton || isPillSwatch) ? 'auto' : `${swatchSize + (padding * 2)}px`,
       padding: `${padding}px`,
       border: `${isActive ? (b.width + 1) : b.width || 1}px solid ${isActive ? (b.activeColor || '#000') : (b.color || '#ccc')}`,
-      borderRadius: isCard ? `${settings.border?.radius ?? 12}px` : (isRound ? '50%' : `${settings.border?.radius || 0}px`),
+      borderRadius: (b.radius !== undefined) ? `${b.radius}px` : (isRound ? '50%' : '0px'),
       cursor: 'pointer',
       backgroundColor: '#fff',
       display: 'flex',
