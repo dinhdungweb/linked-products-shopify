@@ -58,18 +58,27 @@
   -webkit-overflow-scrolling: touch;
   padding-bottom: 8px;
   scrollbar-width: thin;
+  scroll-snap-type: x mandatory; /* Better swipe feel */
+}
+
+@media (min-width: 769px) {
+  .variant-picker__option-values.is-slide {
+    flex-wrap: wrap !important;
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
 }
 
 .variant-picker__option-values.is-slide::-webkit-scrollbar {
-  height: 4px;
+  height: 3px;
 }
 
 .variant-picker__option-values.is-slide::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
 }
 
 .variant-picker__option-values.is-slide::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
 }
 
@@ -107,7 +116,7 @@
 .linked-option {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* Default to start for cards/slides */
   text-decoration: none;
   color: #000000;
   border: var(--lp-border-width) solid var(--lp-border-color);
@@ -118,6 +127,14 @@
   overflow: hidden;
   box-shadow: var(--lp-shadow, none);
   box-sizing: border-box;
+}
+
+/* Re-center for small swatches only */
+.linked-option--swatch,
+.linked-option--button,
+.linked-option--image,
+.linked-option--block {
+  justify-content: center;
 }
 
 .linked-option:hover {
@@ -192,6 +209,7 @@
   flex-direction: column;
   width: var(--lp-swatch-size);
   background: #fff;
+  scroll-snap-align: start; /* Swipe snap */
 }
 
 .linked-option--slide .slide-media {
@@ -213,6 +231,7 @@
   padding: var(--lp-swatch-padding, 8px);
   text-align: center;
   width: 100%;
+  border-top: 1px solid #f0f0f0; /* Separator like Preview */
 }
 
 .linked-option--slide .slide-title {
