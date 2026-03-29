@@ -42,7 +42,7 @@ export const loader = async ({ request }) => {
     where: { shop },
   }) || await prisma.appSetting.create({ data: { shop } });
 
-  const styleIds = ["button_on_card", "color_swatch_card", "image_swatch_card", "dropdown_on_card"];
+  const styleIds = ["button_card", "color_swatch_card", "image_swatch_card", "dropdown_card"];
   const styleSettings = await prisma.optionStyleSetting.findMany({
     where: { shop, styleId: { in: styleIds } },
   });
@@ -172,8 +172,8 @@ export default function ProductCardCustomizer() {
     const tab = searchParams.get("tab");
     if (tab === "color_swatch_card") setSelectedTab(1);
     else if (tab === "image_swatch_card") setSelectedTab(2);
-    else if (tab === "dropdown_on_card") setSelectedTab(3);
-    else if (tab === "button_on_card") setSelectedTab(4);
+    else if (tab === "dropdown_card") setSelectedTab(3);
+    else if (tab === "button_card") setSelectedTab(4);
   }, [searchParams]);
 
   useEffect(() => {
@@ -318,54 +318,54 @@ export default function ProductCardCustomizer() {
   };
 
   const renderDropdownTab = () => {
-    const s = styleSettings["dropdown_on_card"];
+    const s = styleSettings["dropdown_card"];
     return (
         <BlockStack gap="400">
-            <RangeSlider label={`Padding (${s.basic.padding || 8}px)`} value={s.basic.padding || 8} onChange={(v) => handleStyleUpdate("dropdown_on_card", 'basic', 'padding', v)} min={4} max={20} output />
+            <RangeSlider label={`Padding (${s.basic.padding || 8}px)`} value={s.basic.padding || 8} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'padding', v)} min={4} max={20} output />
             
             <Text variant="bodyMd" fontWeight="semibold">Background color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.basic.bgColor || "#FFFFFF"} onChange={(v) => handleStyleUpdate("dropdown_on_card", 'basic', 'bgColor', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.basic.bgColorActive || "#eee"} onChange={(v) => handleStyleUpdate("dropdown_on_card", 'basic', 'bgColorActive', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.basic.bgColor || "#FFFFFF"} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'bgColor', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.basic.bgColorActive || "#eee"} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'bgColorActive', v)} autoComplete="off" /></Grid.Cell>
             </Grid>
 
             <Text variant="bodyMd" fontWeight="semibold">Text color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.label.color} onChange={(v) => handleStyleUpdate("dropdown_on_card", 'label', 'color', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.label.colorActive || "#202020"} onChange={(v) => handleStyleUpdate("dropdown_on_card", 'label', 'colorActive', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.label.color} onChange={(v) => handleStyleUpdate("dropdown_card", 'label', 'color', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.label.colorActive || "#202020"} onChange={(v) => handleStyleUpdate("dropdown_card", 'label', 'colorActive', v)} autoComplete="off" /></Grid.Cell>
             </Grid>
 
-            <RangeSlider label={`Border thickness (${s.border.width}px)`} value={s.border.width} onChange={(v) => handleStyleUpdate("dropdown_on_card", 'border', 'width', v)} min={1} max={4} output />
-            <TextField label="Border color" value={s.border.color} onChange={(v) => handleStyleUpdate("dropdown_on_card", 'border', 'color', v)} autoComplete="off" />
+            <RangeSlider label={`Border thickness (${s.border.width}px)`} value={s.border.width} onChange={(v) => handleStyleUpdate("dropdown_card", 'border', 'width', v)} min={1} max={4} output />
+            <TextField label="Border color" value={s.border.color} onChange={(v) => handleStyleUpdate("dropdown_card", 'border', 'color', v)} autoComplete="off" />
         </BlockStack>
     );
   };
 
   const renderButtonTab = () => {
-    const s = styleSettings["button_on_card"];
+    const s = styleSettings["button_card"];
     return (
         <BlockStack gap="400">
             <BlockStack gap="200">
                 <Text variant="bodyMd">Style</Text>
                 <ButtonGroup variant="segmented">
-                    <Button pressed={s.border.radius > 4} onClick={() => handleStyleUpdate("button_on_card", 'border', 'radius', 20)}>Round</Button>
-                    <Button pressed={s.border.radius <= 4} onClick={() => handleStyleUpdate("button_on_card", 'border', 'radius', 0)}>Square</Button>
+                    <Button pressed={s.border.radius > 4} onClick={() => handleStyleUpdate("button_card", 'border', 'radius', 20)}>Round</Button>
+                    <Button pressed={s.border.radius <= 4} onClick={() => handleStyleUpdate("button_card", 'border', 'radius', 0)}>Square</Button>
                 </ButtonGroup>
             </BlockStack>
-            <RangeSlider label={`Padding (${s.basic.padding}px)`} value={s.basic.padding} onChange={(v) => handleStyleUpdate("button_on_card", 'basic', 'padding', v)} min={1} max={18} output />
-            <RangeSlider label={`Border thickness (${s.border.width}px)`} value={s.border.width} onChange={(v) => handleStyleUpdate("button_on_card", 'border', 'width', v)} min={1} max={4} output />
+            <RangeSlider label={`Padding (${s.basic.padding}px)`} value={s.basic.padding} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'padding', v)} min={1} max={18} output />
+            <RangeSlider label={`Border thickness (${s.border.width}px)`} value={s.border.width} onChange={(v) => handleStyleUpdate("button_card", 'border', 'width', v)} min={1} max={4} output />
             
             <Text variant="bodyMd" fontWeight="semibold">Border color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Normal" value={s.border.color} onChange={(v) => handleStyleUpdate("button_on_card", 'border', 'color', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Active" value={s.border.activeColor} onChange={(v) => handleStyleUpdate("button_on_card", 'border', 'activeColor', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Hover" value={s.border.hoverColor || "#4f5354"} onChange={(v) => handleStyleUpdate("button_on_card", 'border', 'hoverColor', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Normal" value={s.border.color} onChange={(v) => handleStyleUpdate("button_card", 'border', 'color', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Active" value={s.border.activeColor} onChange={(v) => handleStyleUpdate("button_card", 'border', 'activeColor', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Hover" value={s.border.hoverColor || "#4f5354"} onChange={(v) => handleStyleUpdate("button_card", 'border', 'hoverColor', v)} autoComplete="off" /></Grid.Cell>
             </Grid>
 
             <Text variant="bodyMd" fontWeight="semibold">Button color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.basic.buttonColor || "#FFFFFF"} onChange={(v) => handleStyleUpdate("button_on_card", 'basic', 'buttonColor', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.basic.buttonColorActive || "#FFFFFF"} onChange={(v) => handleStyleUpdate("button_on_card", 'basic', 'buttonColorActive', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.basic.buttonColor || "#FFFFFF"} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'buttonColor', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.basic.buttonColorActive || "#FFFFFF"} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'buttonColorActive', v)} autoComplete="off" /></Grid.Cell>
             </Grid>
         </BlockStack>
     );
@@ -375,8 +375,8 @@ export default function ProductCardCustomizer() {
     null,
     "color_swatch_card",
     "image_swatch_card",
-    "dropdown_on_card",
-    "button_on_card"
+    "dropdown_card",
+    "button_card"
   ][selectedTab];
 
   const activeSettings = activeStyleId ? styleSettings[activeStyleId] : null;

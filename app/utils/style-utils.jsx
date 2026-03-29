@@ -51,12 +51,12 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
     swatch: { ...BASE_SETTINGS.swatch, size: 24, borderRadius: 4 },
     label: { ...BASE_SETTINGS.label, show: true, fontSize: 14 }
   },
-  button_on_card: {
+  button_card: {
     ...BASE_SETTINGS,
     basic: { ...BASE_SETTINGS.basic, swatchSize: 0, padding: 8, limitDesktop: 5 },
     label: { ...BASE_SETTINGS.label, show: true, fontSize: 12, border: true }
   },
-  dropdown_on_card: {
+  dropdown_card: {
     ...BASE_SETTINGS,
     basic: { ...BASE_SETTINGS.basic, padding: 8, limitDesktop: 5 },
     label: { ...BASE_SETTINGS.label, show: true, fontSize: 13, border: true }

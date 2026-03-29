@@ -70,10 +70,10 @@ const STYLE_OPTIONS = [
     { id: 'pill_button', label: 'Pill button', type: 'Button', category: 'Button & Label' },
     { id: 'dropdown', label: 'Dropdown', type: 'Dropdown', category: 'Dropdown' },
     { id: 'image_dropdown', label: 'Image swatch in dropdown', type: 'Dropdown', category: 'Dropdown' },
-    { id: 'button_on_card', label: 'Button', type: 'Button', category: 'Product Card' },
+    { id: 'button_card', label: 'Button', type: 'Button', category: 'Product Card' },
     { id: 'color_swatch_card', label: 'Color swatch card', type: 'Color swatch', category: 'Product Card' },
     { id: 'image_swatch_card', label: 'Image swatch card', type: 'Image Swatch', category: 'Product Card' },
-    { id: 'dropdown_on_card', label: 'Dropdown', type: 'Dropdown', category: 'Product Card' },
+    { id: 'dropdown_card', label: 'Dropdown', type: 'Dropdown', category: 'Product Card' },
 ];
 
 const STYLE_CATEGORIES = [
@@ -297,6 +297,10 @@ export async function loader({ request, params }) {
 
     if (groupId === "new") {
         let currentCardStyle = appSettings.defaultProductCardStyle || "image_swatch_card";
+        if (currentCardStyle.endsWith("_on_card")) {
+            currentCardStyle = currentCardStyle.replace("_on_card", "_card");
+        }
+        
         const isValidCardStyle = STYLE_OPTIONS.some(s => s.id === currentCardStyle && s.category === "Product Card");
         
         if (!isValidCardStyle) {
@@ -374,6 +378,11 @@ export async function loader({ request, params }) {
                 ])),
             };
         });
+    }
+
+    // Auto-migrate legacy style ID
+    if (group.cardSelectorStyle?.endsWith("_on_card")) {
+        group.cardSelectorStyle = group.cardSelectorStyle.replace("_on_card", "_card");
     }
 
     return json({ 

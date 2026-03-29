@@ -158,10 +158,10 @@ export default function OptionStylesPage() {
   ];
 
   const productCardStyles = [
-    { id: "button_on_card", title: "Button" },
+    { id: "button_card", title: "Button" },
     { id: "color_swatch_card", title: "Color swatch card" },
     { id: "image_swatch_card", title: "Image swatch card" },
-    { id: "dropdown_on_card", title: "Dropdown" },
+    { id: "dropdown_card", title: "Dropdown" },
   ];
 
   const renderStyleCard = (styleId, title) => {
