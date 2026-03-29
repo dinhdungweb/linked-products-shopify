@@ -193,7 +193,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   );
 };
 
- export const PreviewRenderer = ({ styleId, settings, products, appSettings, isCard = false, hideLabel = false }) => {
+ export const PreviewRenderer = ({ styleId, settings, products, appSettings, isCard = false, hideLabel = false, label }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   
   const displayProducts = (products || PREVIEW_PRODUCTS).map(p => ({
@@ -337,7 +337,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
     );
   }
 
-  const activeOptionName = isCard ? 'Options' : (appSettings?.optionName || 'Color');
+  const activeOptionName = label || (isCard ? 'Options' : (appSettings?.optionName || 'Color'));
 
   const containerStyle = { 
       display: 'flex', 

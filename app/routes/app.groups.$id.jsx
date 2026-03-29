@@ -774,6 +774,7 @@ export default function GroupDetail() {
                                                                 settings={styleSettings[style.id] || DEFAULT_SETTINGS_BY_STYLE[style.id] || BASE_SETTINGS} 
                                                                 isCard={selectingFor === "productCard"}
                                                                 appSettings={appSettings}
+                                                                hideLabel={true}
                                                             />
                                                         </div>
                                                     </div>
@@ -828,7 +829,13 @@ export default function GroupDetail() {
                                 <Text variant="headingSm">Preview on product page</Text>
                                 <InlineStack gap="200" blockAlign="center"><Text variant="bodySm" tone="subdued">Style: {STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Text><div style={{ color: '#8c9196' }}>•</div><Button variant="plain" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button></InlineStack>
                                 <Divider />
-                                <BlockStack gap="200"><Text variant="bodySm" tone="subdued" fontWeight="semibold">{localOptionName}:</Text><PreviewRenderer styleId={localSelectorStyle} settings={styleSettings[localSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localSelectorStyle] || BASE_SETTINGS} products={localProducts} appSettings={appSettings} /></BlockStack>
+                                <PreviewRenderer 
+                                    styleId={localSelectorStyle} 
+                                    settings={styleSettings[localSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localSelectorStyle] || BASE_SETTINGS} 
+                                    products={localProducts} 
+                                    appSettings={appSettings} 
+                                    label={localOptionName}
+                                />
                             </BlockStack>
                         </Card>
                         <Card>
