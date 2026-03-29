@@ -53,25 +53,28 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
   },
   button_on_card: {
     ...BASE_SETTINGS,
-    swatch: { ...BASE_SETTINGS.swatch, size: 0, borderRadius: 0 },
+    basic: { ...BASE_SETTINGS.basic, swatchSize: 0, padding: 8, limitDesktop: 5 },
     label: { ...BASE_SETTINGS.label, show: true, fontSize: 12, border: true }
   },
   color_swatch_on_card: {
     ...BASE_SETTINGS,
-    swatch: { ...BASE_SETTINGS.swatch, size: 24, borderRadius: 12 },
+    basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, limitDesktop: 5 },
+    border: { ...BASE_SETTINGS.border, radius: 12 },
     label: { ...BASE_SETTINGS.label, show: false }
   },
   image_swatch_on_card: {
     ...BASE_SETTINGS,
-    swatch: { ...BASE_SETTINGS.swatch, size: 24, borderRadius: 12 },
+    basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, limitDesktop: 5 },
+    border: { ...BASE_SETTINGS.border, radius: 12 },
     label: { ...BASE_SETTINGS.label, show: false }
   },
   dropdown_on_card: {
     ...BASE_SETTINGS,
+    basic: { ...BASE_SETTINGS.basic, padding: 8, limitDesktop: 5 },
     label: { ...BASE_SETTINGS.label, show: true, fontSize: 13, border: true }
   },
-  image_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0 }, border: { ...BASE_SETTINGS.border, radius: 12 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
-  color_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0 }, border: { ...BASE_SETTINGS.border, radius: 20 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
+  image_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0, limitDesktop: 5 }, border: { ...BASE_SETTINGS.border, radius: 12 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
+  color_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0, limitDesktop: 5 }, border: { ...BASE_SETTINGS.border, radius: 20 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
 };
 
 export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
@@ -93,8 +96,8 @@ export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
   const isButton = styleId.includes('button');
   const isPillSwatch = styleId === 'pill_swatch';
   
-  const padding = isCard ? (settings.swatch?.padding ?? 0) : (settings.swatch?.padding ?? settings.basic.padding ?? 0);
-  const swatchSize = isCard ? (settings.swatch?.size ?? 24) : (settings.swatch?.size ?? settings.basic.swatchSize);
+  const padding = settings.basic?.padding ?? settings.swatch?.padding ?? 0;
+  const swatchSize = settings.basic?.swatchSize ?? settings.swatch?.size ?? 24;
   
   return {
       position: 'relative',
@@ -102,7 +105,7 @@ export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
       width: (isButton || isPillSwatch) ? 'auto' : `${swatchSize + (padding * 2)}px`,
       padding: `${padding}px`,
       border: `${isActive ? (b.width + 1) : b.width || 1}px solid ${isActive ? (b.activeColor || '#000') : (b.color || '#ccc')}`,
-      borderRadius: isCard ? (b.radius || 12) : (isRound ? '50%' : `${b.radius || 0}px`),
+      borderRadius: isCard ? `${settings.border?.radius ?? 12}px` : (isRound ? '50%' : `${settings.border?.radius || 0}px`),
       cursor: 'pointer',
       backgroundColor: '#fff',
       display: 'flex',
@@ -492,7 +495,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
           })}
                    {extraCount > 0 && (
                        <div style={{ 
-                           ...getSwatchStyle(false, settings, styleId), 
+                           ...getSwatchStyle(false, settings, styleId, isCard), 
                            border: 'none', 
                            width: 'auto', 
                            minWidth: '24px',
@@ -504,5 +507,3 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
       </div>
   );
 };
-
-
