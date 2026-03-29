@@ -229,7 +229,7 @@
           <div class="variant-picker__option-info" style="margin-bottom: {{ lp_label_gap }}px; justify-content: {{ lp_justify_content }};">
             <div class="h-stack gap-2" style="flex-direction: {% if lp_label_layout == 'stack' %}column{% else %}row{% endif %}; align-items: {% if lp_layout_align == 'center' %}center{% elsif lp_layout_align == 'right' %}flex-end{% else %}flex-start{% endif %};">
               {%- assign select_label = active_option_name -%}
-              <legend class="text-subdued" style="font-size: {{ lp_label_font_size }}px; font-weight: {{ lp_label_font_weight }};">{{ select_label }}:</legend>
+              <span class="text-subdued" style="font-size: {{ lp_label_font_size }}px; font-weight: {{ lp_label_font_weight }};">{{ select_label }}:</span>
               <span class="selected-value" style="font-size: {{ lp_label_font_size }}px;">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
             </div>
           </div>
