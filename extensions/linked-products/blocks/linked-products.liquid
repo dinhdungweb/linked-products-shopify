@@ -14,8 +14,10 @@
   {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
   
   {%- comment -%}Dynamic settings: prefer per-style customizations, fallback to hardcoded defaults (matches App BASE_SETTINGS){%- endcomment -%}
+  {%- assign meta_selector_style = product.metafields.linked_products.selector_style.value -%}
+  {%- assign meta_option_name = product.metafields.linked_products.option_name.value -%}
   {%- assign active_selector_style = meta_selector_style | default: 'image_swatch' -%}
-  {%- assign active_option_name = meta_option_name| default: 'Color' -%}
+  {%- assign active_option_name = meta_option_name | default: 'Color' -%}
 
   {%- comment -%}Auto-migrate legacy style ID{%- endcomment -%}
   {%- if active_selector_style == 'image_swatch_on_card' -%}
