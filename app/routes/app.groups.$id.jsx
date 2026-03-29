@@ -1138,20 +1138,72 @@ export default function GroupDetail() {
                         </Card>
                         <Card>
                             <BlockStack gap="200">
-                                <InlineStack align="space-between" blockAlign="center"><Text variant="headingSm">Preview on product card</Text><div style={{ transform: 'scale(1.2)' }}><Checkbox label="" labelHidden checked={localCardSelectorStyle !== "same"} onChange={(v) => setLocalCardSelectorStyle(v ? "image_swatch_on_card" : "same")} /></div></InlineStack>
-                                <InlineStack gap="200" blockAlign="center"><Text variant="bodySm" tone="subdued">Style: {localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Text>{localCardSelectorStyle !== "same" && <><div style={{ color: '#8c9196' }}>•</div><Button variant="plain" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button></>}</InlineStack>
-                                <Divider />
-                                {previewOnProductCard ? (
-                                    <Box padding="400" background="bg-surface-secondary" borderRadius="200" borderWidth="025" borderColor="border">
-                                        <BlockStack gap="200">
-                                            <div style={{ aspectRatio: '1/1', backgroundColor: '#eee', borderRadius: '4px', overflow: 'hidden' }}><img src={localProducts[0]?.image || PREVIEW_IMAGES[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
-                                            <Text variant="bodySm" fontWeight="medium">Product Name Example</Text>
-                                            <Text variant="bodyXs" tone="subdued">$49.00 USD</Text>
-                                            <div style={{ marginTop: '8px' }}><PreviewRenderer styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} products={localProducts} /></div>
+                                <InlineStack align="space-between" blockAlign="center">
+                                    <Text variant="headingSm">Preview on product card</Text>
+                                    <div style={{ transform: 'scale(1.2)' }}>
+                                        <Checkbox 
+                                            label="" 
+                                            labelHidden 
+                                            checked={localCardSelectorStyle !== "hidden"} 
+                                            onChange={(v) => setLocalCardSelectorStyle(v ? "same" : "hidden")} 
+                                        />
+                                    </div>
+                                </InlineStack>
+                                
+                                {localCardSelectorStyle === "hidden" ? (
+                                    <Box padding="400" background="bg-surface-secondary" borderRadius="200" borderWidth="025" borderColor="border" borderStyle="dashed">
+                                        <BlockStack gap="200" align="center">
+                                            <div style={{ color: '#8c9196', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                                <Icon source={ViewIcon} tone="subdued" />
+                                                <Text variant="bodySm" tone="subdued">This option is hidden in product card</Text>
+                                            </div>
                                         </BlockStack>
                                     </Box>
-                                ) : <PreviewRenderer styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} products={localProducts} />}
-                                <Box paddingBlockStart="400"><InlineStack align="space-between"><Text variant="bodySm" tone="subdued">Preview on:</Text><InlineStack gap="200"><Button size="micro" pressed={!previewOnProductCard} onClick={() => setPreviewOnProductCard(false)}>Product Page</Button><Button size="micro" pressed={previewOnProductCard} onClick={() => setPreviewOnProductCard(true)}>Collection</Button></InlineStack></InlineStack></Box>
+                                ) : (
+                                    <>
+                                        <InlineStack gap="200" blockAlign="center">
+                                            <Text variant="bodySm" tone="subdued">Style: {localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Text>
+                                            <div style={{ color: '#8c9196' }}>•</div>
+                                            <Button variant="plain" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button>
+                                        </InlineStack>
+                                        <Divider />
+                                        <div style={{ maxWidth: '240px', margin: '0 auto', width: '100%' }}>
+                                            {previewOnProductCard ? (
+                                                <Box padding="400" background="bg-surface-secondary" borderRadius="200" borderWidth="025" borderColor="border">
+                                                    <BlockStack gap="200">
+                                                        <div style={{ aspectRatio: '1/1', backgroundColor: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
+                                                            <img src={localProducts[0]?.image || PREVIEW_IMAGES[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        </div>
+                                                        <Text variant="bodySm" fontWeight="medium">Product Name Example</Text>
+                                                        <Text variant="bodyXs" tone="subdued">$49.00 USD</Text>
+                                                        <div style={{ marginTop: '8px' }}>
+                                                            <PreviewRenderer 
+                                                                styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} 
+                                                                settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} 
+                                                                products={localProducts} 
+                                                            />
+                                                        </div>
+                                                    </BlockStack>
+                                                </Box>
+                                            ) : (
+                                                <PreviewRenderer 
+                                                    styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} 
+                                                    settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} 
+                                                    products={localProducts} 
+                                                />
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                                <Box paddingBlockStart="400">
+                                    <InlineStack align="space-between">
+                                        <Text variant="bodySm" tone="subdued">Preview on:</Text>
+                                        <InlineStack gap="200">
+                                            <Button size="micro" pressed={!previewOnProductCard} onClick={() => setPreviewOnProductCard(false)}>Product Page</Button>
+                                            <Button size="micro" pressed={previewOnProductCard} onClick={() => setPreviewOnProductCard(true)}>Collection</Button>
+                                        </InlineStack>
+                                    </InlineStack>
+                                </Box>
                             </BlockStack>
                         </Card>
                     </BlockStack>
