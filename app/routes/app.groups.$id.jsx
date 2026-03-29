@@ -117,12 +117,12 @@ function hsbToHex(hsb) {
 }
 
 const getBorderRadius = (id) => {
-    if (!id) return '50%';
+    if (!id) return '8px';
     const lower = id.toLowerCase();
     if (lower.includes('square')) return '4px';
     if (lower.includes('slide')) return '4px';
     if (lower.includes('polaroid')) return '0';
-    return '50%';
+    return '8px';
 };
 
 const renderPreview = (styleId) => {
@@ -754,7 +754,7 @@ export async function action({ request, params }) {
     return json({ error: "Invalid action" }, { status: 400 });
 }
 
-const ColorPickerPopover = ({ color, onChange, radius = '50%' }) => {
+const ColorPickerPopover = ({ color, onChange, radius = '8px' }) => {
     const [active, setActive] = useState(false);
     const toggleActive = useCallback(() => setActive((active) => !active), []);
 
