@@ -263,8 +263,8 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {isImageDropdown && (
               <div style={{ 
-                width: `${settings.basic.swatchSize || 32}px`, 
-                height: `${settings.basic.swatchSize || 32}px`, 
+                width: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
+                height: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
                 borderRadius: '4px', 
                 overflow: 'hidden',
                 flexShrink: 0,
@@ -365,7 +365,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
               
               const renderSwatchInner = () => {
                 const isTwoColor = p.style === 'two';
-                const size = settings.basic.swatchSize;
+                const size = settings.basic.swatchSize || settings.swatch?.size || 32;
                 const height = (size * ratioH / ratioW);
                 const radius = isRound ? '50%' : `${settings.border.radius}px`;
 
@@ -434,14 +434,14 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                 );
               };
 
-              const size = settings.basic.swatchSize;
+              const size = settings.basic.swatchSize || settings.swatch?.size || 32;
               const height = (size * ratioH / ratioW);
 
               return (
                   <div key={i} style={getOuterStyle(isActive, settings, styleId, isCard)}>
                       <div style={{ 
                           ...getSwatchStyle(isActive, settings, styleId, isCard), 
-                          padding: isButton ? '8px 16px' : (isPillSwatch ? '6px 12px' : `${settings.basic.padding}px`),
+                          padding: isButton ? '8px 16px' : (isPillSwatch ? '6px 12px' : `${settings.basic.padding ?? settings.swatch?.padding ?? 0}px`),
                       }}>
                           {isActive && renderBadge(isActive, settings)}
                           {!isButton && renderSwatchInner()}

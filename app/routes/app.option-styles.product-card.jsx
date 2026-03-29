@@ -49,7 +49,23 @@ export const loader = async ({ request }) => {
 
   const formattedStyles = styleIds.reduce((acc, id) => {
     const found = styleSettings.find(s => s.styleId === id);
-    acc[id] = found?.settings || DEFAULT_SETTINGS_BY_STYLE[id] || BASE_SETTINGS;
+    let settings = found?.settings || DEFAULT_SETTINGS_BY_STYLE[id] || BASE_SETTINGS;
+    
+    // Self-healing migration
+    if (settings.swatch?.size && !settings.basic?.swatchSize) {
+      settings = {
+        ...settings,
+        basic: { ...settings.basic, swatchSize: settings.swatch.size },
+      };
+    }
+    if (settings.swatch?.padding !== undefined && settings.basic?.padding === undefined) {
+      settings = {
+        ...settings,
+        basic: { ...settings.basic, padding: settings.swatch.padding },
+      };
+    }
+    
+    acc[id] = settings;
     return acc;
   }, {});
 
@@ -255,8 +271,8 @@ export default function ProductCardCustomizer() {
             </ButtonGroup>
         </BlockStack>
 
-        <RangeSlider label={`Size (${s.swatch.size}px)`} value={s.swatch.size} onChange={(v) => handleStyleUpdate(styleId, 'swatch', 'size', v)} min={14} max={50} output />
-        <RangeSlider label={`Padding (${s.swatch.padding || 0}px)`} value={s.swatch.padding || 0} onChange={(v) => handleStyleUpdate(styleId, 'swatch', 'padding', v)} min={0} max={4} output />
+        <RangeSlider label={`Size (${s.basic.swatchSize || s.swatch?.size || 24}px)`} value={s.basic.swatchSize || s.swatch?.size || 24} onChange={(v) => handleStyleUpdate(styleId, 'basic', 'swatchSize', v)} min={14} max={50} output />
+        <RangeSlider label={`Padding (${s.basic.padding ?? s.swatch?.padding ?? 0}px)`} value={s.basic.padding ?? s.swatch?.padding ?? 0} onChange={(v) => handleStyleUpdate(styleId, 'basic', 'padding', v)} min={0} max={4} output />
         <RangeSlider label={`Border thickness (${s.border.width}px)`} value={s.border.width} onChange={(v) => handleStyleUpdate(styleId, 'border', 'width', v)} min={0} max={4} output />
 
         <Text variant="bodyMd" fontWeight="semibold">Border color</Text>
