@@ -403,27 +403,31 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   const containerStyle = { 
       display: 'flex', 
       gap: `${settings.basic.gap}px`, 
-      flexWrap: isSlide ? 'nowrap' : 'wrap',
-      overflowX: isSlide ? 'auto' : 'visible',
-      msOverflowStyle: isSlide ? 'none' : 'auto', // Hide scrollbar for IE/Edge
-      scrollbarWidth: isSlide ? 'none' : 'auto',   // Hide scrollbar for Firefox
+      flexWrap: (isSlide && !isCard) ? 'wrap' : (isSlide ? 'nowrap' : 'wrap'),
+      overflowX: (isSlide && isCard) ? 'auto' : 'visible',
+      msOverflowStyle: (isSlide && isCard) ? 'none' : 'auto', 
+      scrollbarWidth: (isSlide && isCard) ? 'none' : 'auto',   
       WebkitOverflowScrolling: 'touch',
       justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start'),
       padding: '0', 
       width: '100%',
-      // We can't easily hide webkit scrollbar inline without a class, 
-      // but these help in many browsers. 
   };
 
   return (
       <div style={{ width: '100%' }}>
           <style dangerouslySetInnerHTML={{ __html: `
             .slide-container::-webkit-scrollbar { display: none; }
+            @media (min-width: 769px) {
+              .slide-container.is-slide-page { 
+                flex-wrap: wrap !important;
+                overflow-x: visible !important;
+              }
+            }
           ` }} />
           {renderLabel()}
 
           <div 
-            className="slide-container"
+            className={`slide-container ${isSlide && !isCard ? 'is-slide-page' : ''}`}
             style={{ ...containerStyle, marginTop: isCard ? 0 : `${settings.layout?.marginTop || 0}px`, marginBottom: isCard ? 0 : `${settings.layout?.marginBottom || 0}px` }}
           >
               {itemsToRender.map((p, i) => {
