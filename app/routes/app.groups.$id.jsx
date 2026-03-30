@@ -196,6 +196,9 @@ const SortableItem = ({ product, idx, isLast, shop, handleRemoveProduct, handleU
                                 <Badge tone={product.status === "ACTIVE" ? "success" : "info"}>
                                     {product.status === "ACTIVE" ? "Active" : "Draft"}
                                 </Badge>
+                                {product.isUnavailable && (
+                                    <Badge tone="critical">Sold out</Badge>
+                                )}
                                 <Text fontWeight="semibold" variant="bodyMd">{product.title}</Text>
                             </InlineStack>
                             <InlineStack gap="200" blockAlign="center">
@@ -341,6 +344,12 @@ export async function loader({ request, params }) {
     }
 
     let productDetails = [];
+    
+    // Fetch shop info for currency
+    const shopResponse = await admin.graphql(`{ shop { currencyCode moneyFormat } }`);
+    const shopData = await shopResponse.json();
+    const moneyFormat = shopData.data?.shop?.moneyFormat || "${{amount}}";
+    
     if (group.products.length > 0) {
         const productIds = group.products.map((p) => p.productId);
         const response = await admin.graphql(`
@@ -352,8 +361,9 @@ export async function loader({ request, params }) {
             handle
             featuredImage { url }
             status
+            totalInventory
             images(first: 10) { nodes { url } }
-            variants(first: 5) { nodes { id title image { url } } }
+            variants(first: 5) { nodes { id title price availableForSale image { url } } }
           }
         }
       }
@@ -365,6 +375,16 @@ export async function loader({ request, params }) {
         productDetails = group.products.map((item) => {
             const shopifyProduct = shopifyProducts.find((p) => p?.id === item.productId);
             let fallbackImage = shopifyProduct?.variants?.nodes?.find(v => v.image?.url)?.image?.url;
+            
+            // Check if product is available or not based on total inventory or variants
+            const isUnavailable = shopifyProduct ? (shopifyProduct.totalInventory <= 0 && !shopifyProduct.variants.nodes.some(v => v.availableForSale)) : false;
+            
+            // Format price based on shop money format
+            let rawPrice = shopifyProduct?.variants?.nodes?.[0]?.price || "12.88";
+            let formattedPrice = moneyFormat.replace(/\{\{amount\}\}/g, rawPrice)
+                                         .replace(/\{\{amount_no_decimals\}\}/g, Math.round(parseFloat(rawPrice)).toString())
+                                         .replace(/\{\{amount_with_comma_separator\}\}/g, rawPrice.replace(".", ","))
+                                         .replace(/\{\{amount_no_decimals_with_comma_separator\}\}/g, Math.round(parseFloat(rawPrice)).toString().replace(".", ","));
 
             return {
                 ...item,
@@ -372,6 +392,8 @@ export async function loader({ request, params }) {
                 handle: shopifyProduct?.handle || item.productHandle,
                 image: shopifyProduct?.featuredImage?.url || fallbackImage || null,
                 status: shopifyProduct?.status,
+                isUnavailable: isUnavailable,
+                price: formattedPrice,
                 allImages: Array.from(new Set([
                     ...(shopifyProduct?.images?.nodes?.map(n => n.url) || []),
                     ...(shopifyProduct?.variants?.nodes?.map(v => v.image?.url).filter(Boolean) || [])
