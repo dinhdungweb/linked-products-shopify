@@ -325,8 +325,8 @@ export default function ProductCardCustomizer() {
             
             <Text variant="bodyMd" fontWeight="semibold">Background color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.basic.bgColor || "#FFFFFF"} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'bgColor', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.basic.bgColorActive || "#eee"} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'bgColorActive', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.basic.blockBg || "#FFFFFF"} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'blockBg', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.basic.blockBgActive || "#eee"} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'blockBgActive', v)} autoComplete="off" /></Grid.Cell>
             </Grid>
 
             <Text variant="bodyMd" fontWeight="semibold">Text color</Text>

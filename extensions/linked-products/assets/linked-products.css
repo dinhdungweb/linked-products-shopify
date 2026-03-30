@@ -692,7 +692,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  background: #fff;
+  background: var(--lp-block-bg, #fff);
   border: var(--lp-border-width, 1px) solid var(--lp-border-color, #dbdfe2);
   border-radius: var(--lp-border-radius, 4px);
   min-height: 48px;
