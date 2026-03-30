@@ -910,6 +910,7 @@ export default function GroupDetail() {
                                                                 products={localProducts} 
                                                                 appSettings={appSettings}
                                                                 isCard={true}
+                                                                hideLabel={true}
                                                             />
                                                         </div>
                                                     </BlockStack>
@@ -921,6 +922,7 @@ export default function GroupDetail() {
                                                     products={localProducts} 
                                                     appSettings={appSettings}
                                                     isCard={true}
+                                                    hideLabel={true}
                                                 />
                                             )}
                                         </div>
