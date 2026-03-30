@@ -1,11 +1,9 @@
-{%- assign app_settings = shop.metafields.linked_products.app_settings.value -%}
-{%- if app_settings.showOnProductCards -%}
   <script>
     (function() {
       if (window.lpInjected) return;
       window.lpInjected = true;
+      console.log('Linked Products: Injector active.');
 
-      // Config for standard themes (Dawn, etc.)
       const SELECTORS = {
         cards: '.card-wrapper, .card, .product-card, .grid-view-item, .product-item',
         content: '.card__content, .product-card__info, .product-item-meta, .product-info',
@@ -22,15 +20,14 @@
           if (!productLink) continue;
           
           const url = new URL(productLink.href, window.location.origin);
-          const handle = url.pathname.split('/products/')[1];
+          const handle = url.pathname.split('/products/')[1].split('?')[0];
           if (!handle) continue;
 
-          // Create a container
           const container = document.createElement('div');
           container.className = 'lp-injected-container';
           container.style.width = '100%';
+          container.setAttribute('data-lp-handle', handle);
           
-          // Find insertion point (usually before or after price)
           const priceElement = card.querySelector(SELECTORS.price);
           const contentElement = card.querySelector(SELECTORS.content);
           
@@ -40,23 +37,19 @@
             contentElement.appendChild(container);
           }
 
-          // Fetch the swatch HTML using Section Rendering API 
-          // Note: This assumes the 'collection-swatches' block is available as a section
-          // For a true "automatic" experience without any theme setup, 
-          // we use a specific query param to trigger our Liquid block if possible.
+          // Fetch Swatches via Section Rendering API (if possible) or just a simple placeholder for now
+          // For a robust "Auto" version, we'd fetch a mini-liquid template.
+          // But since we can't easily add a new section via code, let's try to fetch the existing one.
           
-          // Simplified: We use a placeholder that the user can also manually target
-          container.setAttribute('data-lp-handle', handle);
-          
-          // Re-trigger the block if it's already on the page for this handle
-          // (This is advanced logic, for now we let the user know they should add the block once)
+          try {
+            // We'll attempt to fetch the section. This usually requires the section to be part of the theme.
+            // Since we know the block name is 'collection-swatches', we can try.
+            // Note: Extension block IDs are usually dynamic, so this is a challenge for "Auto" without a proxy.
+          } catch (e) {}
         }
       }
 
-      // Run
       injectCardSwatches();
-      
-      // MutationObserver for AJAX/Infinite scroll
       const observer = new MutationObserver((mutations) => {
         let shouldRun = false;
         mutations.forEach(m => { if (m.addedNodes.length) shouldRun = true; });
@@ -68,10 +61,9 @@
   <style>
     .lp-injected-container {
         display: block;
-        min-height: 10px;
+        min-height: 5px;
     }
   </style>
-{%- endif -%}
 
 {% schema %}
 {
