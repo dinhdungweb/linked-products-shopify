@@ -666,12 +666,34 @@
   filter: grayscale(0.5);
 }
 
+.linked-option.is-unavailable {
+  opacity: 0.6;
+  cursor: not-allowed;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Diagonal line - only for cross_mark */
+.linked-products-picker[data-unavailable-style='cross_mark'] .lp-unavailable-effect {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to top right, transparent calc(50% - 1.5px), #ff4d4f 50%, transparent calc(50% + 1.5px));
+  z-index: 10;
+  pointer-events: none;
+  display: block;
+}
+
+/* Hide line if not cross_mark */
+.linked-products-picker:not([data-unavailable-style='cross_mark']) .lp-unavailable-effect {
+  display: none;
+}
+
+/* Strike-through for strike style */
+.linked-products-picker[data-unavailable-style='strike'] .is-unavailable .pill-label,
 .linked-products-picker[data-unavailable-style='strike'] .is-unavailable .slide-title,
 .linked-products-picker[data-unavailable-style='strike'] .is-unavailable .card-label,
-.linked-products-picker[data-unavailable-style='strike'] .is-unavailable .pill-label,
-.linked-products-picker[data-unavailable-style='strike'] .is-unavailable.linked-option--block {
+.linked-products-picker[data-unavailable-style='strike'] .is-unavailable.linked-option--button {
   text-decoration: line-through;
-  opacity: 0.7;
 }
 
 /* ============================================

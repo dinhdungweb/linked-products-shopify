@@ -253,6 +253,7 @@
                       {%- endif -%}
                       <span class="lp-dropdown__text">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
                       <svg class="lp-dropdown__icon" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      {%- if product.available == false -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
                   </div>
                   <div class="lp-dropdown__options">
                     {%- for item in linked_handles_raw -%}
@@ -273,6 +274,7 @@
                             <span class="lp-dropdown__text">{{ value }}</span>
                             {%- if linked_prod.available == false -%}
                                 <span class="lp-dropdown__sold-out">(Sold out)</span>
+                                <span class="lp-unavailable-effect"></span>
                             {%- endif -%}
                         </a>
                       {%- endif -%}

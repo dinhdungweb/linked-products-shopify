@@ -142,6 +142,7 @@
         {%- else -%}
           <span class="no-image">{{ value | slice: 0, 2 }}</span>
         {%- endif -%}
+        {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
       </a>
     </span>
 
@@ -167,6 +168,7 @@
             <span class="slide-price">{{ product_obj.price | money }}</span>
           {%- endif -%}
         </div>
+        {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
       </a>
     </span>
 
@@ -184,6 +186,7 @@
             <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
           {%- endif -%}
         </div>
+        {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
       </a>
     </span>
 
@@ -200,7 +203,7 @@
         {%- else -%}
           <span class="swatch-bg swatch-bg--text" style="font-size: calc(var(--lp-swatch-size) * 0.4); color: var(--lp-price-color, #999);">{{ value | slice: 0 }}</span>
         {%- endif -%}
-
+        {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
       </a>
     </span>
 
@@ -215,6 +218,7 @@
         {%- if settings.variantName.show != false -%}
           <span class="pill-label">{{ value }}</span>
         {%- endif -%}
+        {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
       </a>
     </span>
 
@@ -223,6 +227,7 @@
        class="linked-option linked-option--button {% if style == 'pill_button' %}is-pill{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
        title="{{ value }}">
       {{ value }}
+      {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
     </a>
 
   {%- when 'image_swatch_card' -%}
@@ -247,6 +252,7 @@
         {%- if settings.price.show -%}
           <span class="slide-price" style="font-size: var(--lp-price-font-size, 10px);">{{ product_obj.price | money }}</span>
         {%- endif -%}
+        {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
       </a>
     </span>
 
@@ -268,6 +274,7 @@
         {%- if settings.variantName.show != false -%}
           <span class="card-label">{{ value }}</span>
         {%- endif -%}
+        {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
       </a>
     </span>
 
@@ -281,6 +288,7 @@
          title="{% if is_unavailable %}{{ value }} (Sold out){% else %}{{ value }}{% endif %}">
           <span class="color-dot" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
         {{ value }}
+        {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
       </a>
     </span>
 
