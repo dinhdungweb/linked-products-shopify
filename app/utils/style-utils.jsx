@@ -428,7 +428,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                               {!isButton && renderSwatchInner()}
                               {renderUnavailableEffect(p.isUnavailable, settings.basic?.unavailableStyle ?? "cross_mark")}
                               {shouldShowName && (
-                                  <div style={{ marginTop: isButton ? 0 : '8px', paddingBottom: isButton ? 0 : '8px', textAlign: 'center', width: '100%', maxWidth: '100%', lineHeight: '1.2', wordBreak: 'break-word' }}>
+                                  <div style={{ padding: isButton ? 0 : '5px', textAlign: 'center', width: '100%', maxWidth: '100%', lineHeight: '1.2', wordBreak: 'break-word', boxSizing: 'border-box' }}>
                                       <div style={{ fontSize: `${settings.variantName?.fontSize}px`, fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'), display: '-webkit-box', WebkitLineClamp: settings.variantName?.maxLines || 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                           {isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}
                                       </div>
