@@ -309,6 +309,8 @@
 }
 
 .linked-option--pill-swatch .pill-label {
+  font-size: var(--lp-variant-font-size, 13px);
+  font-weight: var(--lp-variant-weight, 500);
   word-break: break-all;
 }
 
@@ -316,7 +318,8 @@
 .linked-option--button {
   padding: var(--lp-block-padding-y) var(--lp-block-padding-x) !important;
   min-width: 60px;
-  font-weight: 500;
+  font-size: var(--lp-variant-font-size, 14px);
+  font-weight: var(--lp-variant-weight, 500);
   display: inline-flex;
   align-items: center;
   justify-content: center;
