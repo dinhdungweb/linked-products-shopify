@@ -672,22 +672,31 @@
   overflow: hidden;
 }
 
-/* Diagonal line - only for cross_mark */
+/* Diagonal line - Pixel-perfect sharp 1px line to match preview */
 .linked-products-picker[data-unavailable-style='cross_mark'] .lp-unavailable-effect {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(to top right, transparent calc(50% - 0.5px), #ff4d4f 50%, transparent calc(50% + 0.5px));
+  background: linear-gradient(to top right, 
+    transparent calc(50% - 1px), 
+    rgba(255, 77, 79, 0.8) calc(50% - 0.5px), 
+    rgba(255, 77, 79, 1) 50%, 
+    rgba(255, 77, 79, 0.8) calc(50% + 0.5px), 
+    transparent calc(50% + 1px)
+  );
   z-index: 10;
   pointer-events: none;
   display: block;
 }
 
-/* For cross_mark, we might want a slight desaturation instead of heavy opacity to match preview */
-.linked-products-picker[data-unavailable-style='cross_mark'] .linked-option.is-unavailable {
-  filter: saturate(0.8);
+/* Slightly darken the text for unavailable variants to match preview readability */
+.linked-products-picker[data-unavailable-style='cross_mark'] .is-unavailable .pill-label,
+.linked-products-picker[data-unavailable-style='cross_mark'] .is-unavailable .slide-title,
+.linked-products-picker[data-unavailable-style='cross_mark'] .is-unavailable .card-label {
+  color: #666;
+  opacity: 0.8;
 }
 
-/* Opacity style - only for opacity setting */
+/* Opacity style - only for specific opacity setting */
 .linked-products-picker[data-unavailable-style='opacity'] .linked-option.is-unavailable {
   opacity: 0.4;
 }
