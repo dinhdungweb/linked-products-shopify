@@ -318,11 +318,19 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {isImageDropdown && (
-                        <img 
-                            src={p.color} 
-                            alt="" 
-                            style={{ width: '36px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} 
-                        />
+                        <div style={{ 
+                            width: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
+                            height: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
+                            borderRadius: '4px', 
+                            overflow: 'hidden',
+                            flexShrink: 0
+                        }}>
+                            <img 
+                                src={p.color} 
+                                alt="" 
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            />
+                        </div>
                     )}
                     <Text variant="bodyMd">{p.name}</Text>
                 </div>

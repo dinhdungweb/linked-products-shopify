@@ -513,9 +513,9 @@
 }
 
 .lp-dropdown__img {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
+  width: var(--lp-swatch-size, 32px);
+  height: var(--lp-swatch-size, 32px);
+  border-radius: var(--lp-border-radius, 4px);
   object-fit: cover;
   flex-shrink: 0;
   border: 1px solid rgba(0,0,0,0.05);
@@ -703,14 +703,7 @@
   border-color: var(--lp-hover-border-color, #000);
 }
 
-.lp-dropdown__img {
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
-  object-fit: cover;
-  background: #f4f4f4;
-  flex-shrink: 0;
-}
+/* Removed duplicate .lp-dropdown__img */
 
 .lp-dropdown__text {
   flex: 1;
