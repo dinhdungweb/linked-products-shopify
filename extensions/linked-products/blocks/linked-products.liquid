@@ -76,17 +76,6 @@
   {%- endif -%}
   
   {%- assign lp_radius_unit = 'px' -%}
-  {%- if active_selector_style == 'image_swatch' or active_selector_style == 'color_swatch' -%}
-    {%- if lp_border_radius == blank or lp_border_radius >= 20 -%}
-       {%- assign lp_border_radius = 50 -%}
-       {%- assign lp_radius_unit = '%' -%}
-    {%- endif -%}
-  {%- elsif active_selector_style == 'pill_button' or active_selector_style == 'pill_swatch' -%}
-    {%- if lp_border_radius == blank or lp_border_radius >= 20 -%}
-       {%- assign lp_border_radius = 999 -%}
-       {%- assign lp_radius_unit = 'px' -%}
-    {%- endif -%}
-  {%- endif -%}
 
   {%- assign lp_border_width = active_style_settings.border.width | default: def_width -%}
   {%- assign lp_border_color = active_style_settings.border.color | default: '#dbdfe2' -%}
@@ -101,17 +90,6 @@
   {%- endif -%}
 
   {%- assign lp_outer_radius_unit = 'px' -%}
-  {%- if active_selector_style == 'image_swatch' or active_selector_style == 'color_swatch' -%}
-    {%- if lp_outer_radius == blank or lp_outer_radius >= 20 -%}
-       {%- assign lp_outer_radius = 50 -%}
-       {%- assign lp_outer_radius_unit = '%' -%}
-    {%- endif -%}
-  {%- elsif active_selector_style == 'pill_button' or active_selector_style == 'pill_swatch' -%}
-    {%- if lp_outer_radius == blank or lp_outer_radius >= 20 -%}
-       {%- assign lp_outer_radius = 999 -%}
-       {%- assign lp_outer_radius_unit = 'px' -%}
-    {%- endif -%}
-  {%- endif -%}
 
   {%- assign lp_outer_color = active_style_settings.border.outerColor | default: '#dbdfe2' -%}
   {%- assign lp_outer_active_color = active_style_settings.border.outerActiveColor | default: '#000000' -%}
