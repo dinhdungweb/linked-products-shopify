@@ -227,7 +227,7 @@
 }
 
 .linked-option--slide .slide-info {
-  padding: var(--lp-swatch-padding);
+  padding: 5px;
   text-align: center;
   width: 100%;
   display: flex;
