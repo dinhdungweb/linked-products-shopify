@@ -243,49 +243,6 @@ export default function OptionStylesPage() {
     );
   };
 
-  const renderExploreCard = (styleId, title, asDarkCard = false) => {
-    if (asDarkCard) {
-      return (
-        <div style={{ backgroundColor: '#4a4a4a', color: 'white', borderRadius: '8px', padding: '24px', height: '100%', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <Icon source={StoreIcon} tone="textInverse" />
-          <Text variant="headingMd" tone="textInverse">Find more styles</Text>
-          <Text variant="bodyMd" tone="textInverse">Discover more product page styles to fit your brand, including color swatch, image swatch, button, dropdown.</Text>
-          <div style={{ marginTop: 'auto' }}>
-            <Button>View all styles</Button>
-          </div>
-        </div>
-      );
-    }
-
-    const settings = DEFAULT_SETTINGS_BY_STYLE[styleId] || BASE_SETTINGS;
-
-    return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'visible', position: 'relative', zIndex: styleId.includes('dropdown') ? 20 : 1 }}>
-        <div style={{
-          flex: 1,
-          backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)',
-          padding: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: '150px',
-          overflow: 'visible',
-          borderRadius: '0 0 8px 8px'
-        }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'visible' }}>
-            <PreviewRenderer styleId={styleId} settings={settings} appSettings={appSettings} hideLabel={true} />
-          </div>
-        </div>
-        <Divider />
-        <Box padding="300">
-          <InlineStack align="space-between" blockAlign="center">
-            <Text variant="headingSm" as="h3">{title}</Text>
-            <Button icon={PlusIcon} size="micro">Add</Button>
-          </InlineStack>
-        </Box>
-      </div>
-    );
-  };
-
   return (
     <Page fullWidth>
       <TitleBar title="Option styles" />
@@ -332,39 +289,6 @@ export default function OptionStylesPage() {
             }
           </Grid>
         </BlockStack>
-
-        <Box paddingBlockStart="200" paddingBlockEnd="200">
-          <Divider />
-        </Box>
-
-        <BlockStack gap="400">
-          <BlockStack gap="100">
-            <Text variant="headingLg">Explore more styles</Text>
-            <Text variant="bodyMd" tone="subdued">Discover more product page styles to fit your brand.</Text>
-          </BlockStack>
-
-          <Grid>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("slide_swatch", "Slide swatch (Mobile only)")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("image_swatch", "Image swatch")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("polaroid_swatch", "Polaroid swatch")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("color_swatch", "Color swatch")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("button", "Button")}
-            </Grid.Cell>
-            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 2, lg: 4, xl: 4 }}>
-              {renderExploreCard("more", "Find more styles", true)}
-            </Grid.Cell>
-          </Grid>
-        </BlockStack>
-
         <Box paddingBlockEnd="600" paddingBlockStart="400">
           <InlineStack align="center" gap="100">
             <Icon source={QuestionCircleIcon} tone="base" />
