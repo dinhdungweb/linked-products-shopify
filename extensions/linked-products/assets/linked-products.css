@@ -463,43 +463,6 @@
   border: 1px solid var(--lp-neutral-border);
 }
 
-/* Unavailable/Sold out state */
-.linked-option.is-unavailable {
-  opacity: 0.6;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Diagonal line for swatch and image styles - Only if style is cross_mark */
-.linked-products-picker[data-unavailable-style="cross_mark"] .linked-option--swatch.is-unavailable::after,
-.linked-products-picker[data-unavailable-style="cross_mark"] .linked-option--image.is-unavailable::after,
-.linked-products-picker[data-unavailable-style="cross_mark"] .linked-option--card.is-unavailable .card-media::after,
-.linked-products-picker[data-unavailable-style="cross_mark"] .linked-option--slide.is-unavailable .slide-media::after,
-.linked-products-picker[data-unavailable-style="cross_mark"] .linked-option--polaroid.is-unavailable .polaroid-inner::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to top left, transparent calc(50% - 1px), #999, transparent calc(50% + 1px));
-  pointer-events: none;
-  z-index: 10;
-}
-
-/* Cross for swatch check when unavailable */
-.linked-option.is-unavailable .swatch-check {
-  display: none !important;
-}
-
-/* Strikethrough for text styles */
-.linked-option--block.is-unavailable,
-.linked-option--button.is-unavailable,
-.linked-option--pill-swatch.is-unavailable .pill-label {
-  text-decoration: line-through;
-  background-color: #f9f9f9;
-}
-
 /* Custom Dropdown style */
 .variant-picker__dropdown-container,
 .variant-picker__dropdown-container * {
