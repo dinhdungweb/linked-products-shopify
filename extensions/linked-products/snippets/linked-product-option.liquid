@@ -149,12 +149,12 @@
     <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block;">
       <a href="{{ url }}" 
          class="linked-option linked-option--slide {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
+         style="width: var(--lp-swatch-size);"
          title="{{ value }}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
-        <div class="slide-media">
+        <div class="slide-media" style="aspect-ratio: var(--lp-aspect-ratio);">
           {%- if final_image_url != blank -%}
             <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
           {%- endif -%}
@@ -174,12 +174,12 @@
     <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--polaroid {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
+         style="width: var(--lp-swatch-size);"
          title="{{ value }}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
-        <div class="polaroid-inner">
+        <div class="polaroid-inner" style="aspect-ratio: var(--lp-aspect-ratio);">
           {%- if final_image_url != blank -%}
             <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
           {%- endif -%}
@@ -229,12 +229,12 @@
     <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block;">
       <a href="{{ url }}" 
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
+         style="width: var(--lp-swatch-size);"
          title="{{ value }}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
-        <div class="card-media">
+        <div class="card-media" style="aspect-ratio: var(--lp-aspect-ratio);">
           {%- if final_image_url != blank -%}
             <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
           {%- else -%}
@@ -254,10 +254,10 @@
     <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block;">
       <a href="{{ url }}" 
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
+         style="width: var(--lp-swatch-size);"
          title="{{ value }}">
         <div class="card-media is-color" 
-             style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: var(--lp-border-color, #f4f4f4);{% endif %}">
+             style="aspect-ratio: var(--lp-aspect-ratio); {% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: var(--lp-border-color, #f4f4f4);{% endif %}">
           {%- if has_color or final_image_url != blank -%}
             <span class="swatch-anchor"></span>
           {%- else -%}
