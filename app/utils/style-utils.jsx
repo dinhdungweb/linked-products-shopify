@@ -405,16 +405,27 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
       gap: `${settings.basic.gap}px`, 
       flexWrap: isSlide ? 'nowrap' : 'wrap',
       overflowX: isSlide ? 'auto' : 'visible',
+      msOverflowStyle: isSlide ? 'none' : 'auto', // Hide scrollbar for IE/Edge
+      scrollbarWidth: isSlide ? 'none' : 'auto',   // Hide scrollbar for Firefox
+      WebkitOverflowScrolling: 'touch',
       justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start'),
       padding: '0', 
-      width: '100%'
+      width: '100%',
+      // We can't easily hide webkit scrollbar inline without a class, 
+      // but these help in many browsers. 
   };
 
   return (
       <div style={{ width: '100%' }}>
+          <style dangerouslySetInnerHTML={{ __html: `
+            .slide-container::-webkit-scrollbar { display: none; }
+          ` }} />
           {renderLabel()}
 
-          <div style={{ ...containerStyle, marginTop: isCard ? 0 : `${settings.layout?.marginTop || 0}px`, marginBottom: isCard ? 0 : `${settings.layout?.marginBottom || 0}px` }}>
+          <div 
+            className="slide-container"
+            style={{ ...containerStyle, marginTop: isCard ? 0 : `${settings.layout?.marginTop || 0}px`, marginBottom: isCard ? 0 : `${settings.layout?.marginBottom || 0}px` }}
+          >
               {itemsToRender.map((p, i) => {
                   const isActive = i === 1;
                   const aspectRatio = settings.basic.aspectRatio || "1:1";
