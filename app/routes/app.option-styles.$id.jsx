@@ -89,6 +89,54 @@ export const action = async ({ request, params }) => {
       await prisma.optionStyleSetting.deleteMany({
         where: { shop, styleId },
       });
+
+      // SYNC TO METAFIELDS (Remove the deleted style from customizations)
+      try {
+        const shopDataResult = await admin.graphql(`{ shop { id } }`);
+        const shopJsonResult = await shopDataResult.json();
+        const shopIdValue = shopJsonResult.data.shop.id;
+
+        const mfQuery = await admin.graphql(`
+          query getMetafield {
+            shop {
+              metafield(namespace: "linked_products", key: "style_customizations") {
+                value
+              }
+            }
+          }
+        `);
+        
+        const mfResult = await mfQuery.json();
+        let currentStyles = {};
+        try {
+          currentStyles = JSON.parse(mfResult.data.shop.metafield?.value || "{}");
+        } catch (e) {}
+        
+        if (currentStyles[styleId]) {
+          delete currentStyles[styleId];
+
+          await admin.graphql(`
+            mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
+              metafieldsSet(metafields: $metafields) {
+                userErrors { field message }
+              }
+            }
+          `, {
+            variables: {
+              metafields: [{
+                namespace: "linked_products",
+                key: "style_customizations",
+                type: "json",
+                ownerId: shopIdValue,
+                value: JSON.stringify(currentStyles)
+              }]
+            }
+          });
+        }
+      } catch (syncError) {
+        console.error("Sync on delete error:", syncError);
+      }
+
       return redirect("/app/option-styles");
     }
 
