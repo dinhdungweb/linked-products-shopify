@@ -177,6 +177,13 @@ export default function OptionStylesPage() {
           <InlineStack align="space-between" blockAlign="center">
             <InlineStack gap="200" blockAlign="center">
               <Text variant="headingSm" as="h3">{title}</Text>
+              {isDefault ? (
+                <Badge tone="success">Default in use</Badge>
+              ) : isInUse ? (
+                <Badge tone="info">In use</Badge>
+              ) : (
+                <Badge tone="subdued">Not in use</Badge>
+              )}
             </InlineStack>
             <InlineStack gap="100" blockAlign="center">
               <Button 
