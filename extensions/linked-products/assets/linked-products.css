@@ -236,6 +236,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 2px;
+  box-sizing: border-box;
 }
 
 .linked-option--slide .slide-title {
