@@ -423,7 +423,12 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
 
                   return (
                       <div key={i} style={getOuterStyle(isActive, settings, styleId, isCard)}>
-                          <div style={{ ...getSwatchStyle(isActive, settings, styleId, isCard), padding: isButton ? '8px 16px' : (isPillSwatch ? '6px 12px' : `${settings.basic.padding ?? settings.swatch?.padding ?? 0}px`) }}>
+                          <div style={{ 
+                              ...getSwatchStyle(isActive, settings, styleId, isCard), 
+                              padding: (isButton || isPillSwatch) 
+                                  ? `${settings.basic?.padding ?? 8}px ${settings.basic?.padding ? settings.basic.padding * 2 : 12}px` 
+                                  : `${settings.basic?.padding ?? settings.swatch?.padding ?? 0}px` 
+                          }}>
                               {isActive && renderBadge(isActive, settings)}
                               {!isButton && renderSwatchInner()}
                               {renderUnavailableEffect(p.isUnavailable, settings.basic?.unavailableStyle ?? "cross_mark")}
