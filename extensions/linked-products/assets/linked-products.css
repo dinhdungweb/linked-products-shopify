@@ -205,7 +205,7 @@
 }
 
 .linked-option--swatch.is-square .swatch-bg {
-  border-radius: calc(var(--lp-border-radius, 4px) - 2px);
+  border-radius: inherit;
 }
 
 .linked-option--swatch .swatch-bg {
