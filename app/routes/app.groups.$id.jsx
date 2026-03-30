@@ -405,16 +405,29 @@ export async function loader({ request, params }) {
         });
     }
 
-    // Auto-migrate legacy style ID
-    if (group.cardSelectorStyle?.endsWith("_on_card")) {
-        group.cardSelectorStyle = group.cardSelectorStyle.replace("_on_card", "_card");
-    }
+    // Fetch all products in other active groups to detect conflicts
+    const activeProducts = await prisma.productGroupItem.findMany({
+        where: {
+            group: {
+                shop: session.shop,
+                status: "active",
+                id: { not: groupId === "new" ? undefined : groupId }
+            }
+        },
+        include: { group: { select: { name: true } } }
+    });
+    
+    const usedProductsMap = activeProducts.reduce((acc, p) => {
+        acc[p.productId] = p.group.name || "Untitled Group";
+        return acc;
+    }, {});
 
     return json({ 
         group: { ...group, products: productDetails }, 
         shop: session.shop,
         styleSettings: formattedSettings,
-        appSettings
+        appSettings,
+        usedProductsMap
     });
 }
 
@@ -430,6 +443,7 @@ export async function action({ request, params }) {
 
     if (actionType === "addProducts") {
         const productsJson = formData.get("products");
+        const forceMove = formData.get("forceMove") === "true";
         if (!productsJson) return json({ error: "No products selected" }, { status: 400 });
         const products = JSON.parse(productsJson);
         
@@ -461,10 +475,31 @@ export async function action({ request, params }) {
         const group = await prisma.productGroup.findUnique({ where: { id: targetGroupId } });
         const defaultStyle = (group?.selectorStyle?.includes('image') || group?.selectorStyle?.includes('slide') || group?.selectorStyle?.includes('polaroid')) ? 'image' : 'one';
 
+        const affectedGroupIds = new Set();
+
         for (const product of products) {
+            if (forceMove) {
+                // Find previous groups this product belonged to
+                const previousItems = await prisma.productGroupItem.findMany({
+                    where: { productId: product.id, NOT: { groupId: targetGroupId } }
+                });
+                previousItems.forEach(item => affectedGroupIds.add(item.groupId));
+                
+                // Delete from those groups
+                await prisma.productGroupItem.deleteMany({
+                    where: { productId: product.id, NOT: { groupId: targetGroupId } }
+                });
+            }
+
             position++;
-            await prisma.productGroupItem.create({
-                data: {
+            await prisma.productGroupItem.upsert({
+                where: { groupId_productId: { groupId: targetGroupId, productId: product.id } },
+                update: {
+                    productHandle: product.handle,
+                    optionValue: product.title,
+                    position,
+                },
+                create: {
                     groupId: targetGroupId,
                     productId: product.id,
                     productHandle: product.handle,
@@ -475,6 +510,12 @@ export async function action({ request, params }) {
                 },
             });
         }
+
+        // Re-sync groups that lost a product
+        for (const aid of affectedGroupIds) {
+            await syncGroupMetafields(admin, prisma, aid);
+        }
+
         await syncGroupMetafields(admin, prisma, targetGroupId);
         
         if (groupId === "new") {
@@ -639,7 +680,7 @@ const ImagePickerPopover = ({ imageUrl, onChange, productImages = [], radius = '
     );
 };
 export default function GroupDetail() {
-    const { group, shop, styleSettings, appSettings } = useLoaderData();
+    const { group, shop, styleSettings, appSettings, usedProductsMap } = useLoaderData();
     const actionData = useActionData();
     const submit = useSubmit();
     const navigation = useNavigation();
@@ -654,6 +695,11 @@ export default function GroupDetail() {
     const [showStyleModal, setShowStyleModal] = useState(false);
     const [selectingFor, setSelectingFor] = useState("productPage"); // productPage or productCard
     const [previewOnProductCard, setPreviewOnProductCard] = useState(true);
+
+    // Conflict states
+    const [conflicts, setConflicts] = useState([]);
+    const [pendingSelection, setPendingSelection] = useState([]);
+    const [showConflictModal, setShowConflictModal] = useState(false);
 
     const [localGroupName, setLocalGroupName] = useState(group.name || "");
     const [localOptionName, setLocalOptionName] = useState(group.optionName || "Color");
@@ -683,13 +729,45 @@ export default function GroupDetail() {
         try {
             const selection = await shopify.resourcePicker({ type: "product", multiple: true, action: "select" });
             if (selection && selection.length > 0) {
-                const formData = new FormData();
-                formData.append("action", "addProducts");
-                formData.append("products", JSON.stringify(selection.map(p => ({ id: p.id, handle: p.handle, title: p.title }))));
-                submit(formData, { method: "POST" });
+                const selectedProducts = selection.map(p => ({ id: p.id, handle: p.handle, title: p.title }));
+                
+                // Check for conflicts
+                const foundConflicts = selectedProducts.filter(p => usedProductsMap[p.id]);
+                
+                if (foundConflicts.length > 0) {
+                    setConflicts(foundConflicts.map(p => ({ ...p, groupName: usedProductsMap[p.id] })));
+                    setPendingSelection(selectedProducts);
+                    setShowConflictModal(true);
+                } else {
+                    const formData = new FormData();
+                    formData.append("action", "addProducts");
+                    formData.append("products", JSON.stringify(selectedProducts));
+                    submit(formData, { method: "POST" });
+                }
             }
         } catch (error) { console.error("Picker error:", error); }
-    }, [shopify, submit]);
+    }, [shopify, submit, usedProductsMap]);
+
+    const handleResolveConflict = (forceMove) => {
+        const formData = new FormData();
+        formData.append("action", "addProducts");
+        
+        let productsToAdd = pendingSelection;
+        if (!forceMove) {
+            // Filter out conflicts
+            productsToAdd = pendingSelection.filter(p => !conflicts.some(c => c.id === p.id));
+        }
+
+        if (productsToAdd.length > 0) {
+            formData.append("products", JSON.stringify(productsToAdd));
+            if (forceMove) formData.append("forceMove", "true");
+            submit(formData, { method: "POST" });
+        }
+        
+        setShowConflictModal(false);
+        setConflicts([]);
+        setPendingSelection([]);
+    };
 
     const handleRemoveProduct = (productId) => {
         if (!confirm("Remove this product?")) return;
@@ -946,6 +1024,37 @@ export default function GroupDetail() {
             <Box padding="400" background="bg-surface" borderColor="border" borderWidth="025" borderRadius="300" position="sticky" insetBlockEnd="0" zIndex="10" marginBlockStart="800">
                 <InlineStack align="space-between" blockAlign="center"><Button variant="primary" tone="critical" onClick={handleDeleteGroup} loading={isLoading && navigation.formData?.get("action") === "deleteGroup"}>Delete</Button><Button variant="primary" size="large" onClick={handleSync} loading={isLoading && navigation.formData?.get("action") === "saveAll"}>Save</Button></InlineStack>
             </Box>
+
+            <Modal
+                open={showConflictModal}
+                onClose={() => { setShowConflictModal(false); setConflicts([]); setPendingSelection([]); }}
+                title="Phát hiện sản phẩm đã trùng lặp"
+                primaryAction={{
+                    content: "Thêm và Chuyển nhóm",
+                    onAction: () => handleResolveConflict(true),
+                }}
+                secondaryActions={[
+                    {
+                        content: "Bỏ qua trùng lặp",
+                        onAction: () => handleResolveConflict(false),
+                    }
+                ]}
+            >
+                <Modal.Section>
+                    <BlockStack gap="400">
+                        <Banner tone="warning">
+                            Các sản phẩm sau đây đã thuộc một nhóm <b>Active</b> khác. Nếu bạn chuyển chúng sang nhóm này, chúng sẽ không hiển thị ở nhóm cũ nữa.
+                        </Banner>
+                        <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                            {conflicts.map((c, i) => (
+                                <li key={i} style={{ marginBottom: '8px' }}>
+                                    <b>{c.title}</b> (Đang ở nhóm: <i>{c.groupName}</i>)
+                                </li>
+                            ))}
+                        </ul>
+                    </BlockStack>
+                </Modal.Section>
+            </Modal>
         </Page>
     );
 }
