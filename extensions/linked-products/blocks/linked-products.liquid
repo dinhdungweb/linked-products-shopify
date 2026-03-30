@@ -104,7 +104,7 @@
     {%- assign lp_show_label = false -%}
   {%- endif -%}
 
-  {%- assign lp_label_layout = active_style_settings.label.layout | default: 'stack' -%}
+  {%- assign lp_label_layout = active_style_settings.label.layout | default: 'inline' -%}
   {%- assign lp_label_gap = active_style_settings.label.gap | default: 8 -%}
   {%- assign lp_label_font_size = active_style_settings.label.fontSize | default: 14 -%}
   {%- assign lp_label_font_weight = active_style_settings.label.fontWeight | default: 'normal' -%}
