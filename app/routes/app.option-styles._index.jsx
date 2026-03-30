@@ -20,9 +20,9 @@ import { LinkIcon, QuestionCircleIcon, PlusIcon, StoreIcon, MenuHorizontalIcon, 
 import { TitleBar } from "@shopify/app-bridge-react";
 import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit as useRemixSubmit } from "@remix-run/react";
-import { 
-  BASE_SETTINGS, 
-  DEFAULT_SETTINGS_BY_STYLE, 
+import {
+  BASE_SETTINGS,
+  DEFAULT_SETTINGS_BY_STYLE,
   PreviewRenderer
 } from "../utils/style-utils";
 import prisma from "../db.server";
@@ -79,7 +79,7 @@ export const loader = async ({ request }) => {
     Object.assign(appSettings, updateData);
   }
 
-  return json({ 
+  return json({
     styleSettings: styleSettings.reduce((acc, curr) => {
       acc[curr.styleId] = curr.settings;
       return acc;
@@ -101,7 +101,7 @@ export const action = async ({ request }) => {
 
     await prisma.appSetting.update({
       where: { shop },
-      data: isCard 
+      data: isCard
         ? { defaultProductCardStyle: styleId }
         : { defaultProductPageStyle: styleId }
     });
@@ -167,7 +167,7 @@ export default function OptionStylesPage() {
   const renderStyleCard = (styleId, title) => {
     const settings = styleSettings[styleId] || DEFAULT_SETTINGS_BY_STYLE[styleId] || BASE_SETTINGS;
     const isInUse = usedStyles.includes(styleId);
-    const isDefault = selectedTab === 0 
+    const isDefault = selectedTab === 0
       ? appSettings.defaultProductPageStyle === styleId
       : appSettings.defaultProductCardStyle === styleId;
 
@@ -177,19 +177,20 @@ export default function OptionStylesPage() {
           <InlineStack align="space-between" blockAlign="center">
             <InlineStack gap="200" blockAlign="center">
               <Text variant="headingSm" as="h3">{title}</Text>
-              {isDefault ? (
-                <Badge tone="success">Default in use</Badge>
-              ) : isInUse ? (
+              {isDefault && (
+                <Badge tone="success">Default</Badge>
+              )}
+              {isInUse ? (
                 <Badge tone="info">In use</Badge>
               ) : (
                 <Badge tone="subdued">Not in use</Badge>
               )}
             </InlineStack>
             <InlineStack gap="100" blockAlign="center">
-              <Button 
-                icon={LinkIcon} 
-                size="micro" 
-                url={selectedTab === 1 
+              <Button
+                icon={LinkIcon}
+                size="micro"
+                url={selectedTab === 1
                   ? `/app/option-styles/product-card?tab=${styleId}`
                   : `/app/option-styles/${styleId}`
                 }
@@ -204,9 +205,9 @@ export default function OptionStylesPage() {
                 <ActionList
                   items={[
                     { content: 'Duplicate', icon: DuplicateIcon, disabled: true },
-                    { 
-                      content: 'Set as default', 
-                      icon: StarIcon, 
+                    {
+                      content: 'Set as default',
+                      icon: StarIcon,
                       onAction: () => handleSetDefault(styleId, selectedTab === 1),
                       disabled: isDefault
                     },
@@ -218,23 +219,23 @@ export default function OptionStylesPage() {
           </InlineStack>
         </Box>
         <Divider />
-        <div style={{ 
-          flex: 1, 
-          backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', 
-          padding: '16px', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          minHeight: '120px', 
+        <div style={{
+          flex: 1,
+          backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '120px',
           overflow: 'visible',
           borderRadius: '0 0 8px 8px' // Thêm bo góc dưới để không bị mất khung box
         }}>
           <div style={{ flex: '1 1 0%', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'visible' }}>
-            <PreviewRenderer 
-              styleId={styleId} 
-              settings={settings} 
-              isCard={selectedTab === 1} 
+            <PreviewRenderer
+              styleId={styleId}
+              settings={settings}
+              isCard={selectedTab === 1}
               appSettings={appSettings}
-              hideLabel={true} 
+              hideLabel={true}
             />
           </div>
         </div>
@@ -260,13 +261,13 @@ export default function OptionStylesPage() {
 
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--p-color-bg-surface, #fff)', borderRadius: 'var(--p-border-radius-300, 8px)', boxShadow: 'var(--p-shadow-200, 0 1px 3px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05))', overflow: 'visible', position: 'relative', zIndex: styleId.includes('dropdown') ? 20 : 1 }}>
-        <div style={{ 
-          flex: 1, 
-          backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)', 
-          padding: '16px', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          minHeight: '150px', 
+        <div style={{
+          flex: 1,
+          backgroundColor: 'var(--p-color-bg-surface-secondary, #f4f6f8)',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '150px',
           overflow: 'visible',
           borderRadius: '0 0 8px 8px'
         }}>
