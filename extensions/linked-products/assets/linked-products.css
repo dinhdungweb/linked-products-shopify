@@ -207,8 +207,10 @@
 /* Slide Style (Card) */
 .linked-option--slide {
   flex-direction: column;
-  background: #fff;
+  background: var(--lp-block-bg);
   scroll-snap-align: start; /* Swipe snap */
+  padding: var(--lp-swatch-padding);
+  box-sizing: content-box;
 }
 
 .linked-option--slide .slide-media {
@@ -315,10 +317,11 @@
 .linked-option--card {
   display: inline-flex !important;
   flex-direction: column;
-  padding: var(--lp-block-padding-y) var(--lp-block-padding-x) !important;
+  padding: var(--lp-swatch-padding) !important;
   gap: var(--lp-items-gap);
   background: var(--lp-block-bg);
   align-items: center;
+  box-sizing: content-box;
 }
 
 .linked-option--card .card-media {
