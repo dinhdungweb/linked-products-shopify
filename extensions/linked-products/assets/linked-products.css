@@ -677,7 +677,7 @@
 .linked-products-picker[data-unavailable-style='cross_mark'] .lp-unavailable-effect {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(to top right, transparent calc(50% - 1.5px), #ff4d4f 50%, transparent calc(50% + 1.5px));
+  background: linear-gradient(to top right, transparent calc(50% - 0.5px), #ff4d4f 50%, transparent calc(50% + 0.5px));
   z-index: 10;
   pointer-events: none;
   display: block;
