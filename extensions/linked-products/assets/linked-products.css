@@ -638,14 +638,13 @@
 /* Diagonal line - Pixel-perfect sharp 1px line to match preview */
 .linked-products-picker[data-unavailable-style='cross_mark'] .lp-unavailable-effect {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(45deg, 
-    transparent calc(50% - 1px), 
-    rgba(255, 77, 79, 0.8) calc(50% - 0.5px), 
-    rgba(255, 77, 79, 1) 50%, 
-    rgba(255, 77, 79, 0.8) calc(50% + 0.5px), 
-    transparent calc(50% + 1px)
-  );
+  top: 50%;
+  left: 50%;
+  width: 142%;
+  height: 1px;
+  background-color: rgb(255, 77, 79);
+  transform: translate(-50%, -50%) rotate(-45deg);
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 0px 1px;
   z-index: 10;
   pointer-events: none;
   display: block;
