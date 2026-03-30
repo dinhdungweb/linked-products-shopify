@@ -667,7 +667,6 @@
 }
 
 .linked-option.is-unavailable {
-  opacity: 0.6;
   cursor: not-allowed;
   position: relative;
   overflow: hidden;
@@ -681,6 +680,16 @@
   z-index: 10;
   pointer-events: none;
   display: block;
+}
+
+/* For cross_mark, we might want a slight desaturation instead of heavy opacity to match preview */
+.linked-products-picker[data-unavailable-style='cross_mark'] .linked-option.is-unavailable {
+  filter: saturate(0.8);
+}
+
+/* Opacity style - only for opacity setting */
+.linked-products-picker[data-unavailable-style='opacity'] .linked-option.is-unavailable {
+  opacity: 0.4;
 }
 
 /* Hide line if not cross_mark */
