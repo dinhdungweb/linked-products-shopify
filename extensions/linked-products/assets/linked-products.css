@@ -128,10 +128,23 @@
   background: #ffffff;
   overflow: hidden;
   box-shadow: var(--lp-shadow, none);
-  box-sizing: border-box;
 }
 
 /* Re-center for small swatches only */
+.linked-option--swatch,
+.linked-option--image,
+.linked-option--slide,
+.linked-option--card,
+.linked-option--polaroid {
+  box-sizing: content-box;
+}
+
+.linked-option--button,
+.linked-option--block,
+.linked-option--dropdown {
+  box-sizing: border-box;
+}
+
 .linked-option--swatch,
 .linked-option--button,
 .linked-option--image,
