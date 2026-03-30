@@ -46,8 +46,7 @@
 
   {%- if active_selector_style == 'image_swatch' -%}
     {%- assign def_size = 48 -%}{%- assign def_radius = 100 -%}
-  {%- elsif active_selector_style == 'slide_swatch' -%}
-    {%- assign def_size = 90 -%}{%- assign def_radius = 0 -%}{%- assign def_padding = 6 -%}{%- assign def_max_lines = 2 -%}
+  {%- elsif active_selector_style == 'slide_swatch' -%}{%- assign def_size = 90 -%}{%- assign def_radius = 0 -%}{%- assign def_padding = 5 -%}{%- assign def_max_lines = 2 -%}
   {%- elsif active_selector_style == 'polaroid_swatch' -%}
     {%- assign def_size = 52 -%}{%- assign def_padding = 4 -%}{%- assign def_radius = 0 -%}{%- assign def_shadow_show = true -%}
   {%- elsif active_selector_style == 'color_swatch' -%}
