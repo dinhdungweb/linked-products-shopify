@@ -432,7 +432,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                                       <div style={{ fontSize: `${settings.variantName?.fontSize}px`, fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'), display: '-webkit-box', WebkitLineClamp: settings.variantName?.maxLines || 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                           {isButton ? (isSlide ? p.name : p.name.split(' ')[0]) : p.name}
                                       </div>
-                                      {settings.price?.show && ( <div style={{ fontSize: `${settings.price?.fontSize || 10}px`, fontWeight: settings.price?.fontWeight || 'normal', color: settings.price?.color || '#6d7175', marginTop: '2px' }}>{p.price}</div> )}
+                                      {settings.price?.show && ( <div style={{ fontSize: `${settings.price?.fontSize || 10}px`, fontWeight: settings.price?.fontWeight || 'normal', color: settings.price?.color || '#6d7175', marginTop: '4px' }}>{p.price}</div> )}
                                   </div>
                               )}
                           </div>
