@@ -34,12 +34,12 @@
   
   {%- comment -%}Style-specific Defaults (Sync with DEFAULT_SETTINGS_BY_STYLE in app/utils/style-utils.jsx){%- endcomment -%}
   {%- assign def_size = 32 -%}
-  {%- assign def_gap = 8 -%}
+  {%- assign def_gap = 10 -%}
   {%- assign def_padding = 0 -%}
   {%- assign def_radius = 4 -%}
   {%- assign def_width = 1 -%}
   {%- assign def_outer_width = 0 -%}
-  {%- assign def_outer_padding = 0 -%}
+  {%- assign def_outer_padding = 4 -%}
   {%- assign def_outer_radius = 4 -%}
   {%- assign def_shadow_show = false -%}
   {%- assign def_max_lines = 1 -%}
@@ -88,6 +88,14 @@
   {%- assign lp_outer_width = active_style_settings.border.outerWidth | default: def_outer_width -%}
   {%- assign lp_outer_padding = active_style_settings.border.outerPadding | default: def_outer_padding -%}
   {%- assign lp_outer_radius = active_style_settings.border.outerRadius | default: def_outer_radius -%}
+  {%- assign lp_outer_radius_unit = 'px' -%}
+  {%- if active_selector_style == 'image_swatch' or active_selector_style == 'color_swatch' or active_selector_style == 'pill_button' -%}
+    {%- if active_style_settings.border.radius == blank or active_style_settings.border.radius >= 20 -%}
+       {%- assign lp_outer_radius = 50 -%}
+       {%- assign lp_outer_radius_unit = '%' -%}
+    {%- endif -%}
+  {%- endif -%}
+
   {%- assign lp_outer_color = active_style_settings.border.outerColor | default: '#dbdfe2' -%}
   {%- assign lp_outer_active_color = active_style_settings.border.outerActiveColor | default: '#000000' -%}
   {%- assign lp_outer_hover_color = active_style_settings.border.outerHoverColor | default: lp_outer_color -%}
@@ -182,6 +190,8 @@
     --lp-swatch-size: {{ lp_swatch_size | replace: 'px', '' }}px;
     --lp-items-gap: {{ lp_items_gap }}px;
     --lp-swatch-padding: {{ lp_padding }}px;
+    --lp-block-padding-y: {{ lp_padding | default: 8 }}px;
+    --lp-block-padding-x: {{ lp_padding | times: 1.5 | default: 12 }}px;
     --lp-border-radius: {{ lp_border_radius }}{{ lp_radius_unit }};
     --lp-border-color: {{ lp_border_color }};
     --lp-selected-border-color: {{ lp_selected_border_color }};
@@ -189,7 +199,7 @@
     --lp-border-width: {{ lp_border_width }}px;
     --lp-outer-width: {{ lp_outer_width }}px;
     --lp-outer-padding: {% if lp_outer_width > 0 %}{{ lp_outer_padding }}{% else %}0{% endif %}px;
-    --lp-outer-radius: {{ lp_outer_radius }}px;
+    --lp-outer-radius: {{ lp_outer_radius }}{{ lp_outer_radius_unit | default: 'px' }};
     --lp-outer-color: {{ lp_outer_color }};
     --lp-outer-active-color: {{ lp_outer_active_color }};
     --lp-outer-hover-color: {{ lp_outer_hover_color }};
@@ -211,6 +221,10 @@
     --lp-selected-weight: {{ lp_selected_weight }};
     --lp-show-selected: {% if lp_show_selected_variant %}block{% else %}none{% endif %};
     --lp-unavailable-style: {{ active_style_settings.unavailable.style | default: 'cross_mark' }};
+    --lp-block-bg: {{ active_style_settings.basic.blockBg | default: '#ffffff' }};
+    --lp-selected-bg: {{ active_style_settings.basic.selectedBg | default: '#f4f6f8' }};
+    --lp-neutral-bg: #f5f5f5;
+    --lp-neutral-border: rgba(0,0,0,0.05);
     {% if lp_shadow_show %}
     --lp-shadow: {{ lp_shadow_x }}px {{ lp_shadow_y }}px {{ lp_shadow_blur }}px {{ lp_shadow_spread }}px {{ lp_shadow_color }};
     {% else %}

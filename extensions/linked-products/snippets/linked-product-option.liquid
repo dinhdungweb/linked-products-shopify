@@ -129,9 +129,10 @@
 {%- case style -%}
 
   {%- when 'image_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--image {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
          title="{{ value }}{% if is_unavailable %} (Sold out){% endif %}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
@@ -145,9 +146,10 @@
     </span>
 
   {%- when 'slide_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block;">
       <a href="{{ url }}" 
          class="linked-option linked-option--slide {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
          title="{{ value }}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
@@ -169,9 +171,10 @@
     </span>
 
   {%- when 'polaroid_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--polaroid {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
          title="{{ value }}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
@@ -185,9 +188,10 @@
     </span>
 
   {%- when 'color_swatch', 'square_color_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--swatch {% if style == 'square_color_swatch' %}is-square{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
          title="{{ value }}">
         {%- if has_color -%}
           <span class="swatch-bg swatch-bg--color" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
@@ -222,9 +226,10 @@
     </a>
 
   {%- when 'image_swatch_card' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block;">
       <a href="{{ url }}" 
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
          title="{{ value }}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
@@ -246,9 +251,10 @@
     </span>
 
   {%- when 'color_swatch_card' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block; width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block;">
       <a href="{{ url }}" 
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
          title="{{ value }}">
         <div class="card-media is-color" 
              style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: var(--lp-border-color, #f4f4f4);{% endif %}">
