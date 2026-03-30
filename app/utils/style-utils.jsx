@@ -266,8 +266,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                 height: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
                 borderRadius: '4px', 
                 overflow: 'hidden',
-                flexShrink: 0,
-                border: '1px solid rgba(0,0,0,0.05)'
+                flexShrink: 0
               }}>
                 <img 
                   src={activeProduct.color} 
@@ -389,7 +388,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                      if (isColor) {
                         const directions = { L_R: "to right", LT_RB: "to bottom right", T_B: "to bottom", LB_RT: "to top right" };
                         const direction = directions[settings.basic.twoColorStyle] || "to bottom right";
-                        return ( <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: radius, background: p.style === 'two' ? `linear-gradient(${direction}, ${p.colorHex} 50%, ${p.colorHex2} 50%)` : p.colorHex, border: '1px solid rgba(0,0,0,0.05)' }} /> );
+                        return ( <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: radius, background: p.style === 'two' ? `linear-gradient(${direction}, ${p.colorHex} 50%, ${p.colorHex2} 50%)` : p.colorHex }} /> );
                     }
 
                     if (isPillSwatch) {
@@ -406,7 +405,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                     }
 
                     return (
-                        <div style={{ width: '100%', aspectRatio: `${ratioW}/${ratioH}`, backgroundColor: '#eee', borderRadius: radius, border: '1px solid rgba(0,0,0,0.1)', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ width: '100%', aspectRatio: `${ratioW}/${ratioH}`, backgroundColor: '#eee', borderRadius: radius, position: 'relative', overflow: 'hidden' }}>
                             <img src={p.color} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: settings.basic.imagePosition || 'center' }} />
                         </div>
                     );
