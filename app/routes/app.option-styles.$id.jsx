@@ -648,25 +648,7 @@ export default function StyleCustomizerPage() {
                 <BlockStack gap="400" overflow="visible">
                     <Text variant="headingMd">Preview</Text>
                     
-                    <div style={{ overflow: 'visible' }}>
-                        {settings.label.show && !styleId.includes('dropdown') && (
-                            <div style={{ 
-                                marginBottom: `${settings.label.gap}px`,
-                                fontSize: `${settings.label.fontSize}px`,
-                                fontWeight: settings.label.fontWeight || 'normal',
-                                lineHeight: `${settings.label.lineHeight}px`,
-                                display: settings.label.layout === 'inline' ? 'flex' : 'block',
-                                gap: '8px',
-                                alignItems: 'baseline',
-                                overflow: 'visible'
-                            }}>
-                                <span>Color:</span>
-                                {settings.label.showSelectedVariant && (
-                                    <span style={{ fontWeight: settings.label.selectedVariantFontWeight || 'bold' }}>{activeProduct.name}</span>
-                                )}
-                            </div>
-                        )}
-                        
+                    <div style={{ overflow: 'visible', width: '100%' }}>
                         <div style={{ 
                             padding: '0', 
                             width: '100%', 

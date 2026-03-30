@@ -355,19 +355,29 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                   marginBottom: `${settings.label?.gap || 8}px`,
                   textAlign: settings.layout?.align || 'left',
                   display: 'flex',
-                  justifyContent: settings.layout?.align === 'center' ? 'center' : (settings.layout?.align === 'right' ? 'flex-end' : 'flex-start')
+                  justifyContent: settings.layout?.align === 'center' ? 'center' : (settings.layout?.align === 'right' ? 'flex-end' : 'flex-start'),
+                  color: '#202223'
               }}>
                    <div style={{ 
                        display: 'flex', 
                        flexDirection: (settings.label?.layout === 'stack' ? 'column' : 'row'),
                        alignItems: (settings.label?.layout === 'stack' ? (settings.layout?.align === 'center' ? 'center' : (settings.layout?.align === 'right' ? 'flex-end' : 'flex-start')) : 'center'),
-                       gap: '8px'
+                       gap: (settings.label?.layout === 'stack' ? '4px' : '8px'),
+                       fontSize: `${settings.label?.fontSize || 14}px`,
+                       lineHeight: `${settings.label?.lineHeight || (settings.label?.fontSize || 14) + 4}px`
                    }}>
-                        <Text variant="bodyMd" tone="subdued" fontWeight={settings.label?.fontWeight}>{activeOptionName}:</Text>
+                        <span style={{ 
+                            color: '#6d7175',
+                            fontWeight: settings.label?.fontWeight || 'normal'
+                        }}>
+                            {activeOptionName}:
+                        </span>
                         {settings.label?.showSelectedVariant && (
-                            <Text variant="bodyMd" fontWeight={settings.label?.selectedVariantFontWeight || 'semibold'}>
+                            <span style={{ 
+                                fontWeight: settings.label?.selectedVariantFontWeight || 'semibold' 
+                            }}>
                                 {displayProducts[1]?.name || 'Liquid'}
-                            </Text>
+                            </span>
                         )}
                    </div>
               </div>
