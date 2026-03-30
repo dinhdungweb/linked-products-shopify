@@ -431,13 +431,17 @@ export default function ProductCardCustomizer() {
                                 <PreviewRenderer 
                                     styleId={activeStyleId} 
                                     settings={activeSettings} 
-                                    appSettings={appSettings} isCard={true}
+                                    appSettings={appSettings} 
+                                    isCard={true}
+                                    hideLabel={true}
                                 />
                             ) : (
                                 <PreviewRenderer 
                                     styleId="color_swatch_card" 
                                     settings={styleSettings["color_swatch_card"]} 
-                                    appSettings={appSettings} isCard={true}
+                                    appSettings={appSettings} 
+                                    isCard={true}
+                                    hideLabel={true}
                                 />
                             )}
                         </div>
