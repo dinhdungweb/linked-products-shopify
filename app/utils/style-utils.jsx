@@ -234,118 +234,171 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   const showLabel = isCard ? (appSettings?.cardShowLabel ?? false) : settings.variantName?.show;
   const shouldShowName = (showLabel || isButton) && !isPillSwatch && !(isCard && (isColor || styleId.includes('image_swatch')));
 
+  const activeOptionName = label || (isCard ? 'Options' : (appSettings?.optionName || 'Color'));
+
+  const renderLabel = () => {
+    if (hideLabel || !settings.label?.show) return null;
+    return (
+      <div style={{ 
+          marginBottom: `${settings.label?.gap || 8}px`,
+          textAlign: settings.layout?.align || 'left',
+          display: 'flex',
+          justifyContent: settings.layout?.align === 'center' ? 'center' : (settings.layout?.align === 'right' ? 'flex-end' : 'flex-start'),
+          color: '#202223'
+      }}>
+           <div style={{ 
+               display: 'flex', 
+               flexDirection: (settings.label?.layout === 'stack' ? 'column' : 'row'),
+               alignItems: (settings.label?.layout === 'stack' ? (settings.layout?.align === 'center' ? 'center' : (settings.layout?.align === 'right' ? 'flex-end' : 'flex-start')) : 'center'),
+               gap: (settings.label?.layout === 'stack' ? '4px' : '8px'),
+               fontSize: `${settings.label?.fontSize || 14}px`,
+               lineHeight: `${settings.label?.lineHeight || (settings.label?.fontSize || 14) + 4}px`
+           }}>
+                <span style={{ 
+                    color: '#6d7175',
+                    fontWeight: settings.label?.fontWeight || 'normal'
+                }}>
+                    {activeOptionName}:
+                </span>
+                {settings.label?.showSelectedVariant && (
+                    <span style={{ 
+                        fontWeight: settings.label?.selectedVariantFontWeight || 'semibold' 
+                    }}>
+                        {displayProducts[1]?.name || 'Liquid'}
+                    </span>
+                )}
+           </div>
+      </div>
+    );
+  };
+
   if (isDropdown) {
     const activeProduct = displayProducts[0] || PREVIEW_PRODUCTS[1];
     const isImageDropdown = styleId === 'image_dropdown';
     const borderRadius = `${settings.border.radius}px`;
     
     return (
-      <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
-        <div 
-          onClick={() => setIsOpen(!isOpen)}
-          style={{ 
-            width: '100%', 
-            border: `1px solid ${settings.border.color || '#8c9196'}`, 
-            borderRadius: borderRadius, 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            backgroundColor: settings.basic?.blockBg || '#fff',
-            padding: '10px 14px',
-            cursor: 'pointer',
-            position: 'relative',
-            zIndex: 10,
-            transition: 'all 0.2s ease',
-            boxShadow: settings.shadow?.show ? `${settings.shadow.offsetX}px ${settings.shadow.offsetY}px ${settings.shadow.blur}px ${settings.shadow.color}` : 'none'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {isImageDropdown && (
-              <div style={{ 
-                width: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
-                height: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
-                borderRadius: '4px', 
-                overflow: 'hidden',
-                flexShrink: 0
-              }}>
-                <img 
-                  src={activeProduct.color} 
-                  alt="" 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                />
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <Text variant="bodyMd" fontWeight="medium">{activeProduct.name}</Text>
-                {settings.price?.show && (
-                    <Text variant="bodySm" tone="subdued">{activeProduct.price}</Text>
-                )}
-            </div>
-          </div>
-          <div style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
-            <Icon source={ChevronDownIcon} tone="base" />
-          </div>
-        </div>
-
-        {isOpen && (
-          <div style={{ 
-            position: 'absolute', 
-            top: '100%', 
-            left: '0',
-            width: '100%', 
-            marginTop: '8px',
-            border: '1px solid #dbdfe2',
-            borderRadius: '8px',
-            backgroundColor: '#fff',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-            zIndex: 100,
-            maxHeight: '300px',
-            overflowY: 'auto'
-          }}>
-            {displayProducts.map((p, index) => (
-              <div 
-                key={index} 
-                style={{ 
-                    padding: '12px 14px', 
-                    borderBottom: index === displayProducts.length - 1 ? 'none' : '1px solid #f1f1f1', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between',
-                    gap: '12px', 
-                    cursor: 'pointer',
-                    backgroundColor: index === 1 ? '#f6f6f6' : 'transparent'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {isImageDropdown && (
-                        <div style={{ 
-                            width: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
-                            height: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
-                            borderRadius: '4px', 
-                            overflow: 'hidden',
-                            flexShrink: 0
-                        }}>
-                            <img 
-                                src={p.color} 
-                                alt="" 
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                            />
-                        </div>
-                    )}
-                    <Text variant="bodyMd">{p.name}</Text>
+      <div style={{ width: '100%' }}>
+        {renderLabel()}
+        <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+            <div 
+            onClick={() => setIsOpen(!isOpen)}
+            style={{ 
+                width: '100%', 
+                border: `1px solid ${settings.border.color || '#8c9196'}`, 
+                borderRadius: borderRadius, 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                backgroundColor: settings.basic?.blockBg || '#fff',
+                padding: '10px 14px',
+                cursor: 'pointer',
+                position: 'relative',
+                zIndex: 10,
+                transition: 'all 0.2s ease',
+                boxShadow: settings.shadow?.show ? `${settings.shadow.offsetX}px ${settings.shadow.offsetY}px ${settings.shadow.blur}px ${settings.shadow.color}` : 'none'
+            }}
+            >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {isImageDropdown && (
+                <div style={{ 
+                    width: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
+                    height: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
+                    borderRadius: '4px', 
+                    overflow: 'hidden',
+                    flexShrink: 0
+                }}>
+                    <img 
+                    src={activeProduct.color} 
+                    alt="" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
                 </div>
-                {settings.price?.show && (
-                    <Text variant="bodySm" tone="subdued">{p.price}</Text>
                 )}
-              </div>
-            ))}
-          </div>
-        )}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ 
+                        fontSize: `${settings.variantName?.fontSize || 14}px`,
+                        fontWeight: settings.variantName?.fontWeight || 'medium',
+                        color: '#1a1a1a'
+                    }}>
+                        {activeProduct.name}
+                    </div>
+                    {settings.price?.show && (
+                        <Text variant="bodySm" tone="subdued">{activeProduct.price}</Text>
+                    )}
+                </div>
+            </div>
+            <div style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
+                <Icon source={ChevronDownIcon} tone="base" />
+            </div>
+            </div>
+
+            {isOpen && (
+            <div style={{ 
+                position: 'absolute', 
+                top: '100%', 
+                left: '0',
+                width: '100%', 
+                marginTop: '8px',
+                border: '1px solid #dbdfe2',
+                borderRadius: '8px',
+                backgroundColor: '#fff',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                zIndex: 100,
+                maxHeight: '300px',
+                overflowY: 'auto'
+            }}>
+                {displayProducts.map((p, index) => (
+                <div 
+                    key={index} 
+                    style={{ 
+                        padding: '12px 14px', 
+                        borderBottom: index === displayProducts.length - 1 ? 'none' : '1px solid #f1f1f1', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        gap: '12px', 
+                        cursor: 'pointer',
+                        backgroundColor: index === 1 ? '#f6f6f6' : 'transparent'
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {isImageDropdown && (
+                            <div style={{ 
+                                width: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
+                                height: `${settings.basic.swatchSize || settings.swatch?.size || 32}px`, 
+                                borderRadius: '4px', 
+                                overflow: 'hidden',
+                                flexShrink: 0
+                            }}>
+                                <img 
+                                    src={p.color} 
+                                    alt="" 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                />
+                            </div>
+                        )}
+                        <div style={{ 
+                            fontSize: `${settings.variantName?.fontSize || 14}px`,
+                            fontWeight: settings.variantName?.fontWeight || 'normal',
+                            color: '#1a1a1a'
+                        }}>
+                            {p.name}
+                        </div>
+                    </div>
+                    {settings.price?.show && (
+                        <Text variant="bodySm" tone="subdued">{p.price}</Text>
+                    )}
+                </div>
+                ))}
+            </div>
+            )}
+        </div>
       </div>
     );
   }
 
-  const activeOptionName = label || (isCard ? 'Options' : (appSettings?.optionName || 'Color'));
+
 
   const containerStyle = { 
       display: 'flex', 
@@ -359,38 +412,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
 
   return (
       <div style={{ width: '100%' }}>
-          {!hideLabel && settings.label?.show && (
-              <div style={{ 
-                  marginBottom: `${settings.label?.gap || 8}px`,
-                  textAlign: settings.layout?.align || 'left',
-                  display: 'flex',
-                  justifyContent: settings.layout?.align === 'center' ? 'center' : (settings.layout?.align === 'right' ? 'flex-end' : 'flex-start'),
-                  color: '#202223'
-              }}>
-                   <div style={{ 
-                       display: 'flex', 
-                       flexDirection: (settings.label?.layout === 'stack' ? 'column' : 'row'),
-                       alignItems: (settings.label?.layout === 'stack' ? (settings.layout?.align === 'center' ? 'center' : (settings.layout?.align === 'right' ? 'flex-end' : 'flex-start')) : 'center'),
-                       gap: (settings.label?.layout === 'stack' ? '4px' : '8px'),
-                       fontSize: `${settings.label?.fontSize || 14}px`,
-                       lineHeight: `${settings.label?.lineHeight || (settings.label?.fontSize || 14) + 4}px`
-                   }}>
-                        <span style={{ 
-                            color: '#6d7175',
-                            fontWeight: settings.label?.fontWeight || 'normal'
-                        }}>
-                            {activeOptionName}:
-                        </span>
-                        {settings.label?.showSelectedVariant && (
-                            <span style={{ 
-                                fontWeight: settings.label?.selectedVariantFontWeight || 'semibold' 
-                            }}>
-                                {displayProducts[1]?.name || 'Liquid'}
-                            </span>
-                        )}
-                   </div>
-              </div>
-          )}
+          {renderLabel()}
 
           <div style={{ ...containerStyle, marginTop: isCard ? 0 : `${settings.layout?.marginTop || 0}px`, marginBottom: isCard ? 0 : `${settings.layout?.marginBottom || 0}px` }}>
               {itemsToRender.map((p, i) => {
