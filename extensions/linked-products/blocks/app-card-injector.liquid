@@ -1,0 +1,74 @@
+{%- assign app_settings = shop.metafields.linked_products.app_settings.value -%}
+{%- if app_settings.showOnProductCards -%}
+  <script>
+    (function() {
+      if (window.lpInjected) return;
+      window.lpInjected = true;
+
+      // Config for standard themes (Dawn, etc.)
+      const SELECTORS = {
+        cards: '.card-wrapper, .card, .product-card, .grid-view-item, .product-item',
+        content: '.card__content, .product-card__info, .product-item-meta, .product-info',
+        price: '.price, .product-item__price, .card__price, .product-card__price'
+      };
+
+      async function injectCardSwatches() {
+        const cards = document.querySelectorAll(SELECTORS.cards);
+        
+        for (const card of cards) {
+          if (card.querySelector('.lp-injected-container')) continue;
+          
+          const productLink = card.querySelector('a[href*="/products/"]');
+          if (!productLink) continue;
+          
+          const url = new URL(productLink.href, window.location.origin);
+          const handle = url.pathname.split('/products/')[1];
+          if (!handle) continue;
+
+          // Create a container
+          const container = document.createElement('div');
+          container.className = 'lp-injected-container';
+          container.style.width = '100%';
+          
+          // Find insertion point (usually before or after price)
+          const priceElement = card.querySelector(SELECTORS.price);
+          const contentElement = card.querySelector(SELECTORS.content);
+          
+          if (priceElement) {
+            priceElement.parentNode.insertBefore(container, priceElement.nextSibling);
+          } else if (contentElement) {
+            contentElement.appendChild(container);
+          }
+
+          // Fetch the swatch HTML using Section Rendering API 
+          // Note: This assumes the 'collection-swatches' block is available as a section
+          // For a true "automatic" experience without any theme setup, 
+          // we use a specific query param to trigger our Liquid block if possible.
+          
+          // Simplified: We use a placeholder that the user can also manually target
+          container.setAttribute('data-lp-handle', handle);
+          
+          // Re-trigger the block if it's already on the page for this handle
+          // (This is advanced logic, for now we let the user know they should add the block once)
+        }
+      }
+
+      // Run
+      injectCardSwatches();
+      
+      // MutationObserver for AJAX/Infinite scroll
+      const observer = new MutationObserver((mutations) => {
+        let shouldRun = false;
+        mutations.forEach(m => { if (m.addedNodes.length) shouldRun = true; });
+        if (shouldRun) injectCardSwatches();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    })();
+  </script>
+  <style>
+    .lp-injected-container {
+        display: block;
+        min-height: 10px;
+    }
+  </style>
+{%- endif -%}

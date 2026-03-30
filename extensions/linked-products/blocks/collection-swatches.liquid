@@ -10,7 +10,8 @@
 {%- if linked_handles_raw != blank and linked_handles_raw.size > 1 and group_status == 'active' -%}
   {%- assign current_handle = product.handle -%}
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
-  {%- assign app_settings = shop.metafields.linked_products.settings.value -%}
+  {%- assign app_settings = shop.metafields.linked_products.app_settings.value -%}
+  {%- assign general_settings = shop.metafields.linked_products.settings.value -%}
   {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
 
   {%- comment -%}Determine which style to use for the card{%- endcomment -%}
@@ -65,9 +66,17 @@
     --lp-aspect-ratio: {{ lp_aspect_ratio }};
     --lp-image-position: {{ lp_image_position }};
     --lp-hover-effect: {{ lp_hover_effect }};
+    --lp-margin-top: {{ app_settings.cardMarginTop | default: 0 }}px;
+    --lp-margin-bottom: {{ app_settings.cardMarginBottom | default: 6 }}px;
+    --lp-justify: {% if app_settings.cardAlign == 'center' %}center{% elsif app_settings.cardAlign == 'right' %}flex-end{% else %}flex-start{% endif %};
   "
   data-hover-effect="{{ lp_hover_effect }}"
   >
+    {%- if app_settings.cardShowLabel -%}
+        <div class="lp-card-label" style="margin-bottom: 4px; text-align: {{ app_settings.cardAlign | default: 'left' }}; font-size: 12px; font-weight: 600; color: #333;">
+            {{ active_style_settings.label.text | default: 'Options' }}:
+        </div>
+    {%- endif -%}
     {%- if app_settings.cardDisplayMode == 'count' -%}
         <div class="lp-count-only" style="margin-top: 4px;">
             <span style="font-size: 12px; color: #666; font-weight: 500;">
@@ -75,7 +84,7 @@
             </span>
         </div>
     {%- else -%}
-        <div class="variant-picker__option-values wrap" style="gap: var(--lp-items-gap); margin-top: 6px;">
+        <div class="variant-picker__option-values wrap" style="gap: var(--lp-items-gap); margin-top: 0; justify-content: var(--lp-justify);">
             {%- assign rendered_count = 0 -%}
             {%- for item in linked_handles_raw -%}
                 {%- if rendered_count >= lp_max_swatches %}{% break %}{% endif -%}
