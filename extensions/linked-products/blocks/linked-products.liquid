@@ -186,7 +186,7 @@
     --lp-items-gap: {{ lp_items_gap }}px;
     --lp-swatch-padding: {{ lp_padding }}px;
     --lp-block-padding-y: {{ lp_padding | default: 8 }}px;
-    --lp-block-padding-x: 12px;
+    --lp-block-padding-x: {{ lp_padding | times: 2 | default: 12 }}px;
     --lp-border-radius: {{ lp_border_radius }}{{ lp_radius_unit }};
     --lp-border-color: {{ lp_border_color }};
     --lp-selected-border-color: {{ lp_selected_border_color }};
