@@ -346,9 +346,15 @@ export async function loader({ request, params }) {
     let productDetails = [];
     
     // Fetch shop info for currency
-    const shopResponse = await admin.graphql(`{ shop { currencyCode moneyFormat } }`);
+    const shopResponse = await admin.graphql(`{ shop { currencyCode } }`);
     const shopData = await shopResponse.json();
-    const moneyFormat = shopData.data?.shop?.moneyFormat || "${{amount}}";
+    const currencyCode = shopData.data?.shop?.currencyCode || "USD";
+    
+    // Formatter for currency
+    const priceFormatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currencyCode,
+    });
     
     if (group.products.length > 0) {
         const productIds = group.products.map((p) => p.productId);
@@ -379,12 +385,9 @@ export async function loader({ request, params }) {
             // Check if product is available or not based on total inventory or variants
             const isUnavailable = shopifyProduct ? (shopifyProduct.totalInventory <= 0 && !shopifyProduct.variants.nodes.some(v => v.availableForSale)) : false;
             
-            // Format price based on shop money format
-            let rawPrice = shopifyProduct?.variants?.nodes?.[0]?.price || "12.88";
-            let formattedPrice = moneyFormat.replace(/\{\{amount\}\}/g, rawPrice)
-                                         .replace(/\{\{amount_no_decimals\}\}/g, Math.round(parseFloat(rawPrice)).toString())
-                                         .replace(/\{\{amount_with_comma_separator\}\}/g, rawPrice.replace(".", ","))
-                                         .replace(/\{\{amount_no_decimals_with_comma_separator\}\}/g, Math.round(parseFloat(rawPrice)).toString().replace(".", ","));
+            // Format price using Intl.NumberFormat
+            let rawPrice = parseFloat(shopifyProduct?.variants?.nodes?.[0]?.price || "12.88");
+            let formattedPrice = priceFormatter.format(rawPrice);
 
             return {
                 ...item,
