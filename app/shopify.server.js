@@ -19,19 +19,31 @@ const shopify = shopifyApp({
   distribution: AppDistribution.AppStore,
   billing: {
     [PLANS.basic.key]: {
-      amount: PLANS.basic.price,
-      currencyCode: 'USD',
-      interval: BillingInterval.Every30Days,
+      lineItems: [
+        {
+          amount: PLANS.basic.price,
+          currencyCode: 'USD',
+          interval: BillingInterval.Every30Days,
+        },
+      ],
     },
     [PLANS.advanced.key]: {
-      amount: PLANS.advanced.price,
-      currencyCode: 'USD',
-      interval: BillingInterval.Every30Days,
+      lineItems: [
+        {
+          amount: PLANS.advanced.price,
+          currencyCode: 'USD',
+          interval: BillingInterval.Every30Days,
+        },
+      ],
     },
     [PLANS.premium.key]: {
-      amount: PLANS.premium.price,
-      currencyCode: 'USD',
-      interval: BillingInterval.Every30Days,
+      lineItems: [
+        {
+          amount: PLANS.premium.price,
+          currencyCode: 'USD',
+          interval: BillingInterval.Every30Days,
+        },
+      ],
     },
   },
   webhooks: {
