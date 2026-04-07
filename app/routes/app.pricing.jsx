@@ -89,7 +89,7 @@ export const action = async ({ request }) => {
             await billing.request({
                 plan: planName,
                 isTest: true,
-                returnUrl: `https://${shop}/admin/apps/${process.env.SHOPIFY_APP_HANDLE}/app/pricing?plan=${plan}`,
+                returnUrl: `https://${shop}/admin/apps/${process.env.SHOPIFY_APP_HANDLE || 'variants-linked-products'}/app/pricing?plan=${plan}`,
             });
         } catch (error) {
             if (error instanceof Response) throw error;
