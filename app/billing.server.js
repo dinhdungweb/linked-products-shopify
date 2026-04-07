@@ -1,7 +1,5 @@
 import prisma from "./db.server";
-
 import { PLANS } from "./billing.config";
-
 
 /**
  * Get or create shop record
@@ -29,60 +27,62 @@ export async function getShopPlan(shopDomain) {
 }
 
 /**
- * Count total links (products in groups) for a shop
+ * Count total product groups for a shop
  */
-export async function getLinkCount(shopDomain) {
-    const count = await prisma.productGroupItem.count({
+export async function getGroupCount(shopDomain) {
+    const count = await prisma.productGroup.count({
         where: {
-            group: {
-                shop: shopDomain,
-            },
+            shop: shopDomain,
         },
     });
     return count;
 }
 
 /**
- * Check if shop can add more links
+ * Check if shop can add more groups
+ * Rename internally but keep signature for compatibility
  */
-export async function canAddLinks(shopDomain, additionalCount = 1) {
+export async function canAddLinks(shopDomain, groupsToAdd = 1) {
     const shop = await getOrCreateShop(shopDomain);
     const plan = PLANS[shop.plan] || PLANS.free;
-    const currentCount = await getLinkCount(shopDomain);
+    const currentCount = await getGroupCount(shopDomain);
 
-    return currentCount + additionalCount <= plan.linkLimit;
+    // If plan gives unlimited groups
+    if (plan.groupLimit === Infinity) return true;
+
+    return currentCount + groupsToAdd <= plan.groupLimit;
 }
 
 /**
- * Get remaining links available
+ * Get remaining groups available
  */
 export async function getRemainingLinks(shopDomain) {
     const shop = await getOrCreateShop(shopDomain);
     const plan = PLANS[shop.plan] || PLANS.free;
-    const currentCount = await getLinkCount(shopDomain);
+    const currentCount = await getGroupCount(shopDomain);
 
-    if (plan.linkLimit === Infinity) {
+    if (plan.groupLimit === Infinity) {
         return Infinity;
     }
 
-    return Math.max(0, plan.linkLimit - currentCount);
+    return Math.max(0, plan.groupLimit - currentCount);
 }
 
 /**
- * Get usage info for display
+ * Get usage info for display (Updated for Group limits)
  */
 export async function getUsageInfo(shopDomain) {
     const shop = await getOrCreateShop(shopDomain);
     const plan = PLANS[shop.plan] || PLANS.free;
-    const currentCount = await getLinkCount(shopDomain);
+    const currentCount = await getGroupCount(shopDomain);
 
     return {
         plan: shop.plan,
         planName: plan.name,
         used: currentCount,
-        limit: plan.linkLimit,
-        remaining: plan.linkLimit === Infinity ? Infinity : plan.linkLimit - currentCount,
-        percentage: plan.linkLimit === Infinity ? 0 : Math.round((currentCount / plan.linkLimit) * 100),
+        limit: plan.groupLimit,
+        remaining: plan.groupLimit === Infinity ? Infinity : plan.groupLimit - currentCount,
+        percentage: plan.groupLimit === Infinity ? 0 : Math.round((currentCount / plan.groupLimit) * 100),
     };
 }
 
@@ -90,10 +90,11 @@ export async function getUsageInfo(shopDomain) {
  * Create subscription using Shopify Billing API
  */
 export async function createSubscription(admin, planKey, shopDomain) {
+    // This is a legacy method if not using the new billing.request from shopify-app-remix
+    // But we'll keep it updated for consistency
     const plan = PLANS[planKey];
 
     if (!plan || plan.price === 0) {
-        // Free plan - just update database
         await prisma.shop.upsert({
             where: { shop: shopDomain },
             update: { plan: "free", chargeId: null },
@@ -102,7 +103,8 @@ export async function createSubscription(admin, planKey, shopDomain) {
         return { success: true, confirmationUrl: null };
     }
 
-    // Create subscription via GraphQL
+    // Usually calling shopify.billing.request is preferred now in action,
+    // but if this server utility is used:
     const response = await admin.graphql(`
     mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
       appSubscriptionCreate(
@@ -111,14 +113,9 @@ export async function createSubscription(admin, planKey, shopDomain) {
         returnUrl: $returnUrl
         test: $test
       ) {
-        appSubscription {
-          id
-        }
+        appSubscription { id }
         confirmationUrl
-        userErrors {
-          field
-          message
-        }
+        userErrors { field message }
       }
     }
   `, {
@@ -143,7 +140,6 @@ export async function createSubscription(admin, planKey, shopDomain) {
     });
 
     const result = await response.json();
-
     if (result.data?.appSubscriptionCreate?.userErrors?.length > 0) {
         throw new Error(result.data.appSubscriptionCreate.userErrors[0].message);
     }
@@ -159,79 +155,53 @@ export async function createSubscription(admin, planKey, shopDomain) {
  * Handle subscription confirmation callback
  */
 export async function confirmSubscription(admin, shopDomain, planKey, subscriptionDataOrId) {
-    // If we passed the full subscription object (from billing.check), use it directly
     if (subscriptionDataOrId && typeof subscriptionDataOrId === 'object') {
-        console.log(`[Billing] Fast-syncing subscription for ${shopDomain} using provided data.`);
         const updatedShop = await prisma.shop.upsert({
             where: { shop: shopDomain },
             update: { plan: planKey, chargeId: subscriptionDataOrId.id },
             create: { shop: shopDomain, plan: planKey, chargeId: subscriptionDataOrId.id },
         });
-        console.log(`[Billing] Fast-sync complete. Current plan: ${updatedShop.plan}`);
         return true;
     }
 
     const chargeId = typeof subscriptionDataOrId === 'string' ? subscriptionDataOrId : null;
-    console.log(`[Billing] Confirming subscription for ${shopDomain}. Plan: ${planKey}, ChargeId: ${chargeId}`);
-
-    // Verify the subscription is active
     const response = await admin.graphql(`
     query {
       currentAppInstallation {
-        activeSubscriptions {
-          id
-          status
-          name
-        }
+        activeSubscriptions { id status name }
       }
     }
   `);
 
     const result = await response.json();
     const subscriptions = result.data?.currentAppInstallation?.activeSubscriptions || [];
-
-    console.log(`[Billing] Active subscriptions found:`, JSON.stringify(subscriptions, null, 2));
-
-    // Find active subscription that matches our chargeId if possible, 
-    // or just the first ACTIVE one if chargeId is not in the list
     const activeSubscription = subscriptions.find(sub =>
         sub.status === "ACTIVE" && (chargeId ? sub.id.includes(chargeId) : true)
     ) || subscriptions.find(sub => sub.status === "ACTIVE");
 
     if (activeSubscription) {
-        console.log(`[Billing] Found active subscription: ${activeSubscription.name} (${activeSubscription.id})`);
-
-        const updatedShop = await prisma.shop.upsert({
+        await prisma.shop.upsert({
             where: { shop: shopDomain },
             update: { plan: planKey, chargeId: activeSubscription.id },
             create: { shop: shopDomain, plan: planKey, chargeId: activeSubscription.id },
         });
-
-        console.log(`[Billing] Database updated for ${shopDomain}: plan is now ${updatedShop.plan}`);
         return true;
     }
-
     return false;
 }
+
 /**
  * Cancel subscription and downgrade to free
  */
 export async function cancelSubscription(admin, shopDomain) {
     const shop = await getOrCreateShop(shopDomain);
-
     if (shop.chargeId) {
         try {
             await admin.graphql(`
         mutation AppSubscriptionCancel($id: ID!) {
           appSubscriptionCancel(id: $id) {
-            appSubscription {
-              id
-              status
-            }
-            userErrors {
-              field
-              message
-            }
+            appSubscription { id status }
+            userErrors { field message }
           }
         }
       `, {

@@ -3,19 +3,25 @@ export const PLANS = {
     free: {
         name: "Free",
         price: 0,
-        linkLimit: 100,
+        groupLimit: 1,
         interval: null,
     },
     basic: {
         name: "Basic",
-        price: 3.99,
-        linkLimit: 500,
+        price: 7.99,
+        groupLimit: 100,
         interval: "EVERY_30_DAYS",
     },
-    pro: {
-        name: "Pro",
-        price: 6.99,
-        linkLimit: Infinity,
+    advanced: {
+        name: "Advanced",
+        price: 15.99,
+        groupLimit: 500,
+        interval: "EVERY_30_DAYS",
+    },
+    premium: {
+        name: "Premium",
+        price: 35.99,
+        groupLimit: Infinity,
         interval: "EVERY_30_DAYS",
     },
 };

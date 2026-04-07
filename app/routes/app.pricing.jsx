@@ -18,48 +18,34 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
 
 export const loader = async ({ request }) => {
-    // Dynamic import to strictly prevent server code in client bundle
-    const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_PRO } = await import("../shopify.server");
+    const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_ADVANCED, MONTHLY_PLAN_PREMIUM } = await import("../shopify.server");
     const { getUsageInfo, confirmSubscription } = await import("../billing.server");
 
     const { admin, session, billing } = await authenticate.admin(request);
     const shop = session.shop;
 
-    let usageInfo;
-    try {
-        usageInfo = await getUsageInfo(shop);
-    } catch (error) {
-        console.error("Error in loader:", error);
-        throw error;
-    }
+    let usageInfo = await getUsageInfo(shop);
 
-    console.log(`[Pricing Loader] Checking subscription status for ${shop}. Local plan: ${usageInfo.plan}`);
-
-    // Robust & Fast Sync: Check Shopify Billing API status directly
     try {
         const billingCheck = await billing.check({
             isTest: true,
-            plans: [MONTHLY_PLAN_BASIC, MONTHLY_PLAN_PRO],
+            plans: [MONTHLY_PLAN_BASIC, MONTHLY_PLAN_ADVANCED, MONTHLY_PLAN_PREMIUM],
         });
 
         const currentKnownPlan = usageInfo.plan || 'free';
 
         if (billingCheck.hasActivePayment) {
             const activeSub = billingCheck.appSubscriptions[0];
-            const planKey = activeSub.name.includes("Pro") ? "pro" : "basic";
+            let planKey = "free";
+            if (activeSub.name.includes("Premium")) planKey = "premium";
+            else if (activeSub.name.includes("Advanced")) planKey = "advanced";
+            else if (activeSub.name.includes("Basic")) planKey = "basic";
 
-            // Only update DB if plan has actually changed to save time/resources
             if (planKey !== currentKnownPlan) {
-                console.log(`[Pricing Loader] Plan change detected (${currentKnownPlan} -> ${planKey}). Syncing...`);
                 await confirmSubscription(admin, shop, planKey, activeSub);
-                // Refresh usage info after sync to reflect change in UI
                 usageInfo = await getUsageInfo(shop);
-            } else {
-                console.log(`[Pricing Loader] Plan matches Shopify. Skipping extra sync.`);
             }
         } else if (currentKnownPlan !== 'free') {
-            // If DB says paid but Shopify says no, sync back to free
-            console.log(`[Pricing Loader] Paid subscription not found on Shopify. Syncing to free.`);
             await confirmSubscription(admin, shop, 'free', null);
             usageInfo = await getUsageInfo(shop);
         }
@@ -74,26 +60,8 @@ export const loader = async ({ request }) => {
     });
 };
 
-export function ErrorBoundary() {
-    const error = useRouteError();
-    console.error("Pricing Page Error:", error);
-    return (
-        <Page title="Error">
-            <Layout>
-                <Layout.Section>
-                    <Banner tone="critical">
-                        <p>There was an error loading the pricing page.</p>
-                        <p>{error.message || (typeof error === 'string' ? error : 'Check console for details')}</p>
-                    </Banner>
-                </Layout.Section>
-            </Layout>
-        </Page>
-    );
-}
-
 export const action = async ({ request }) => {
-    console.log("Pricing action triggered");
-    const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_PRO } = await import("../shopify.server");
+    const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_ADVANCED, MONTHLY_PLAN_PREMIUM } = await import("../shopify.server");
     const { cancelSubscription } = await import("../billing.server");
 
     const { billing, session, admin } = await authenticate.admin(request);
@@ -101,8 +69,6 @@ export const action = async ({ request }) => {
     const formData = await request.formData();
     const actionValue = formData.get("action");
     const plan = formData.get("plan");
-
-    console.log(`Action: ${actionValue}, Plan: ${plan}, Shop: ${shop}`);
 
     if (actionValue === "subscribe") {
         if (plan === "free") {
@@ -115,33 +81,27 @@ export const action = async ({ request }) => {
             }
         }
 
-        const planName = plan === "pro" ? MONTHLY_PLAN_PRO : MONTHLY_PLAN_BASIC;
+        let planName = MONTHLY_PLAN_BASIC;
+        if (plan === "premium") planName = MONTHLY_PLAN_PREMIUM;
+        else if (plan === "advanced") planName = MONTHLY_PLAN_ADVANCED;
 
         try {
-            console.log(`[Pricing] Action: subscribe, Plan: ${plan}, Map to: ${planName}, Shop: ${shop}`);
-
-            // billing.request will throw a RedirectResponse if successful
             await billing.request({
                 plan: planName,
                 isTest: true,
-                returnUrl: `https://${shop}/admin/apps/${process.env.SHOPIFY_APP_HANDLE || 'variants-linked-products'}/app/pricing?plan=${plan}`,
+                returnUrl: `https://${shop}/admin/apps/${process.env.SHOPIFY_APP_HANDLE}/app/pricing?plan=${plan}`,
             });
         } catch (error) {
-            if (error instanceof Response) {
-                console.log("[Pricing] Redirect response detected, allowing Remix to handle redirection.");
-                throw error;
-            }
-            console.error("[Pricing] Billing request error:", error.message || error);
-            return json({ error: `Billing Error: ${error.message || "Could not process request"}` }, { status: 400 });
+            if (error instanceof Response) throw error;
+            return json({ error: `Billing Error: ${error.message}` }, { status: 400 });
         }
     }
 
     if (actionValue === "cancel") {
         try {
             await cancelSubscription(admin, shop);
-            return json({ success: true, message: "Subscription cancelled. You are now on the Free plan." });
+            return json({ success: true, message: "Subscription cancelled." });
         } catch (error) {
-            console.error("Cancel error:", error);
             return json({ error: error.message }, { status: 400 });
         }
     }
@@ -165,14 +125,13 @@ export default function PricingPage() {
     };
 
     const handleCancel = () => {
-        if (confirm("Are you sure you want to cancel your subscription? You will be downgraded to the Free plan.")) {
+        if (confirm("Are you sure you want to cancel?")) {
             const formData = new FormData();
             formData.append("action", "cancel");
             submit(formData, { method: "POST" });
         }
     };
 
-    // Check if just upgraded
     const justUpgraded = searchParams.get("plan") && searchParams.get("charge_id");
 
     return (
@@ -182,27 +141,9 @@ export default function PricingPage() {
             <Layout>
                 <Layout.Section>
                     <BlockStack gap="400">
-                        {/* Error Banner */}
-                        {actionData?.error && (
-                            <Banner tone="critical" onDismiss={() => { }}>
-                                <p>{actionData.error}</p>
-                            </Banner>
-                        )}
+                        {actionData?.error && <Banner tone="critical"><p>{actionData.error}</p></Banner>}
+                        {(actionData?.message || justUpgraded) && <Banner tone="success"><p>{actionData?.message || "Plan activated successfully!"}</p></Banner>}
 
-                        {/* Success Message from Action */}
-                        {actionData?.message && (
-                            <Banner tone="success" onDismiss={() => { }}>
-                                <p>{actionData.message}</p>
-                            </Banner>
-                        )}
-
-                        {justUpgraded && (
-                            <Banner tone="success" onDismiss={() => { }}>
-                                <p>🎉 Welcome! Your plan has been activated successfully!</p>
-                            </Banner>
-                        )}
-
-                        {/* Usage Stats */}
                         <Card>
                             <BlockStack gap="300">
                                 <Text variant="headingMd">Current Usage</Text>
@@ -210,28 +151,26 @@ export default function PricingPage() {
                                     <Text>
                                         <Text as="span" fontWeight="bold">{usageInfo.used}</Text>
                                         {usageInfo.limit === Infinity ? (
-                                            <Text as="span" tone="subdued"> links used (Unlimited)</Text>
+                                            <Text as="span" tone="subdued"> groups used (Unlimited)</Text>
                                         ) : (
-                                            <Text as="span" tone="subdued"> / {usageInfo.limit} links</Text>
+                                            <Text as="span" tone="subdued"> / {usageInfo.limit} groups</Text>
                                         )}
                                     </Text>
-                                    <Badge tone={usageInfo.plan === "pro" ? "success" : usageInfo.plan === "basic" ? "info" : undefined}>
+                                    <Badge tone={usageInfo.plan === "premium" ? "success" : "info"}>
                                         {usageInfo.planName} Plan
                                     </Badge>
                                 </InlineStack>
                                 {usageInfo.limit !== Infinity && (
                                     <ProgressBar
                                         progress={usageInfo.percentage}
-                                        tone={usageInfo.percentage >= 90 ? "critical" : usageInfo.percentage >= 70 ? "warning" : "primary"}
+                                        tone={usageInfo.percentage >= 90 ? "critical" : "primary"}
                                     />
                                 )}
                             </BlockStack>
                         </Card>
 
-                        {/* Plan Cards */}
-                        {/* Plan Cards */}
-                        <InlineGrid columns={{ xs: 1, md: 3 }} gap="400" alignItems="start">
-                            {/* Free Plan */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+                            {/* Free */}
                             <Card>
                                 <BlockStack gap="400">
                                     <BlockStack gap="100">
@@ -239,105 +178,100 @@ export default function PricingPage() {
                                         <Text variant="heading2xl">$0</Text>
                                         <Text tone="subdued">Forever free</Text>
                                     </BlockStack>
-
                                     <Divider />
-
                                     <BlockStack gap="200">
-                                        <Text>✓ Up to 100 linked products</Text>
-                                        <Text>✓ All selector styles</Text>
-                                        <Text>✓ Theme customization</Text>
-                                        <Text tone="subdued">✗ Priority support</Text>
+                                        <Text>✓ 1 product group</Text>
+                                        <Text>✓ Create single-option groups</Text>
+                                        <Text>✓ Show option on product card</Text>
+                                        <Text>✓ Translations</Text>
                                     </BlockStack>
-
-                                    <Button
-                                        fullWidth
-                                        disabled={usageInfo.plan === "free"}
-                                        onClick={() => handleSubscribe("free")}
-                                        loading={isSubmitting}
-                                    >
+                                    <Button fullWidth disabled={usageInfo.plan === "free"} onClick={() => handleSubscribe("free")} loading={isSubmitting}>
                                         {usageInfo.plan === "free" ? "Current Plan" : "Downgrade"}
                                     </Button>
                                 </BlockStack>
                             </Card>
 
-                            {/* Basic Plan */}
+                            {/* Basic */}
                             <Card>
                                 <BlockStack gap="400">
                                     <BlockStack gap="100">
-                                        <InlineStack gap="200" blockAlign="center">
-                                            <Text variant="headingLg">Basic</Text>
-                                            <Badge tone="info">Popular</Badge>
-                                        </InlineStack>
-                                        <Text variant="heading2xl">$3.99</Text>
+                                        <Text variant="headingLg">Basic</Text>
+                                        <Text variant="heading2xl">$7.99</Text>
                                         <Text tone="subdued">per month</Text>
                                     </BlockStack>
-
                                     <Divider />
-
                                     <BlockStack gap="200">
-                                        <Text>✓ Up to 500 linked products</Text>
-                                        <Text>✓ All selector styles</Text>
-                                        <Text>✓ Theme customization</Text>
-                                        <Text>✓ Email support</Text>
+                                        <Text>✓ 100 product groups</Text>
+                                        <Text>✓ Create single-option groups</Text>
+                                        <Text>✓ Import / export groups</Text>
+                                        <Text>✓ Show option on product card</Text>
+                                        <Text>✓ Translations</Text>
+                                        <Text>✓ Auto-sync information</Text>
+                                        <Text>✓ Title Pattern Automation</Text>
                                     </BlockStack>
-
-                                    {usageInfo.plan === "basic" ? (
-                                        <Button fullWidth disabled>Current Plan</Button>
-                                    ) : usageInfo.plan === "pro" ? (
-                                        <Button fullWidth onClick={() => handleSubscribe("basic")} loading={isSubmitting}>
-                                            Downgrade
-                                        </Button>
-                                    ) : (
-                                        <Button fullWidth variant="primary" onClick={() => handleSubscribe("basic")} loading={isSubmitting}>
-                                            Upgrade
-                                        </Button>
-                                    )}
+                                    <Button fullWidth variant="primary" onClick={() => handleSubscribe("basic")} loading={isSubmitting} disabled={usageInfo.plan === "basic"}>
+                                        {usageInfo.plan === "basic" ? "Current Plan" : "Select Plan"}
+                                    </Button>
                                 </BlockStack>
                             </Card>
 
-                            {/* Pro Plan */}
-                            <Card background="bg-surface-success-subdued">
+                            {/* Advanced */}
+                            <Card>
+                                <div style={{ position: 'relative' }}>
+                                    <div style={{ position: 'absolute', top: '-15px', right: '0' }}>
+                                        <Badge tone="success">Most popular</Badge>
+                                    </div>
+                                    <BlockStack gap="400">
+                                        <BlockStack gap="100">
+                                            <Text variant="headingLg">Advanced</Text>
+                                            <Text variant="heading2xl">$15.99</Text>
+                                            <Text tone="subdued">per month</Text>
+                                        </BlockStack>
+                                        <Divider />
+                                        <BlockStack gap="200">
+                                            <Text>✓ 500 product groups</Text>
+                                            <Text>✓ Multi-option groups</Text>
+                                            <Text>✓ Subcategory groups</Text>
+                                            <Text>✓ Featured product support</Text>
+                                            <Text>✓ All automation features</Text>
+                                            <Text>✓ Import / export / sync</Text>
+                                        </BlockStack>
+                                        <Button fullWidth variant="primary" onClick={() => handleSubscribe("advanced")} loading={isSubmitting} disabled={usageInfo.plan === "advanced"}>
+                                            {usageInfo.plan === "advanced" ? "Current Plan" : "Select Plan"}
+                                        </Button>
+                                    </BlockStack>
+                                </div>
+                            </Card>
+
+                            {/* Premium */}
+                            <Card>
                                 <BlockStack gap="400">
                                     <BlockStack gap="100">
-                                        <InlineStack gap="200" blockAlign="center">
-                                            <Text variant="headingLg">Pro</Text>
-                                            <Badge tone="success">Best Value</Badge>
-                                        </InlineStack>
-                                        <Text variant="heading2xl">$6.99</Text>
+                                        <Text variant="headingLg">Premium</Text>
+                                        <Text variant="heading2xl">$35.99</Text>
                                         <Text tone="subdued">per month</Text>
                                     </BlockStack>
-
                                     <Divider />
-
                                     <BlockStack gap="200">
-                                        <Text fontWeight="bold">✓ Unlimited linked products</Text>
-                                        <Text>✓ All selector styles</Text>
-                                        <Text>✓ Theme customization</Text>
-                                        <Text>✓ Priority support</Text>
+                                        <Text fontWeight="bold">✓ Unlimited product groups</Text>
+                                        <Text>✓ Seamless product switching</Text>
+                                        <Text>✓ Scheduled automation</Text>
+                                        <Text>✓ Conditional swatch image</Text>
+                                        <Text>✓ Manage groups via API</Text>
+                                        <Text>✓ All Advanced features</Text>
                                     </BlockStack>
-
-                                    {usageInfo.plan === "pro" ? (
-                                        <Button fullWidth disabled>Current Plan</Button>
-                                    ) : (
-                                        <Button fullWidth variant="primary" onClick={() => handleSubscribe("pro")} loading={isSubmitting}>
-                                            Upgrade
-                                        </Button>
-                                    )}
+                                    <Button fullWidth variant="primary" onClick={() => handleSubscribe("premium")} loading={isSubmitting} disabled={usageInfo.plan === "premium"}>
+                                        {usageInfo.plan === "premium" ? "Current Plan" : "Select Plan"}
+                                    </Button>
                                 </BlockStack>
                             </Card>
-                        </InlineGrid>
+                        </div>
 
-                        {/* Cancel subscription */}
                         {usageInfo.plan !== "free" && (
                             <Card>
-                                <InlineStack gap="400" align="space-between" blockAlign="center">
-                                    <BlockStack gap="100">
-                                        <Text variant="headingMd">Cancel Subscription</Text>
-                                        <Text tone="subdued">You will be downgraded to the Free plan with 100 links limit.</Text>
-                                    </BlockStack>
-                                    <Button tone="critical" onClick={handleCancel} loading={isSubmitting}>
-                                        Cancel Subscription
-                                    </Button>
+                                <InlineStack align="space-between">
+                                    <Text>Need to downgrade? You can return to the Free plan anytime.</Text>
+                                    <Button tone="critical" onClick={handleCancel}>Cancel Plan</Button>
                                 </InlineStack>
                             </Card>
                         )}

@@ -70,7 +70,7 @@ export async function runAutomationRule(admin, prisma, ruleId, shop, canAddLinks
     if (availableProducts.length < 2) continue;
 
     // Kiểm tra giới hạn gói cước
-    const canAdd = await canAddLinks(shop, availableProducts.length);
+    const canAdd = await canAddLinks(shop, 1);
     if (!canAdd) break;
 
     // Tạo nhóm mới
@@ -227,7 +227,7 @@ export async function processAutomationsForProduct(admin, prisma, productId, sho
           const available = matchingProducts.filter(p => !existingItems.some(e => e.productId === p.id));
 
           if (available.length >= 2) {
-            const canAdd = await canAddLinks(shop, available.length);
+            const canAdd = await canAddLinks(shop, 1);
             if (canAdd) {
               const newGroup = await prisma.productGroup.create({
                 data: {

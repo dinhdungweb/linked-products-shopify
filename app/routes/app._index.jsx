@@ -49,40 +49,35 @@ import { PLANS } from "../billing.config";
 
 // Loader - Get product groups list
 export async function loader({ request }) {
-  const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_PRO } = await import("../shopify.server");
+  const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_ADVANCED, MONTHLY_PLAN_PREMIUM } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
   const { getUsageInfo, confirmSubscription } = await import("../billing.server");
 
   const { admin, session, billing } = await authenticate.admin(request);
   const shop = session.shop;
 
-  let usageInfo;
-  try {
-    usageInfo = await getUsageInfo(shop);
-  } catch (error) {
-    console.error("Initial usage fetch error:", error);
-  }
+  let usageInfo = await getUsageInfo(shop);
 
-  // Robust & Fast Sync: Check Shopify Billing API status directly
   try {
     const billingCheck = await billing.check({
       isTest: true,
-      plans: [MONTHLY_PLAN_BASIC, MONTHLY_PLAN_PRO],
+      plans: [MONTHLY_PLAN_BASIC, MONTHLY_PLAN_ADVANCED, MONTHLY_PLAN_PREMIUM],
     });
 
     const currentKnownPlan = usageInfo?.plan || 'free';
 
     if (billingCheck.hasActivePayment) {
       const activeSub = billingCheck.appSubscriptions[0];
-      const planKey = activeSub.name.includes("Pro") ? "pro" : "basic";
+      let planKey = "free";
+      if (activeSub.name.includes("Premium")) planKey = "premium";
+      else if (activeSub.name.includes("Advanced")) planKey = "advanced";
+      else if (activeSub.name.includes("Basic")) planKey = "basic";
 
       if (planKey !== currentKnownPlan) {
-        console.log(`[Dashboard Loader] Plan sync initiated: ${currentKnownPlan} -> ${planKey}`);
         await confirmSubscription(admin, shop, planKey, activeSub);
         usageInfo = await getUsageInfo(shop);
       }
     } else if (currentKnownPlan !== 'free') {
-      console.log(`[Dashboard Loader] Syncing back to free plan.`);
       await confirmSubscription(admin, shop, 'free', null);
       usageInfo = await getUsageInfo(shop);
     }
@@ -126,11 +121,11 @@ export async function action({ request }) {
       return json({ error: "At least 2 products are required to create a group" }, { status: 400 });
     }
 
-    // Check link limit
-    const canAdd = await canAddLinks(session.shop, products.length);
+    // Check group limit
+    const canAdd = await canAddLinks(session.shop, 1);
     if (!canAdd) {
       return json({
-        error: "You have reached your plan's link limit. Please upgrade to add more products.",
+        error: "You have reached your plan's group limit. Please upgrade to create more product groups.",
         limitReached: true
       }, { status: 400 });
     }
@@ -379,10 +374,10 @@ export async function action({ request }) {
           continue;
         }
 
-        // Check link limit
-        const canAdd = await canAddLinks(session.shop, products.length);
+        // Check group limit
+        const canAdd = await canAddLinks(session.shop, 1);
         if (!canAdd) {
-          errors.push(`Skipped group "${groupName}": link limit reached`);
+          errors.push(`Skipped group "${groupName}": group limit reached`);
           break;
         }
 

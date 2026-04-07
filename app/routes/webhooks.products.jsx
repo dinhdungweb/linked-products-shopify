@@ -9,9 +9,8 @@ export const action = async ({ request }) => {
   console.log(`Received webhook topic: ${topic} for shop: ${shop}`);
 
   if (topic === "PRODUCTS_CREATE" || topic === "PRODUCTS_UPDATE") {
-    const productId = payload.id;
-    if (!productId.startsWith("gid://")) {
-       // Sometimes payload ID is just the number
+    let productId = payload.id;
+    if (typeof productId === "number" || !productId.includes("gid://")) {
        productId = `gid://shopify/Product/${productId}`;
     }
 
