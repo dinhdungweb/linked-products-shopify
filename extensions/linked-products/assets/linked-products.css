@@ -42,7 +42,8 @@
   justify-content: var(--lp-justify, flex-start);
 }
 
-.variant-picker__option-values.is-scroll {
+.variant-picker__option-values.is-scroll,
+.variant-picker__option-values.is-slide {
   flex-wrap: nowrap !important;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -52,22 +53,26 @@
 }
 
 @media (min-width: 769px) {
-  .variant-picker__option-values.is-scroll {
+  .variant-picker__option-values.is-scroll,
+  .variant-picker__option-values.is-slide {
     flex-wrap: wrap !important;
     overflow-x: visible;
     scroll-snap-type: none;
   }
 }
 
-.variant-picker__option-values.is-scroll::-webkit-scrollbar {
+.variant-picker__option-values.is-scroll::-webkit-scrollbar,
+.variant-picker__option-values.is-slide::-webkit-scrollbar {
   height: 3px;
 }
 
-.variant-picker__option-values.is-scroll::-webkit-scrollbar-track {
+.variant-picker__option-values.is-scroll::-webkit-scrollbar-track,
+.variant-picker__option-values.is-slide::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.variant-picker__option-values.is-scroll::-webkit-scrollbar-thumb {
+.variant-picker__option-values.is-scroll::-webkit-scrollbar-thumb,
+.variant-picker__option-values.is-slide::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
 }
@@ -645,16 +650,18 @@
   .linked-option--swatch,
   .linked-option--image,
   .linked-option--scroll,
+  .linked-option--slide,
   .linked-option--card,
   .linked-option--polaroid {
     width: var(--lp-swatch-size);
   }
 
-  /* Specific mobile style for outer containers that were block inline */
+  /* Ensure outer containers stay inline-flex for horizontal scrolling */
   [when="scroll_swatch"] .lp-outer-swatch,
+  [when="slide_swatch"] .lp-outer-swatch,
   [when="image_swatch_card"] .lp-outer-swatch,
   [when="color_swatch_card"] .lp-outer-swatch {
-    display: block !important;
+    display: inline-flex !important;
   }
 
   .linked-option--block {
