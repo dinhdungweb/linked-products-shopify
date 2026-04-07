@@ -132,7 +132,6 @@
     <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--image {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
          title="{{ value }}{% if is_unavailable %} (Sold out){% endif %}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
@@ -146,26 +145,25 @@
       </a>
     </span>
 
-  {%- when 'slide_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block;">
+  {%- when 'scroll_swatch', 'slide_swatch' -%}
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
-         class="linked-option linked-option--slide {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-         style="width: var(--lp-swatch-size);"
+         class="linked-option linked-option--scroll {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
-        <div class="slide-media" style="aspect-ratio: var(--lp-aspect-ratio);">
+        <div class="scroll-media">
           {%- if final_image_url != blank -%}
             <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
           {%- endif -%}
         </div>
-        <div class="slide-info">
+        <div class="scroll-info">
           {%- if settings.variantName.show != false -%}
-            <span class="slide-title">{{ value }}</span>
+            <span class="scroll-title">{{ value }}</span>
           {%- endif -%}
           {%- if settings.price.show -%}
-            <span class="slide-price">{{ product_obj.price | money }}</span>
+            <span class="scroll-price">{{ product_obj.price | money }}</span>
           {%- endif -%}
         </div>
         {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
@@ -176,12 +174,11 @@
     <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--polaroid {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-         style="width: var(--lp-swatch-size);"
          title="{{ value }}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
-        <div class="polaroid-inner" style="aspect-ratio: var(--lp-aspect-ratio);">
+        <div class="polaroid-inner">
           {%- if final_image_url != blank -%}
             <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
           {%- endif -%}
@@ -194,7 +191,6 @@
     <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--swatch {% if style == 'square_color_swatch' %}is-square{% endif %} {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-         style="width: var(--lp-swatch-size); aspect-ratio: var(--lp-aspect-ratio);"
          title="{{ value }}">
         {%- if has_color -%}
           <span class="swatch-bg swatch-bg--color" style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% else %}background-color: {{ css_color }};{% endif %}"></span>
@@ -208,7 +204,7 @@
     </span>
 
   {%- when 'pill_swatch' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="border-radius: var(--lp-border-radius);">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--pill-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
          title="{{ value }}">
@@ -231,39 +227,38 @@
     </a>
 
   {%- when 'image_swatch_card' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block;">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-         style="width: var(--lp-swatch-size);"
          title="{{ value }}">
         {%- if settings.badge.show -%}
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
-        <div class="card-media" style="aspect-ratio: var(--lp-aspect-ratio);">
+        <div class="card-media">
           {%- if final_image_url != blank -%}
             <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
           {%- else -%}
             <span class="no-image">{{ value | slice: 0, 1 }}</span>
           {%- endif -%}
         </div>
-        {%- if settings.variantName.show != false -%}
-          <span class="card-label">{{ value }}</span>
+        {%- assign should_show_card_name = settings.variantName.show -%}
+        {%- if style contains 'image' or style contains 'card' -%}
+          {%- assign should_show_card_name = false -%}
         {%- endif -%}
-        {%- if settings.price.show -%}
-          <span class="slide-price" style="font-size: var(--lp-price-font-size, 10px);">{{ product_obj.price | money }}</span>
+        {%- if should_show_card_name -%}
+          <span class="card-label">{{ value }}</span>
         {%- endif -%}
         {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
       </a>
     </span>
 
   {%- when 'color_swatch_card' -%}
-    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}" style="display: block;">
+    <span class="lp-outer-swatch {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}">
       <a href="{{ url }}" 
          class="linked-option linked-option--card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
-         style="width: var(--lp-swatch-size);"
          title="{{ value }}">
         <div class="card-media is-color" 
-             style="aspect-ratio: var(--lp-aspect-ratio); {% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: var(--lp-border-color, #f4f4f4);{% endif %}">
+             style="{% if item_style == 'two' %}background: linear-gradient({{ gradient_direction }}, {{ custom_color | default: '#ccc' }} 50%, {{ custom_color2 | default: '#ddd' }} 50%);{% elsif has_color %}background-color: {{ css_color }};{% elsif final_image_url != blank %}background-image: url({{ final_image_url }}); background-size: cover;{% else %}background-color: var(--lp-border-color, #f4f4f4);{% endif %}">
           {%- if has_color or final_image_url != blank -%}
             <span class="swatch-anchor"></span>
           {%- else -%}
@@ -271,12 +266,31 @@
           {%- endif -%}
 
         </div>
-        {%- if settings.variantName.show != false -%}
+        {%- assign should_show_card_name = settings.variantName.show -%}
+        {%- if style contains 'color' or style contains 'card' -%}
+          {%- assign should_show_card_name = false -%}
+        {%- endif -%}
+        {%- if should_show_card_name -%}
           <span class="card-label">{{ value }}</span>
         {%- endif -%}
         {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
       </a>
     </span>
+
+  {%- when 'button_card' -%}
+    <a href="{{ url }}" 
+       class="linked-option linked-option--button-card {% if selected %}is-selected{% endif %} {% if is_unavailable %}is-unavailable{% endif %}"
+       style="
+         --lp-btn-padding-y: {{ settings.basic.padding | default: 8 }}px;
+         --lp-btn-padding-x: {{ settings.basic.padding | times: 1.5 | default: 12 }}px;
+         --lp-border-radius: {{ settings.border.radius | default: 4 }}px;
+         --lp-btn-font-size: {{ settings.variantName.fontSize | default: 13 }}px;
+         --lp-btn-font-weight: {{ settings.variantName.fontWeight | default: 500 }};
+       "
+       title="{{ value }}">
+      {{ value }}
+      {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
+    </a>
 
   {%- when 'dropdown', 'image_dropdown' -%}
     <span class="dropdown-option-placeholder">Use block settings for dropdown</span>

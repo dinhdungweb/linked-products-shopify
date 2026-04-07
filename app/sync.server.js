@@ -34,7 +34,18 @@ export async function syncGroupMetafields(admin, prisma, gId) {
         metafields.push({ ...base, key: "inventory_behavior", value: group.inventoryBehavior || "show", type: "single_line_text_field" });
         metafields.push({ ...base, key: "option_name", value: group.optionName || "Color", type: "single_line_text_field" });
         metafields.push({ ...base, key: "selector_style", value: group.selectorStyle || "block", type: "single_line_text_field" });
-        metafields.push({ ...base, key: "card_selector_style", value: group.cardSelectorStyle || "swatch", type: "single_line_text_field" });
+        // Determine card style ID
+        let cStyle = group.cardSelectorStyle || "image_swatch_card";
+        if (cStyle === "swatch") {
+            cStyle = "image_swatch_card";
+        } else if (cStyle === "pill") {
+            cStyle = "button_card";
+        } else if (cStyle === "same") {
+            cStyle = (group.selectorStyle || "block") + "_card";
+            cStyle = cStyle.replace("swatch_card", "image_swatch_card");
+            if (cStyle.includes("button")) cStyle = "button_card";
+        }
+        metafields.push({ ...base, key: "card_selector_style", value: cStyle, type: "single_line_text_field" });
         metafields.push({ ...base, key: "status", value: group.status || "active", type: "single_line_text_field" });
     }
 

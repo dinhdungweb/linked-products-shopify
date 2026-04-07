@@ -97,6 +97,9 @@ export const action = async ({ request }) => {
 
     // Save each style
     for (const [styleId, settings] of Object.entries(styleSettings)) {
+      if (settings.basic?.limitDesktop) settings.basic.limitDesktop = parseInt(settings.basic.limitDesktop);
+      if (settings.basic?.limitMobile) settings.basic.limitMobile = parseInt(settings.basic.limitMobile);
+
       await prisma.optionStyleSetting.upsert({
         where: { shop_styleId: { shop, styleId } },
         update: { settings },
@@ -116,6 +119,12 @@ export const action = async ({ request }) => {
     
     // Merge new card styles
     Object.assign(allStyles, styleSettings);
+    
+    // BACKWARDS COMPATIBILITY SYNC:
+    // Some products might still point to old style names. Update them too.
+    if (styleSettings.image_swatch_card) allStyles.swatch = styleSettings.image_swatch_card;
+    if (styleSettings.button_card) allStyles.pill = styleSettings.button_card;
+    if (styleSettings.color_swatch_card) allStyles.color_swatch = styleSettings.color_swatch_card;
 
     await admin.graphql(`
       mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
@@ -266,7 +275,7 @@ export default function ProductCardCustomizer() {
         <BlockStack gap="200">
             <Text variant="bodyMd">Style</Text>
             <ButtonGroup variant="segmented">
-                <Button pressed={s.border.radius > 4} onClick={() => handleStyleUpdate(styleId, 'border', 'radius', 20)}>Round</Button>
+                <Button pressed={s.border.radius > 4} onClick={() => handleStyleUpdate(styleId, 'border', 'radius', 50)}>Round</Button>
                 <Button pressed={s.border.radius <= 4} onClick={() => handleStyleUpdate(styleId, 'border', 'radius', 0)}>Square</Button>
             </ButtonGroup>
         </BlockStack>

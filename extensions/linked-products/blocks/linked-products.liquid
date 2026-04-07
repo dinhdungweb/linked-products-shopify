@@ -46,7 +46,7 @@
 
   {%- if active_selector_style == 'image_swatch' -%}
     {%- assign def_size = 48 -%}{%- assign def_radius = 100 -%}
-  {%- elsif active_selector_style == 'slide_swatch' -%}{%- assign def_size = 90 -%}{%- assign def_radius = 0 -%}{%- assign def_padding = 5 -%}{%- assign def_max_lines = 2 -%}
+  {%- elsif active_selector_style == 'scroll_swatch' or active_selector_style == 'slide_swatch' -%}{%- assign def_size = 90 -%}{%- assign def_radius = 0 -%}{%- assign def_padding = 5 -%}{%- assign def_max_lines = 2 -%}
   {%- elsif active_selector_style == 'polaroid_swatch' -%}
     {%- assign def_size = 52 -%}{%- assign def_padding = 4 -%}{%- assign def_radius = 0 -%}{%- assign def_shadow_show = true -%}
   {%- elsif active_selector_style == 'color_swatch' -%}
@@ -174,9 +174,17 @@
   {%- assign lp_badge_color = active_style_settings.badge.color | default: '#ffffff' -%}
   {%- assign lp_badge_bg = active_style_settings.badge.bgColor | default: '#000000' -%}
 
-  {%- assign lp_is_slide = false -%}
-  {%- if active_selector_style contains 'slide' -%}
-    {%- assign lp_is_slide = true -%}
+  {%- assign lp_layout_type = active_style_settings.layout.type | default: 'stack' -%}
+  {%- assign lp_is_scroll = false -%}
+  {%- if lp_layout_type == 'scroll' or lp_layout_type == 'slide' -%}
+    {%- assign lp_is_scroll = true -%}
+  {%- elsif lp_layout_type == 'scroll_mobile' or lp_layout_type == 'slide_mobile' -%}
+    {%- comment -%}For now, keep it simple or implement specific mobile check if needed{%- endcomment -%}
+    {%- assign lp_is_scroll = true -%}
+  {%- endif -%}
+
+  {%- if active_selector_style contains 'scroll' or active_selector_style contains 'slide' -%}
+    {%- assign lp_is_scroll = true -%}
   {%- endif -%}
 
   {{ 'linked-products.css' | asset_url | stylesheet_tag }}
@@ -290,7 +298,7 @@
               });
           </script>
         {%- else -%}
-          <div class="variant-picker__option-values {% unless lp_is_slide %}wrap{% endunless %} {% if lp_is_slide %}is-slide{% endif %}" style="gap: var(--lp-items-gap); justify-content: var(--lp-justify);">
+          <div class="variant-picker__option-values {% unless lp_is_scroll %}wrap{% endunless %} {% if lp_is_scroll %}is-scroll{% endif %}" style="gap: var(--lp-items-gap); justify-content: var(--lp-justify);">
             {%- assign rendered_count = 0 -%}
             {%- assign current_handle_str = product.handle -%}
             

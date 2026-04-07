@@ -1,69 +1,118 @@
-  <script>
-    (function() {
-      if (window.lpInjected) return;
-      window.lpInjected = true;
-      console.log('Linked Products: Injector active.');
+  {{ 'linked-products.css' | asset_url | stylesheet_tag }}
 
-      const SELECTORS = {
-        cards: '.card-wrapper, .card, .product-card, .grid-view-item, .product-item',
-        content: '.card__content, .product-card__info, .product-item-meta, .product-info',
-        price: '.price, .product-item__price, .card__price, .product-card__price'
-      };
+  {%- if shop.metafields.linked_products.settings.value.showOnProductCards -%}
+    <div id="lp-swatch-storage" style="display: none !important;" aria-hidden="true">
+        {%- if template.name == 'collection' -%}
+            {%- for product in collection.products -%}
+                <div data-handle="{{ product.handle }}">
+                    {%- render 'linked-product-card-swatches', product: product -%}
+                </div>
+            {%- endfor -%}
+        {%- elsif template.name == 'search' -%}
+            {%- for product in search.results -%}
+                {%- if product.object_type == 'product' -%}
+                    <div data-handle="{{ product.handle }}">
+                        {%- render 'linked-product-card-swatches', product: product -%}
+                    </div>
+                {%- endif -%}
+            {%- endfor -%}
+        {%- elsif template.name == 'index' -%}
+            {%- comment -%}For home page, we might need a broader search or specific collections. 
+            For now, let's try to find all products mentioned in sections if possible, 
+            but standard liquid doesn't allow easy global product access. 
+            However, we can render common ones or use the JS fetch approach as fallback.{%- endcomment -%}
+        {%- endif -%}
+    </div>
 
-      async function injectCardSwatches() {
-        const cards = document.querySelectorAll(SELECTORS.cards);
-        
-        for (const card of cards) {
-          if (card.querySelector('.lp-injected-container')) continue;
-          
-          const productLink = card.querySelector('a[href*="/products/"]');
-          if (!productLink) continue;
-          
-          const url = new URL(productLink.href, window.location.origin);
-          const handle = url.pathname.split('/products/')[1].split('?')[0];
-          if (!handle) continue;
+    <script>
+        (function() {
+        if (window.lpInjected) return;
+        window.lpInjected = true;
+        console.log('Linked Products: Injector active.');
 
-          const container = document.createElement('div');
-          container.className = 'lp-injected-container';
-          container.style.width = '100%';
-          container.setAttribute('data-lp-handle', handle);
-          
-          const priceElement = card.querySelector(SELECTORS.price);
-          const contentElement = card.querySelector(SELECTORS.content);
-          
-          if (priceElement) {
-            priceElement.parentNode.insertBefore(container, priceElement.nextSibling);
-          } else if (contentElement) {
-            contentElement.appendChild(container);
-          }
+        const SELECTORS = {
+            cards: '.card-wrapper, .card, .product-card, .grid-view-item, .product-item, .product-grid-item',
+            content: '.card__content, .product-card__info, .product-item-meta, .product-info, .card-information',
+            price: '.price, .product-item__price, .card__price, .product-card__price, .price--on-sale'
+        };
 
-          // Fetch Swatches via Section Rendering API (if possible) or just a simple placeholder for now
-          // For a robust "Auto" version, we'd fetch a mini-liquid template.
-          // But since we can't easily add a new section via code, let's try to fetch the existing one.
-          
-          try {
-            // We'll attempt to fetch the section. This usually requires the section to be part of the theme.
-            // Since we know the block name is 'collection-swatches', we can try.
-            // Note: Extension block IDs are usually dynamic, so this is a challenge for "Auto" without a proxy.
-          } catch (e) {}
+        function injectCardSwatches() {
+            const cards = document.querySelectorAll(SELECTORS.cards);
+            const storage = document.getElementById('lp-swatch-storage');
+            if (!storage) return;
+
+            cards.forEach(card => {
+                if (card.querySelector('.linked-product-swatches')) return;
+                
+                const productLink = card.querySelector('a[href*="/products/"]');
+                if (!productLink) return;
+                
+                const url = new URL(productLink.href, window.location.origin);
+                const pathParts = url.pathname.split('/products/');
+                if (pathParts.length < 2) return;
+                const handle = pathParts[1].split('?')[0].split('/')[0];
+                if (!handle) return;
+
+                // Find pre-rendered content
+                const source = storage.querySelector(`[data-handle="${handle}"]`);
+                if (!source || !source.innerHTML.trim()) return;
+
+                const container = document.createElement('div');
+                container.className = 'lp-injected-container';
+                container.style.width = '100%';
+                container.setAttribute('data-lp-handle', handle);
+                container.innerHTML = source.innerHTML;
+                
+                const priceElement = card.querySelector(SELECTORS.price);
+                const contentElement = card.querySelector(SELECTORS.content);
+                
+                if (priceElement) {
+                    // Try to insert after price container to avoid breaking layout
+                    priceElement.parentNode.insertBefore(container, priceElement.nextSibling);
+                } else if (contentElement) {
+                    contentElement.appendChild(container);
+                }
+            });
         }
-      }
 
-      injectCardSwatches();
-      const observer = new MutationObserver((mutations) => {
-        let shouldRun = false;
-        mutations.forEach(m => { if (m.addedNodes.length) shouldRun = true; });
-        if (shouldRun) injectCardSwatches();
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
-    })();
-  </script>
-  <style>
-    .lp-injected-container {
-        display: block;
-        min-height: 5px;
-    }
-  </style>
+        // Run on load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', injectCardSwatches);
+        } else {
+            injectCardSwatches();
+        }
+
+        // Watch for dynamic updates (infinite scroll, filters)
+        const observer = new MutationObserver((mutations) => {
+            let shouldRun = false;
+            for (const mutation of mutations) {
+                if (mutation.addedNodes.length > 0) {
+                    shouldRun = true;
+                    break;
+                }
+            }
+            if (shouldRun) {
+                // Debounce simple
+                clearTimeout(window.lpTimer);
+                window.lpTimer = setTimeout(injectCardSwatches, 100);
+            }
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true });
+        })();
+    </script>
+    <style>
+        .lp-injected-container {
+            display: block;
+            margin-top: 5px;
+            clear: both;
+        }
+        /* Fix for Dawn theme alignment */
+        .card__content .lp-injected-container {
+            padding-top: 0;
+        }
+    </style>
+  {%- endif -%}
 
 {% schema %}
 {
@@ -72,3 +121,4 @@
   "settings": []
 }
 {% endschema %}
+

@@ -38,7 +38,7 @@ export const BASE_SETTINGS = {
 
 export const DEFAULT_SETTINGS_BY_STYLE = {
   image_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 48, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 100 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
-  slide_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 90, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0, width: 1, color: "#ccc", activeColor: "#000", outerWidth: 0 }, layout: { ...BASE_SETTINGS.layout, type: 'slide' }, price: { ...BASE_SETTINGS.price, show: true } },
+  scroll_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 90, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0, width: 1, color: "#ccc", activeColor: "#000", outerWidth: 0 }, layout: { ...BASE_SETTINGS.layout, type: 'scroll' }, price: { ...BASE_SETTINGS.price, show: true } },
   polaroid_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 52, padding: 4, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 0 }, shadow: { ...BASE_SETTINGS.shadow, show: true, color: "rgba(0,0,0,0.1)", blur: 3, offsetY: 1 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
   color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 20, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 20, outerColor: "#dddddd" }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
   square_color_swatch: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 32, gap: 8 }, border: { ...BASE_SETTINGS.border, radius: 4, width: 2, color: "#ffffff", activeColor: "#ffffff", outerWidth: 2, outerPadding: 2, outerActiveColor: "#5c6ac4", outerRadius: 6, outerColor: "#dddddd" }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
@@ -206,7 +206,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
     isUnavailable: p.isUnavailable || false
   }));
 
-  const isSlide = styleId.includes('slide');
+  const isScroll = settings.layout?.type === 'scroll' || settings.layout?.type === 'scroll_mobile' || styleId.includes('scroll') || styleId.includes('slide');
   const isButton = styleId.includes('button');
   const isDropdown = styleId.includes('dropdown');
   const isColor = styleId.includes('color');
@@ -403,10 +403,10 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   const containerStyle = { 
       display: 'flex', 
       gap: `${settings.basic.gap}px`, 
-      flexWrap: (isSlide && !isCard) ? 'wrap' : (isSlide ? 'nowrap' : 'wrap'),
-      overflowX: (isSlide && isCard) ? 'auto' : 'visible',
-      msOverflowStyle: (isSlide && isCard) ? 'none' : 'auto', 
-      scrollbarWidth: (isSlide && isCard) ? 'none' : 'auto',   
+      flexWrap: (isScroll && !isCard) ? 'wrap' : (isScroll ? 'nowrap' : 'wrap'),
+      overflowX: (isScroll && isCard) ? 'auto' : 'visible',
+      msOverflowStyle: (isScroll && isCard) ? 'none' : 'auto', 
+      scrollbarWidth: (isScroll && isCard) ? 'none' : 'auto',   
       WebkitOverflowScrolling: 'touch',
       justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start'),
       padding: '0', 
@@ -416,9 +416,9 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   return (
       <div style={{ width: '100%' }}>
           <style dangerouslySetInnerHTML={{ __html: `
-            .slide-container::-webkit-scrollbar { display: none; }
+            .scroll-container::-webkit-scrollbar { display: none; }
             @media (min-width: 769px) {
-              .slide-container.is-slide-page { 
+              .scroll-container.is-scroll-page { 
                 flex-wrap: wrap !important;
                 overflow-x: visible !important;
               }
@@ -427,7 +427,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
           {renderLabel()}
 
           <div 
-            className={`slide-container ${isSlide && !isCard ? 'is-slide-page' : ''}`}
+            className={`scroll-container ${isScroll && !isCard ? 'is-scroll-page' : ''}`}
             style={{ ...containerStyle, marginTop: isCard ? 0 : `${settings.layout?.marginTop || 0}px`, marginBottom: isCard ? 0 : `${settings.layout?.marginBottom || 0}px` }}
           >
               {itemsToRender.map((p, i) => {

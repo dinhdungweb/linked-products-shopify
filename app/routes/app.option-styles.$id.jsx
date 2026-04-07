@@ -47,7 +47,7 @@ import {
 
 const STYLE_NAMES = {
   image_swatch: "Image swatch",
-  slide_swatch: "Slide swatch (Mobile only)",
+  scroll_swatch: "Scroll swatch (Mobile only)",
   polaroid_swatch: "Polaroid swatch",
   color_swatch: "Color swatch",
   square_color_swatch: "Square color swatch",
@@ -583,8 +583,8 @@ export default function StyleCustomizerPage() {
                                 <Text variant="bodyMd">Layout</Text>
                                 <ButtonGroup variant="segmented">
                                     <Button pressed={settings.layout.type === "stack"} onClick={() => handleUpdate('layout', 'type', "stack")}>Stack</Button>
-                                    <Button pressed={settings.layout.type === "slide"} onClick={() => handleUpdate('layout', 'type', "slide")}>Slide</Button>
-                                    <Button pressed={settings.layout.type === "slide_mobile"} onClick={() => handleUpdate('layout', 'type', "slide_mobile")}>Slide (Mobile only)</Button>
+                                    <Button pressed={settings.layout.type === "scroll"} onClick={() => handleUpdate('layout', 'type', "scroll")}>Scroll</Button>
+                                    <Button pressed={settings.layout.type === "scroll_mobile"} onClick={() => handleUpdate('layout', 'type', "scroll_mobile")}>Scroll (Mobile only)</Button>
                                 </ButtonGroup>
                             </BlockStack>
                             <TextField 
