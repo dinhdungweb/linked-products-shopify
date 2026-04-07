@@ -41,6 +41,16 @@ const shopify = shopifyApp({
       ],
     },
   },
+  webhooks: {
+    PRODUCTS_CREATE: {
+      deliveryMethod: "http",
+      callbackUrl: "/webhooks/products",
+    },
+    PRODUCTS_UPDATE: {
+      deliveryMethod: "http",
+      callbackUrl: "/webhooks/products",
+    },
+  },
   future: {
     unstable_newEmbeddedAuthStrategy: true,
     expiringOfflineAccessTokens: true,

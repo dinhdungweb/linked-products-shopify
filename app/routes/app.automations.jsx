@@ -24,7 +24,8 @@ import {
   Tabs,
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { DeleteIcon, PlayIcon, PauseCircleIcon } from "@shopify/polaris-icons";
+import { DeleteIcon, PlayIcon, PauseCircleIcon, EditIcon } from "@shopify/polaris-icons";
+import { runAutomationRule } from "../models/automation.server";
 
 // Loader
 export async function loader({ request }) {
@@ -72,6 +73,23 @@ export async function action({ request }) {
     return json({ success: true, message: `Rule "${name}" created successfully!` });
   }
 
+  // Update automation rule
+  if (actionType === "updateRule") {
+    const ruleId = formData.get("ruleId");
+    const name = formData.get("name");
+    const type = formData.get("type");
+    const pattern = formData.get("pattern");
+    const optionName = formData.get("optionName") || "Color";
+    const selectorStyle = formData.get("selectorStyle") || "block";
+
+    await prisma.automationRule.update({
+      where: { id: ruleId },
+      data: { name, type, pattern, optionName, selectorStyle },
+    });
+
+    return json({ success: true, message: `Rule "${name}" updated successfully!` });
+  }
+
   // Delete rule
   if (actionType === "deleteRule") {
     const ruleId = formData.get("ruleId");
@@ -95,123 +113,8 @@ export async function action({ request }) {
   // Run automation rule
   if (actionType === "runRule") {
     const ruleId = formData.get("ruleId");
-    const rule = await prisma.automationRule.findUnique({ where: { id: ruleId } });
-    if (!rule) return json({ error: "Rule not found" }, { status: 404 });
-
     try {
-      let products = [];
-      let groupKeyExtractor;
-
-      if (rule.type === "title_pattern") {
-        // Fetch all products, group by title pattern
-        const regex = new RegExp(rule.pattern, "i");
-        const allProducts = await fetchAllProducts(admin);
-
-        // Group products by base title (match group)
-        const grouped = {};
-        for (const p of allProducts) {
-          const match = p.title.match(regex);
-          if (match) {
-            const baseKey = match[1] || match[0]; // Use first capture group or full match
-            if (!grouped[baseKey]) grouped[baseKey] = [];
-            grouped[baseKey].push(p);
-          }
-        }
-        products = grouped;
-        groupKeyExtractor = (key) => key;
-
-      } else if (rule.type === "tag") {
-        // Find all products with the specified tag
-        const allProducts = await fetchAllProducts(admin);
-        const tagName = rule.pattern.toLowerCase();
-        const taggedProducts = allProducts.filter(p =>
-          p.tags && p.tags.some(t => t.toLowerCase() === tagName)
-        );
-
-        if (taggedProducts.length >= 2) {
-          products = { [rule.pattern]: taggedProducts };
-        }
-
-      } else if (rule.type === "sku_pattern") {
-        const regex = new RegExp(rule.pattern, "i");
-        const allProducts = await fetchAllProducts(admin);
-
-        const grouped = {};
-        for (const p of allProducts) {
-          // Check product SKU from first variant
-          const sku = p.sku || "";
-          const match = sku.match(regex);
-          if (match) {
-            const baseKey = match[1] || match[0];
-            if (!grouped[baseKey]) grouped[baseKey] = [];
-            grouped[baseKey].push(p);
-          }
-        }
-        products = grouped;
-
-      } else if (rule.type === "collection") {
-        // Fetch products from a specific collection
-        const collectionProducts = await fetchCollectionProducts(admin, rule.pattern);
-        if (collectionProducts.length >= 2) {
-          products = { [rule.pattern]: collectionProducts };
-        }
-      }
-
-      let groupsCreated = 0;
-      const productGroups = typeof products === "object" ? products : {};
-
-      for (const [groupKey, groupProducts] of Object.entries(productGroups)) {
-        if (groupProducts.length < 2) continue;
-
-        // Check if any product already in a group
-        const productIds = groupProducts.map(p => p.id);
-        const existing = await prisma.productGroupItem.findMany({
-          where: { productId: { in: productIds } },
-        });
-        if (existing.length > 0) continue;
-
-        // Check link limit
-        const canAdd = await canAddLinks(shop, groupProducts.length);
-        if (!canAdd) break;
-
-        // Create group
-        const groupName = `${rule.name} - ${groupKey}`;
-        const newGroup = await prisma.productGroup.create({
-          data: {
-            shop,
-            name: groupName,
-            optionName: rule.optionName,
-            selectorStyle: rule.selectorStyle,
-          },
-        });
-
-        // Add products
-        for (let i = 0; i < groupProducts.length; i++) {
-          await prisma.productGroupItem.create({
-            data: {
-              groupId: newGroup.id,
-              productId: groupProducts[i].id,
-              productHandle: groupProducts[i].handle,
-              optionValue: groupProducts[i].title,
-              position: i + 1,
-            },
-          });
-        }
-
-        // Sync metafields for this group
-        await syncGroupMetafieldsHelper(admin, prisma, newGroup.id);
-        groupsCreated++;
-      }
-
-      // Update rule
-      await prisma.automationRule.update({
-        where: { id: ruleId },
-        data: {
-          lastRunAt: new Date(),
-          groupsCreated: { increment: groupsCreated },
-        },
-      });
-
+      const groupsCreated = await runAutomationRule(admin, prisma, ruleId, shop, canAddLinks);
       return json({
         success: true,
         message: groupsCreated > 0
@@ -227,131 +130,6 @@ export async function action({ request }) {
   return json({ error: "Invalid action" }, { status: 400 });
 }
 
-// Helper: Fetch all products from Shopify
-async function fetchAllProducts(admin) {
-  const products = [];
-  let cursor = null;
-  let hasNextPage = true;
-
-  while (hasNextPage) {
-    const query = cursor
-      ? `query { products(first: 100, after: "${cursor}") { edges { cursor node { id title handle tags variants(first: 1) { nodes { sku } } } } pageInfo { hasNextPage } } }`
-      : `query { products(first: 100) { edges { cursor node { id title handle tags variants(first: 1) { nodes { sku } } } } pageInfo { hasNextPage } } }`;
-
-    const response = await admin.graphql(query);
-    const result = await response.json();
-    const edges = result.data?.products?.edges || [];
-
-    for (const edge of edges) {
-      products.push({
-        id: edge.node.id,
-        title: edge.node.title,
-        handle: edge.node.handle,
-        tags: edge.node.tags || [],
-        sku: edge.node.variants?.nodes?.[0]?.sku || "",
-      });
-      cursor = edge.cursor;
-    }
-
-    hasNextPage = result.data?.products?.pageInfo?.hasNextPage || false;
-  }
-
-  return products;
-}
-
-// Helper: Fetch products from a collection
-async function fetchCollectionProducts(admin, collectionIdOrHandle) {
-  const products = [];
-
-  // Try to find collection by handle or ID
-  let collectionGid = collectionIdOrHandle;
-  if (!collectionIdOrHandle.startsWith("gid://")) {
-    // Search by handle
-    const searchResponse = await admin.graphql(`
-      query { collectionByHandle(handle: "${collectionIdOrHandle}") { id } }
-    `);
-    const searchResult = await searchResponse.json();
-    collectionGid = searchResult.data?.collectionByHandle?.id;
-    if (!collectionGid) return products;
-  }
-
-  let cursor = null;
-  let hasNextPage = true;
-
-  while (hasNextPage) {
-    const query = cursor
-      ? `query { collection(id: "${collectionGid}") { products(first: 100, after: "${cursor}") { edges { cursor node { id title handle } } pageInfo { hasNextPage } } } }`
-      : `query { collection(id: "${collectionGid}") { products(first: 100) { edges { cursor node { id title handle } } pageInfo { hasNextPage } } } }`;
-
-    const response = await admin.graphql(query);
-    const result = await response.json();
-    const edges = result.data?.collection?.products?.edges || [];
-
-    for (const edge of edges) {
-      products.push({
-        id: edge.node.id,
-        title: edge.node.title,
-        handle: edge.node.handle,
-      });
-      cursor = edge.cursor;
-    }
-
-    hasNextPage = result.data?.collection?.products?.pageInfo?.hasNextPage || false;
-  }
-
-  return products;
-}
-
-// Helper: Sync metafields for a group
-async function syncGroupMetafieldsHelper(admin, prisma, groupId) {
-  const group = await prisma.productGroup.findUnique({
-    where: { id: groupId },
-    include: { products: { orderBy: { position: "asc" } } },
-  });
-
-  if (!group || group.products.length < 2) return;
-
-  const metafields = [];
-  const metafieldValue = group.products.map(p => ({
-    handle: p.productHandle,
-    title: p.optionValue || "",
-    image: p.customImageUrl || "",
-    color: p.customColor || ""
-  }));
-
-  for (const product of group.products) {
-    metafields.push(
-      { ownerId: product.productId, namespace: "linked_products", key: "linked_list", value: JSON.stringify(metafieldValue), type: "json" },
-      { ownerId: product.productId, namespace: "linked_products", key: "option_value", value: product.optionValue || "", type: "single_line_text_field" },
-      { ownerId: product.productId, namespace: "linked_products", key: "inventory_behavior", value: group.inventoryBehavior || "show", type: "single_line_text_field" },
-      { ownerId: product.productId, namespace: "linked_products", key: "option_name", value: group.optionName || "Color", type: "single_line_text_field" },
-      { ownerId: product.productId, namespace: "linked_products", key: "selector_style", value: group.selectorStyle || "block", type: "single_line_text_field" },
-    );
-  }
-
-  const BATCH_SIZE = 25;
-  for (let i = 0; i < metafields.length; i += BATCH_SIZE) {
-    const batch = metafields.slice(i, i + BATCH_SIZE);
-    const mutation = await admin.graphql(`
-      mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafields) {
-          metafields { id }
-          userErrors { field message }
-        }
-      }
-    `, { variables: { metafields: batch } });
-
-    const result = await mutation.json();
-    if (result.data?.metafieldsSet?.userErrors?.length > 0) {
-      throw new Error(result.data.metafieldsSet.userErrors[0].message);
-    }
-  }
-
-  await prisma.productGroup.update({
-    where: { id: groupId },
-    data: { syncStatus: "synced" },
-  });
-}
 
 // Helper data for automation types
 const AUTOMATION_TYPES = [
@@ -396,6 +174,7 @@ export default function AutomationsPage() {
   const navigation = useNavigation();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingRuleId, setEditingRuleId] = useState(null);
   const [selectedTab, setSelectedTab] = useState(0);
   const [formState, setFormState] = useState({
     name: "",
@@ -428,7 +207,8 @@ export default function AutomationsPage() {
 
   const handleCreateRule = useCallback(() => {
     const fd = new FormData();
-    fd.append("action", "createRule");
+    fd.append("action", editingRuleId ? "updateRule" : "createRule");
+    if (editingRuleId) fd.append("ruleId", editingRuleId);
     fd.append("name", formState.name);
     fd.append("type", formState.type);
     fd.append("pattern", formState.pattern);
@@ -436,8 +216,21 @@ export default function AutomationsPage() {
     fd.append("selectorStyle", formState.selectorStyle);
     submit(fd, { method: "POST" });
     setShowCreateModal(false);
+    setEditingRuleId(null);
     setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "block" });
-  }, [formState, submit]);
+  }, [formState, submit, editingRuleId]);
+
+  const handleEditRule = useCallback((rule) => {
+    setEditingRuleId(rule.id);
+    setFormState({
+      name: rule.name,
+      type: rule.type,
+      pattern: rule.pattern,
+      optionName: rule.optionName,
+      selectorStyle: rule.selectorStyle,
+    });
+    setShowCreateModal(true);
+  }, []);
 
   const handleDeleteRule = useCallback((ruleId) => {
     if (!confirm("Delete this automation rule?")) return;
@@ -601,6 +394,14 @@ export default function AutomationsPage() {
                                 accessibilityLabel="Run rule"
                               />
                             </Tooltip>
+                            <Tooltip content="Edit">
+                              <Button
+                                icon={EditIcon}
+                                size="slim"
+                                onClick={() => handleEditRule(rule)}
+                                accessibilityLabel="Edit rule"
+                              />
+                            </Tooltip>
                             <Tooltip content={rule.status === "active" ? "Pause" : "Activate"}>
                               <Button
                                 icon={PauseCircleIcon}
@@ -633,15 +434,23 @@ export default function AutomationsPage() {
       {/* Create Rule Modal */}
       <Modal
         open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title="Create Automation Rule"
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingRuleId(null);
+          setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "block" });
+        }}
+        title={editingRuleId ? "Edit Automation Rule" : "Create Automation Rule"}
         primaryAction={{
-          content: "Create Rule",
+          content: editingRuleId ? "Save Changes" : "Create Rule",
           onAction: handleCreateRule,
           disabled: !formState.name || !formState.pattern,
-          loading: isLoading && navigation.formData?.get("action") === "createRule",
+          loading: isLoading && (navigation.formData?.get("action") === "createRule" || navigation.formData?.get("action") === "updateRule"),
         }}
-        secondaryActions={[{ content: "Cancel", onAction: () => setShowCreateModal(false) }]}
+        secondaryActions={[{ content: "Cancel", onAction: () => {
+          setShowCreateModal(false);
+          setEditingRuleId(null);
+          setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "block" });
+        } }]}
       >
         <Modal.Section>
           <FormLayout>

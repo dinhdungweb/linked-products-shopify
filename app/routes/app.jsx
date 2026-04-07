@@ -22,7 +22,6 @@ export default function App() {
         <Link to="/app" rel="home">Dashboard</Link>
         <Link to="/app/groups">Product groups</Link>
         <Link to="/app/option-styles">Option styles</Link>
-        <Link to="/app/split-products">Split products</Link>
         <Link to="/app/automations">Automations</Link>
         <Link to="/app/settings">Settings</Link>
         <Link to="/app/pricing">Billing</Link>
