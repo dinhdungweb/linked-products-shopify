@@ -183,9 +183,8 @@
     {%- assign lp_is_scroll = true -%}
   {%- endif -%}
 
-  {%- if active_selector_style contains 'scroll' or active_selector_style contains 'slide' -%}
-    {%- assign lp_is_scroll = true -%}
-  {%- endif -%}
+
+
 
   {{ 'linked-products.css' | asset_url | stylesheet_tag }}
 
@@ -298,7 +297,7 @@
               });
           </script>
         {%- else -%}
-          <div class="variant-picker__option-values {% unless lp_is_scroll %}wrap{% endunless %} {% if lp_is_scroll %}is-scroll{% endif %}" style="gap: var(--lp-items-gap); justify-content: var(--lp-justify);">
+          <div class="variant-picker__option-values {% unless lp_is_scroll %}wrap{% endunless %} {% if lp_is_scroll %}is-scroll is-slide{% endif %} {% if lp_layout_type == 'scroll_mobile' or lp_layout_type == 'slide_mobile' %}is-scroll-mobile{% endif %}" style="gap: var(--lp-items-gap); justify-content: var(--lp-justify); min-width: 0; width: 100%;">
             {%- assign rendered_count = 0 -%}
             {%- assign current_handle_str = product.handle -%}
             
