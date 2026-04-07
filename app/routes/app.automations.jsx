@@ -181,7 +181,7 @@ export default function AutomationsPage() {
     type: "title_pattern",
     pattern: "",
     optionName: "Color",
-    selectorStyle: "block",
+    selectorStyle: "button",
   });
   const [actionBannerVisible, setActionBannerVisible] = useState(true);
 
@@ -217,7 +217,7 @@ export default function AutomationsPage() {
     submit(fd, { method: "POST" });
     setShowCreateModal(false);
     setEditingRuleId(null);
-    setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "block" });
+    setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "button" });
   }, [formState, submit, editingRuleId]);
 
   const handleEditRule = useCallback((rule) => {
@@ -501,10 +501,13 @@ export default function AutomationsPage() {
                 <Select
                   label="Selector Style"
                   options={[
-                    { label: "Text Block", value: "block" },
-                    { label: "Color Swatch", value: "swatch" },
-                    { label: "Product Image", value: "variant_image" },
+                    { label: "Image Swatch", value: "image_swatch" },
+                    { label: "Color Swatch", value: "color_swatch" },
+                    { label: "Square Color Swatch", value: "square_color_swatch" },
+                    { label: "Button", value: "button" },
+                    { label: "Pill Button", value: "pill_button" },
                     { label: "Dropdown", value: "dropdown" },
+                    { label: "Image Dropdown", value: "image_dropdown" },
                   ]}
                   value={formState.selectorStyle}
                   onChange={(v) => setFormState(prev => ({ ...prev, selectorStyle: v }))}

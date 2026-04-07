@@ -328,7 +328,7 @@ export async function syncGroupMetafields(admin, prisma, groupId) {
       { ownerId: product.productId, namespace: "linked_products", key: "option_value", value: product.optionValue || "", type: "single_line_text_field" },
       { ownerId: product.productId, namespace: "linked_products", key: "inventory_behavior", value: group.inventoryBehavior || "show", type: "single_line_text_field" },
       { ownerId: product.productId, namespace: "linked_products", key: "option_name", value: group.optionName || "Color", type: "single_line_text_field" },
-      { ownerId: product.productId, namespace: "linked_products", key: "selector_style", value: group.selectorStyle || "block", type: "single_line_text_field" },
+      { ownerId: product.productId, namespace: "linked_products", key: "selector_style", value: group.selectorStyle || "button", type: "single_line_text_field" },
     );
   }
   const BATCH_SIZE = 25;
