@@ -11,7 +11,7 @@ import { PLANS } from "./billing.config";
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: ApiVersion.January25,
+  apiVersion: ApiVersion.October24, // Using a more stable version
   scopes: process.env.SCOPES?.split(","),
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
@@ -24,6 +24,7 @@ const shopify = shopifyApp({
           amount: PLANS.basic.price,
           currencyCode: 'USD',
           interval: BillingInterval.Every30Days,
+          trialDays: 7, // Re-adding trial days as it was working before
         },
       ],
     },
@@ -33,6 +34,7 @@ const shopify = shopifyApp({
           amount: PLANS.advanced.price,
           currencyCode: 'USD',
           interval: BillingInterval.Every30Days,
+          trialDays: 7,
         },
       ],
     },
@@ -42,6 +44,7 @@ const shopify = shopifyApp({
           amount: PLANS.premium.price,
           currencyCode: 'USD',
           interval: BillingInterval.Every30Days,
+          trialDays: 7,
         },
       ],
     },
@@ -119,7 +122,7 @@ async function createMetafieldDefinitions(admin) {
 }
 
 export default shopify;
-export const apiVersion = ApiVersion.January25;
+export const apiVersion = ApiVersion.October24;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const unauthenticated = shopify.unauthenticated;

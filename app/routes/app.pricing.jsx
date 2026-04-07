@@ -37,10 +37,11 @@ export const loader = async ({ request }) => {
             const activeSub = billingCheck.appSubscriptions[0];
             let planKey = "free";
             
-            // Map subscription names to our internal plan keys
-            if (activeSub.name.includes("Premium")) planKey = "premium";
-            else if (activeSub.name.includes("Advanced")) planKey = "advanced";
-            else if (activeSub.name.includes("Basic")) planKey = "basic";
+            // Map subscription names OR keys to our internal plan keys
+            const subName = activeSub.name;
+            if (subName.includes("Premium") || subName === PLANS.premium.key) planKey = "premium";
+            else if (subName.includes("Advanced") || subName === PLANS.advanced.key) planKey = "advanced";
+            else if (subName.includes("Basic") || subName === PLANS.basic.key) planKey = "basic";
 
             if (planKey !== currentKnownPlan) {
                 await confirmSubscription(admin, shop, planKey, activeSub);
@@ -84,25 +85,25 @@ export const action = async ({ request }) => {
             }
         }
 
-        // Get the specific plan key from our config
+        // Use the snake_case keys for the request
         const requestedPlan = PLANS[plan] || PLANS.basic;
-        const planName = requestedPlan.key;
+        const planKey = requestedPlan.key;
 
         try {
-            console.log(`[Pricing] Requesting billing for plan: ${planName}`);
+            console.log(`[Pricing] Requesting billing for plan: ${planKey}`);
             
-            // Hardcoded handle fallback for extra safety
+            // Using a more robust handle logic
             const appHandle = process.env.SHOPIFY_APP_HANDLE || 'variants-linked-products';
 
             return await billing.request({
-                plan: planName,
+                plan: planKey,
                 isTest: true,
                 returnUrl: `https://${shop}/admin/apps/${appHandle}/app/pricing?plan=${plan}`,
             });
         } catch (error) {
             if (error instanceof Response) throw error;
-            console.error("[Pricing] Billing request error:", error.message || error);
-            return json({ error: `Billing Error: ${error.message || "Failed to initiate billing"}` }, { status: 400 });
+            console.error("[Pricing] Billing request error:", error);
+            return json({ error: `Billing Error: ${error.message || "Request failed"}` }, { status: 400 });
         }
     }
 
