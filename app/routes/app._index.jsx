@@ -49,7 +49,7 @@ import { PLANS } from "../billing.config";
 
 // Loader - Get product groups list
 export async function loader({ request }) {
-  const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_ADVANCED, MONTHLY_PLAN_PREMIUM } = await import("../shopify.server");
+  const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
   const { getUsageInfo, confirmSubscription } = await import("../billing.server");
 
@@ -61,7 +61,7 @@ export async function loader({ request }) {
   try {
     const billingCheck = await billing.check({
       isTest: true,
-      plans: [MONTHLY_PLAN_BASIC, MONTHLY_PLAN_ADVANCED, MONTHLY_PLAN_PREMIUM],
+      plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
     });
 
     const currentKnownPlan = usageInfo?.plan || 'free';

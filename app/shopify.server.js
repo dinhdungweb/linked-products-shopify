@@ -6,10 +6,7 @@ import {
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
-
-export const MONTHLY_PLAN_BASIC = 'Monthly Basic Plan';
-export const MONTHLY_PLAN_ADVANCED = 'Monthly Advanced Plan';
-export const MONTHLY_PLAN_PREMIUM = 'Monthly Premium Plan';
+import { PLANS } from "./billing.config";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -21,32 +18,20 @@ const shopify = shopifyApp({
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
   billing: {
-    [MONTHLY_PLAN_BASIC]: {
-      lineItems: [
-        {
-          amount: 7.99,
-          currencyCode: 'USD',
-          interval: BillingInterval.Every30Days,
-        },
-      ],
+    [PLANS.basic.key]: {
+      amount: PLANS.basic.price,
+      currencyCode: 'USD',
+      interval: BillingInterval.Every30Days,
     },
-    [MONTHLY_PLAN_ADVANCED]: {
-      lineItems: [
-        {
-          amount: 15.99,
-          currencyCode: 'USD',
-          interval: BillingInterval.Every30Days,
-        },
-      ],
+    [PLANS.advanced.key]: {
+      amount: PLANS.advanced.price,
+      currencyCode: 'USD',
+      interval: BillingInterval.Every30Days,
     },
-    [MONTHLY_PLAN_PREMIUM]: {
-      lineItems: [
-        {
-          amount: 35.99,
-          currencyCode: 'USD',
-          interval: BillingInterval.Every30Days,
-        },
-      ],
+    [PLANS.premium.key]: {
+      amount: PLANS.premium.price,
+      currencyCode: 'USD',
+      interval: BillingInterval.Every30Days,
     },
   },
   webhooks: {
@@ -65,7 +50,6 @@ const shopify = shopifyApp({
   },
   hooks: {
     afterAuth: async ({ session, admin }) => {
-      // Auto-create metafield definitions upon app installation
       await createMetafieldDefinitions(admin);
     },
   },
@@ -117,7 +101,6 @@ async function createMetafieldDefinitions(admin) {
         },
       });
     } catch (error) {
-      // Ignore errors if definition already exists
       console.log(`Metafield definition ${def.key} may already exist:`, error.message);
     }
   }

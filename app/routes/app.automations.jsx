@@ -31,16 +31,46 @@ import { runAutomationRule } from "../models/automation.server";
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
+  const { getUsageInfo, confirmSubscription } = await import("../billing.server");
 
-  const { session } = await authenticate.admin(request);
+  const { admin, session, billing } = await authenticate.admin(request);
   const shop = session.shop;
+
+  let usageInfo = await getUsageInfo(shop);
+
+  try {
+    const billingCheck = await billing.check({
+      isTest: true,
+      plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
+    });
+
+    const currentKnownPlan = usageInfo?.plan || 'free';
+
+    if (billingCheck.hasActivePayment) {
+      const activeSub = billingCheck.appSubscriptions[0];
+      let planKey = "free";
+      if (activeSub.name.includes("Premium")) planKey = "premium";
+      else if (activeSub.name.includes("Advanced")) planKey = "advanced";
+      else if (activeSub.name.includes("Basic")) planKey = "basic";
+
+      if (planKey !== currentKnownPlan) {
+        await confirmSubscription(admin, shop, planKey, activeSub);
+        usageInfo = await getUsageInfo(shop);
+      }
+    } else if (currentKnownPlan !== 'free') {
+      await confirmSubscription(admin, shop, 'free', null);
+      usageInfo = await getUsageInfo(shop);
+    }
+  } catch (error) {
+    console.warn("[Automations Loader] Billing sync skipped:", error.message);
+  }
 
   const rules = await prisma.automationRule.findMany({
     where: { shop },
     orderBy: { createdAt: "desc" },
   });
 
-  return json({ rules, shop });
+  return json({ rules, shop, usageInfo });
 }
 
 // Action

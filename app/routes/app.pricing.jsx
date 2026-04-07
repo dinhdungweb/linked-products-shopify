@@ -1,5 +1,5 @@
 import { json } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation, useSearchParams, useActionData, useRouteError } from "@remix-run/react";
+import { useLoaderData, useSubmit, useNavigation, useSearchParams, useActionData } from "@remix-run/react";
 import {
     Page,
     Layout,
@@ -10,7 +10,6 @@ import {
     Banner,
     Divider,
     ProgressBar,
-    InlineGrid,
     Button,
     InlineStack,
 } from "@shopify/polaris";
@@ -18,7 +17,7 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
 
 export const loader = async ({ request }) => {
-    const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_ADVANCED, MONTHLY_PLAN_PREMIUM } = await import("../shopify.server");
+    const { authenticate } = await import("../shopify.server");
     const { getUsageInfo, confirmSubscription } = await import("../billing.server");
 
     const { admin, session, billing } = await authenticate.admin(request);
@@ -29,7 +28,7 @@ export const loader = async ({ request }) => {
     try {
         const billingCheck = await billing.check({
             isTest: true,
-            plans: [MONTHLY_PLAN_BASIC, MONTHLY_PLAN_ADVANCED, MONTHLY_PLAN_PREMIUM],
+            plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
         });
 
         const currentKnownPlan = usageInfo.plan || 'free';
@@ -37,6 +36,8 @@ export const loader = async ({ request }) => {
         if (billingCheck.hasActivePayment) {
             const activeSub = billingCheck.appSubscriptions[0];
             let planKey = "free";
+            
+            // Map subscription names to our internal plan keys
             if (activeSub.name.includes("Premium")) planKey = "premium";
             else if (activeSub.name.includes("Advanced")) planKey = "advanced";
             else if (activeSub.name.includes("Basic")) planKey = "basic";
@@ -61,7 +62,7 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-    const { authenticate, MONTHLY_PLAN_BASIC, MONTHLY_PLAN_ADVANCED, MONTHLY_PLAN_PREMIUM } = await import("../shopify.server");
+    const { authenticate } = await import("../shopify.server");
     const { cancelSubscription } = await import("../billing.server");
 
     const { billing, session, admin } = await authenticate.admin(request);
@@ -69,6 +70,8 @@ export const action = async ({ request }) => {
     const formData = await request.formData();
     const actionValue = formData.get("action");
     const plan = formData.get("plan");
+
+    console.log(`Action: ${actionValue}, Plan: ${plan}, Shop: ${shop}`);
 
     if (actionValue === "subscribe") {
         if (plan === "free") {
@@ -81,27 +84,34 @@ export const action = async ({ request }) => {
             }
         }
 
-        let planName = MONTHLY_PLAN_BASIC;
-        if (plan === "premium") planName = MONTHLY_PLAN_PREMIUM;
-        else if (plan === "advanced") planName = MONTHLY_PLAN_ADVANCED;
+        // Get the specific plan key from our config
+        const requestedPlan = PLANS[plan] || PLANS.basic;
+        const planName = requestedPlan.key;
 
         try {
-            await billing.request({
+            console.log(`[Pricing] Requesting billing for plan: ${planName}`);
+            
+            // Hardcoded handle fallback for extra safety
+            const appHandle = process.env.SHOPIFY_APP_HANDLE || 'variants-linked-products';
+
+            return await billing.request({
                 plan: planName,
                 isTest: true,
-                returnUrl: `https://${shop}/admin/apps/${process.env.SHOPIFY_APP_HANDLE || 'variants-linked-products'}/app/pricing?plan=${plan}`,
+                returnUrl: `https://${shop}/admin/apps/${appHandle}/app/pricing?plan=${plan}`,
             });
         } catch (error) {
             if (error instanceof Response) throw error;
-            return json({ error: `Billing Error: ${error.message}` }, { status: 400 });
+            console.error("[Pricing] Billing request error:", error.message || error);
+            return json({ error: `Billing Error: ${error.message || "Failed to initiate billing"}` }, { status: 400 });
         }
     }
 
     if (actionValue === "cancel") {
         try {
             await cancelSubscription(admin, shop);
-            return json({ success: true, message: "Subscription cancelled." });
+            return json({ success: true, message: "Subscription cancelled successfully." });
         } catch (error) {
+            console.error("Cancel error:", error);
             return json({ error: error.message }, { status: 400 });
         }
     }
@@ -125,7 +135,7 @@ export default function PricingPage() {
     };
 
     const handleCancel = () => {
-        if (confirm("Are you sure you want to cancel?")) {
+        if (confirm("Are you sure you want to cancel your subscription?")) {
             const formData = new FormData();
             formData.append("action", "cancel");
             submit(formData, { method: "POST" });
@@ -142,7 +152,9 @@ export default function PricingPage() {
                 <Layout.Section>
                     <BlockStack gap="400">
                         {actionData?.error && <Banner tone="critical"><p>{actionData.error}</p></Banner>}
-                        {(actionData?.message || justUpgraded) && <Banner tone="success"><p>{actionData?.message || "Plan activated successfully!"}</p></Banner>}
+                        {(actionData?.message || justUpgraded) && (
+                            <Banner tone="success"><p>{actionData?.message || "🎉 Your plan has been activated successfully!"}</p></Banner>
+                        )}
 
                         <Card>
                             <BlockStack gap="300">
