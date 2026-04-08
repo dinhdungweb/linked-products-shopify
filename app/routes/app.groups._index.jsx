@@ -144,7 +144,12 @@ export async function action({ request }) {
         const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
 
         if (metafieldNodes.length > 0) {
-          const metafieldIds = metafieldNodes.map(m => m.id);
+          const metafieldsToDelete = metafieldNodes.map(m => ({
+            namespace: "linked_products",
+            key: m.key,
+            ownerId: product.productId
+          }));
+
           await admin.graphql(`
             mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
               metafieldsDelete(metafields: $metafields) {
@@ -152,7 +157,7 @@ export async function action({ request }) {
                 userErrors { field message }
               }
             }
-          `, { variables: { metafields: metafieldIds.map(id => ({ id })) } });
+          `, { variables: { metafields: metafieldsToDelete } });
         }
       }
     } catch (error) {
@@ -210,28 +215,55 @@ export default function GroupsPage() {
     }
   }, [actionData, shopify]);
 
-  const handleDeleteGroup = useCallback((groupId) => {
+  const handleDeleteGroup = useCallback(async (groupId) => {
     if (confirm("Are you sure you want to delete this group?")) {
       const formData = new FormData();
       formData.append("action", "delete");
       formData.append("groupId", groupId);
-      submit(formData, { method: "POST" });
+
+      let headers = {};
+      try {
+        if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
+          const idToken = await window.shopify.idToken();
+          headers = { Authorization: `Bearer ${idToken}` };
+        }
+      } catch (e) {}
+
+      submit(formData, { method: "POST", headers });
     }
   }, [submit]);
 
-  const handleToggleStatus = useCallback((groupId, currentStatus) => {
+  const handleToggleStatus = useCallback(async (groupId, currentStatus) => {
     const formData = new FormData();
     formData.append("action", "toggleStatus");
     formData.append("groupId", groupId);
     formData.append("currentStatus", currentStatus);
-    submit(formData, { method: "POST" });
+
+    let headers = {};
+    try {
+      if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
+        const idToken = await window.shopify.idToken();
+        headers = { Authorization: `Bearer ${idToken}` };
+      }
+    } catch (e) {}
+
+    submit(formData, { method: "POST", headers });
   }, [submit]);
 
-  const handleSyncGroup = useCallback((groupId) => {
+  const handleSyncGroup = useCallback(async (groupId) => {
     const formData = new FormData();
     formData.append("action", "sync");
     formData.append("groupId", groupId);
-    submit(formData, { method: "POST" });
+
+    let headers = {};
+    try {
+      if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
+        const idToken = await window.shopify.idToken();
+        headers = { Authorization: `Bearer ${idToken}` };
+      }
+    } catch (e) {}
+
+    submit(formData, { method: "POST", headers });
   }, [submit]);
 
   const tabs = [

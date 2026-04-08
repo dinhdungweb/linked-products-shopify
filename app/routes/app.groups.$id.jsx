@@ -725,6 +725,16 @@ export default function GroupDetail() {
 
     const isLoading = navigation.state !== "idle";
 
+    const fetchIdToken = async () => {
+        try {
+            if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
+                const idToken = await window.shopify.idToken();
+                return { Authorization: `Bearer ${idToken}` };
+            }
+        } catch (e) { console.error("Token error:", e); }
+        return {};
+    };
+
     const handleOpenResourcePicker = useCallback(async () => {
         try {
             const selection = await shopify.resourcePicker({ type: "product", multiple: true, action: "select" });
@@ -742,13 +752,14 @@ export default function GroupDetail() {
                     const formData = new FormData();
                     formData.append("action", "addProducts");
                     formData.append("products", JSON.stringify(selectedProducts));
-                    submit(formData, { method: "POST" });
+                    const headers = await fetchIdToken();
+                    submit(formData, { method: "POST", headers });
                 }
             }
         } catch (error) { console.error("Picker error:", error); }
     }, [shopify, submit, usedProductsMap]);
 
-    const handleResolveConflict = (forceMove) => {
+    const handleResolveConflict = async (forceMove) => {
         const formData = new FormData();
         formData.append("action", "addProducts");
         
@@ -761,7 +772,8 @@ export default function GroupDetail() {
         if (productsToAdd.length > 0) {
             formData.append("products", JSON.stringify(productsToAdd));
             if (forceMove) formData.append("forceMove", "true");
-            submit(formData, { method: "POST" });
+            const headers = await fetchIdToken();
+            submit(formData, { method: "POST", headers });
         }
         
         setShowConflictModal(false);
@@ -769,25 +781,27 @@ export default function GroupDetail() {
         setPendingSelection([]);
     };
 
-    const handleRemoveProduct = (productId) => {
+    const handleRemoveProduct = async (productId) => {
         if (!confirm("Remove this product?")) return;
         const formData = new FormData();
         formData.append("action", "removeProduct");
         formData.append("productId", productId);
-        submit(formData, { method: "POST" });
+        const headers = await fetchIdToken();
+        submit(formData, { method: "POST", headers });
     };
 
     const handleUpdateField = (id, field, value) => {
         setLocalProducts(prev => prev.map(p => p.productId === id ? { ...p, [field]: value } : p));
     };
 
-    const handleAutoFill = () => {
+    const handleAutoFill = async () => {
         const formData = new FormData();
         formData.append("action", "autoFill");
-        submit(formData, { method: "POST" });
+        const headers = await fetchIdToken();
+        submit(formData, { method: "POST", headers });
     };
 
-    const handleSync = () => {
+    const handleSync = async () => {
         const formData = new FormData();
         formData.append("action", "saveAll");
         formData.append("groupName", localGroupName);
@@ -801,14 +815,16 @@ export default function GroupDetail() {
             customColor: p.customColor, customColor2: p.customColor2, style: p.style
         }));
         formData.append("products", JSON.stringify(productsToSave));
-        submit(formData, { method: "POST" });
+        const headers = await fetchIdToken();
+        submit(formData, { method: "POST", headers });
     };
 
-    const handleDeleteGroup = () => {
+    const handleDeleteGroup = async () => {
         if (!confirm("Delete this group?")) return;
         const formData = new FormData();
         formData.append("action", "deleteGroup");
-        submit(formData, { method: "POST" });
+        const headers = await fetchIdToken();
+        submit(formData, { method: "POST", headers });
     };
 
     const handleStyleSelect = (styleId) => {

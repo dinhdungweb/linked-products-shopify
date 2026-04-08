@@ -297,7 +297,12 @@ export async function action({ request }) {
         const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
 
         if (metafieldNodes.length > 0) {
-          const metafieldIds = metafieldNodes.map(m => m.id);
+          const metafieldsToDelete = metafieldNodes.map(m => ({
+            namespace: "linked_products",
+            key: m.key,
+            ownerId: product.productId
+          }));
+
           await admin.graphql(`
             mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
               metafieldsDelete(metafields: $metafields) {
@@ -307,7 +312,7 @@ export async function action({ request }) {
             }
           `, {
             variables: {
-              metafields: metafieldIds.map(id => ({ id })),
+              metafields: metafieldsToDelete,
             },
           });
         }
@@ -488,6 +493,16 @@ export default function Index() {
     navigation.formData?.get("action") === "createWithProducts"
   );
 
+  const fetchIdToken = async () => {
+    try {
+      if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
+        const idToken = await window.shopify.idToken();
+        return { Authorization: `Bearer ${idToken}` };
+      }
+    } catch (e) { console.error("Token error:", e); }
+    return {};
+  };
+
   // Open Resource Picker to select products
   const handleSelectProducts = useCallback(async () => {
     try {
@@ -515,24 +530,26 @@ export default function Index() {
     setSelectedProducts((prev) => prev.filter((p) => p.id !== productId));
   }, []);
 
-  const handleCreateGroup = useCallback(() => {
+  const handleCreateGroup = useCallback(async () => {
     const formData = new FormData();
     formData.append("action", "createWithProducts");
     formData.append("name", newGroupName);
     formData.append("products", JSON.stringify(selectedProducts));
-    submit(formData, { method: "POST" });
+    const headers = await fetchIdToken();
+    submit(formData, { method: "POST", headers });
     // Reset modal state immediately, isLoading will be handled by actionData/navigation.state
     setShowCreateModal(false);
     setNewGroupName("");
     setSelectedProducts([]);
   }, [newGroupName, selectedProducts, submit]);
 
-  const handleDeleteGroup = useCallback((groupId) => {
+  const handleDeleteGroup = useCallback(async (groupId) => {
     if (confirm("Are you sure you want to delete this group?")) {
       const formData = new FormData();
       formData.append("action", "delete");
       formData.append("groupId", groupId);
-      submit(formData, { method: "POST" });
+      const headers = await fetchIdToken();
+      submit(formData, { method: "POST", headers });
     }
   }, [submit]);
 
