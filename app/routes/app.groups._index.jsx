@@ -3,7 +3,6 @@ import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation, useActionData, Link } from "@remix-run/react";
 import {
   Page,
-  Layout,
   Card,
   Button,
   BlockStack,
@@ -11,15 +10,11 @@ import {
   IndexTable,
   Badge,
   EmptyState,
-  Modal,
-  FormLayout,
   TextField,
   InlineStack,
   Banner,
-  Thumbnail,
   Box,
   Divider,
-  Tooltip,
   ProgressBar,
   Icon,
   Grid,
@@ -206,6 +201,7 @@ export default function GroupsPage() {
   const [bannerVisible, setBannerVisible] = useState(true);
 
   const isLoading = navigation.state !== "idle";
+  const isLimitReached = usageInfo.limit !== Infinity && usageInfo.used >= usageInfo.limit;
 
   useEffect(() => {
     if (actionData?.success) {
@@ -368,17 +364,33 @@ export default function GroupsPage() {
               <Text variant="headingXl" as="h1">Product groups</Text>
               <Text variant="bodyMd" tone="subdued">Product groups combine multiple product listings into variant options.</Text>
             </BlockStack>
-            <InlineStack gap="200">
-              <ButtonGroup>
-                <Button icon={ExportIcon}>Export</Button>
-                <Button icon={ImportIcon}>Import</Button>
-                <Button icon={RefreshIcon} disabled>Bulk update options</Button>
-              </ButtonGroup>
-              <Button variant="primary" icon={PlusIcon} url="/app/groups/new">Create group</Button>
-            </InlineStack>
+              <InlineStack gap="200">
+                <ButtonGroup>
+                  <Button icon={ExportIcon}>Export</Button>
+                  <Button icon={ImportIcon}>Import</Button>
+                  <Button icon={RefreshIcon} disabled>Bulk update options</Button>
+                </ButtonGroup>
+                {isLimitReached ? (
+                  <Tooltip content="Bạn đã đạt giới hạn nhóm sản phẩm của gói hiện tại. Vui lòng nâng cấp để tạo thêm.">
+                    <Button variant="primary" icon={PlusIcon} disabled>Create group</Button>
+                  </Tooltip>
+                ) : (
+                  <Button variant="primary" icon={PlusIcon} url="/app/groups/new">Create group</Button>
+                )}
+              </InlineStack>
           </InlineStack>
 
-          {bannerVisible && (
+          {isLimitReached && (
+            <Banner 
+              title="Bạn đã dùng hết hạn mức tạo nhóm sản phẩm" 
+              tone="warning"
+              action={{ content: 'Nâng cấp gói cước', url: '/app/pricing' }}
+            >
+              <p>Gói <b>{usageInfo.planName}</b> chỉ cho phép tối đa {usageInfo.limit} nhóm. Hãy nâng cấp để tiếp tục mở rộng cửa hàng của bạn.</p>
+            </Banner>
+          )}
+
+          {bannerVisible && !isLimitReached && (
             <Banner tone="info" onDismiss={() => setBannerVisible(false)}>
               <InlineStack gap="200" blockAlign="center">
                 <Text variant="bodyMd">App embed is enabled. Learn how to configure it.</Text>
@@ -388,12 +400,12 @@ export default function GroupsPage() {
           )}
 
           {/* Stats Row */}
-          <Box background="bg-surface" padding="400" borderRadius="300" borderColor="border" borderWidth="025">
+          <Box background={isLimitReached ? "bg-surface-caution" : "bg-surface"} padding="400" borderRadius="300" borderColor={isLimitReached ? "border-caution" : "border"} borderWidth="025">
             <InlineStack align="space-between" blockAlign="center">
               <Box flex="1">
                 <BlockStack gap="100">
                   <Text variant="bodySm" fontWeight="bold" tone="subdued">Created product groups</Text>
-                  <Text variant="bodyMd">{groups.length} groups</Text>
+                  <Text variant="bodyMd" tone={isLimitReached ? "caution" : "default"}>{groups.length} groups</Text>
                 </BlockStack>
               </Box>
               <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
@@ -401,9 +413,11 @@ export default function GroupsPage() {
                 <BlockStack gap="100">
                   <Text variant="bodySm" fontWeight="bold" tone="subdued">Remaining product groups</Text>
                   <InlineStack gap="100" blockAlign="center">
-                    <Text variant="bodyMd" tone="subdued">{usageInfo.limit === Infinity ? "Unlimited" : Math.max(0, usageInfo.limit - groups.length)} groups</Text>
+                    <Text variant="bodyMd" tone={isLimitReached ? "caution" : "subdued"}>
+                      {usageInfo.limit === Infinity ? "Unlimited" : Math.max(0, usageInfo.limit - groups.length)} groups
+                    </Text>
                     <div style={{ color: '#8c9196' }}>•</div>
-                    <Button variant="plain" tone="info" size="micro">Upgrade</Button>
+                    <Button variant="plain" tone={isLimitReached ? "caution" : "info"} size="micro" url="/app/pricing">Upgrade</Button>
                   </InlineStack>
                 </BlockStack>
               </Box>
@@ -489,10 +503,17 @@ export default function GroupsPage() {
         {filteredGroups.length === 0 ? (
           <EmptyState
             heading="No product groups found"
-            action={{ content: 'Create group', url: '/app/groups/new', variant: 'primary' }}
+            action={isLimitReached ? undefined : { content: 'Create group', url: '/app/groups/new', variant: 'primary' }}
             image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
           >
-            <p>Start by creating your first group to link products together.</p>
+            {isLimitReached ? (
+              <BlockStack gap="200">
+                <p>Bạn đã đạt giới hạn của gói <b>{usageInfo.planName}</b>. Hãy nâng cấp để tiếp tục.</p>
+                <Button url="/app/pricing" variant="primary">Nâng cấp gói cước ngay</Button>
+              </BlockStack>
+            ) : (
+              <p>Start by creating your first group to link products together.</p>
+            )}
           </EmptyState>
         ) : (
           <IndexTable

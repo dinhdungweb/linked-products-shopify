@@ -107,7 +107,7 @@
   padding: var(--lp-outer-padding, 0);
   border: var(--lp-outer-width, 0) solid var(--lp-outer-color, transparent);
   border-radius: var(--lp-outer-radius, 4px);
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
   flex-shrink: 0; /* Anti-stretch */
 }
@@ -129,7 +129,7 @@
   color: #000000;
   border: var(--lp-border-width) solid var(--lp-border-color);
   border-radius: var(--lp-border-radius);
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   background: #ffffff;
   overflow: hidden;
@@ -708,7 +708,8 @@
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.2s ease;
+  transform: translateY(-10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .lp-dropdown__options.show {

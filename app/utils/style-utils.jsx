@@ -77,6 +77,7 @@ export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
       border: `${b.outerWidth || 1}px solid ${isActive ? (b.outerActiveColor || '#000') : (b.outerColor || '#ccc')}`,
       borderRadius: radius,
       display: 'inline-flex',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   };
 };
 
@@ -103,7 +104,7 @@ export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      transition: 'all 0.2s ease',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       boxShadow: s && s.show ? `${s.offsetX || 0}px ${s.offsetY || 0}px ${s.blur || 0}px ${s.spread || 0}px ${s.color || 'rgba(0,0,0,0.1)'}` : 'none'
   };
 };
@@ -195,6 +196,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
 
  export const PreviewRenderer = ({ styleId, settings, products, appSettings, isCard = false, hideLabel = false, label }) => {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [hoveredIndex, setHoveredIndex] = React.useState(null);
   
   const displayProducts = (products || PREVIEW_PRODUCTS).map(p => ({
     name: p.optionValue || p.name || '',
@@ -346,7 +348,11 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                 boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
                 zIndex: 100,
                 maxHeight: '300px',
-                overflowY: 'auto'
+                overflowY: 'auto',
+                opacity: isOpen ? 1 : 0,
+                visibility: isOpen ? 'visible' : 'hidden',
+                transform: isOpen ? 'translateY(0)' : 'translateY(-10px)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
             }}>
                 {displayProducts.map((p, index) => (
                 <div 
@@ -467,8 +473,22 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                     );
                   };
 
+                  const hoverEffect = settings.basic?.hoverEffect || "none";
+                  const isHovered = hoveredIndex === i;
+                  
+                  let hoverStyles = {};
+                  if (isHovered && !isActive) {
+                      if (hoverEffect === 'zoom') hoverStyles = { transform: 'scale(1.1)', zIndex: 10 };
+                      else if (hoverEffect === 'lift') hoverStyles = { transform: 'translateY(-4px)', boxShadow: '0 8px 16px rgba(0,0,0,0.15)', zIndex: 10 };
+                  }
+
                   return (
-                      <div key={i} style={getOuterStyle(isActive, settings, styleId, isCard)}>
+                      <div 
+                          key={i} 
+                          style={{ ...getOuterStyle(isActive, settings, styleId, isCard), ...hoverStyles }}
+                          onMouseEnter={() => setHoveredIndex(i)}
+                          onMouseLeave={() => setHoveredIndex(null)}
+                      >
                           <div style={{ 
                               ...getSwatchStyle(isActive, settings, styleId, isCard), 
                               padding: (isButton || isPillSwatch) 

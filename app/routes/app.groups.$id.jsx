@@ -33,7 +33,6 @@ import {
     OrderIcon,
     ViewIcon,
     DragHandleIcon,
-    ChevronDownIcon,
 } from "@shopify/polaris-icons";
 import { 
     DndContext, 
@@ -713,11 +712,6 @@ export default function GroupDetail() {
     const shopify = useAppBridge();
     const revalidator = useRevalidator();
 
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [editingProduct, setEditingProduct] = useState(null);
-    const [editOptionValue, setEditOptionValue] = useState("");
-    const [editCustomImageUrl, setEditCustomImageUrl] = useState("");
-    const [editCustomColor, setEditCustomColor] = useState("");
     const [showStyleModal, setShowStyleModal] = useState(false);
     const [selectingFor, setSelectingFor] = useState("productPage"); // productPage or productCard
     const [previewOnProductCard, setPreviewOnProductCard] = useState(true);

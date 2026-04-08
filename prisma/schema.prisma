@@ -93,7 +93,7 @@ model AutomationRule {
 model Shop {
   id            String    @id @default(cuid())
   shop          String    @unique
-  plan          String    @default("free") // free, basic, pro
+  plan          String    @default("free") // free, basic, advanced, premium
   chargeId      String?   // Shopify subscription charge ID
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
