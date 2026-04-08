@@ -101,42 +101,39 @@ export async function loader({ request }) {
     }
   }
 
-  // Fetch App Embed Status via REST (stable alternative to buggy GraphQL schema)
+  // Fetch App Embed Status via GraphQL Asset query (more stable than admin.rest in this environment)
   let isAppEmbedEnabled = false;
   try {
     const themeResponse = await admin.graphql(`
-      query getMainTheme {
+      query getThemeAsset {
         themes(first: 1, roles: [MAIN]) {
           nodes {
             id
+            asset(key: "config/settings_data.json") {
+              value
+            }
           }
         }
       }
     `);
+    
     const themeData = await themeResponse.json();
-    const themeId = themeData.data?.themes?.nodes?.[0]?.id.split('/').pop();
+    const mainTheme = themeData.data?.themes?.nodes?.[0];
+    const settingsValue = mainTheme?.asset?.value;
 
-    if (themeId) {
-      const assetResponse = await admin.rest.get({
-        path: `themes/${themeId}/assets`,
-        query: { "asset[key]": "config/settings_data.json" },
-      });
+    if (settingsValue) {
+      const settings = JSON.parse(settingsValue);
+      const blocks = settings.current?.blocks || {};
       
-      console.log(`Checking app embed for theme: ${themeId}, status: ${assetResponse.status}`);
+      // Check if any block of type 'shopify://apps/.../blocks/linked-products' is enabled (disabled: false)
+      isAppEmbedEnabled = Object.values(blocks).some(block => 
+        block.type?.includes('linked-products') && block.disabled === false
+      );
       
-      if (assetResponse.ok) {
-        const assetData = await assetResponse.json();
-        if (assetData.asset?.value) {
-          const settings = JSON.parse(assetData.asset.value);
-          const blocks = settings.current?.blocks || {};
-          
-          isAppEmbedEnabled = Object.values(blocks).some(block => 
-            block.type?.includes('linked-products') && block.disabled === false
-          );
-          
-          console.log(`Found extension in blocks: ${isAppEmbedEnabled}`);
-        }
-      }
+      console.log(`Checking app embed in settings_data.json. Found: ${isAppEmbedEnabled}`);
+    } else {
+      console.log("Could not find settings_data.json value via GraphQL");
+      isAppEmbedEnabled = true; // Safety default if asset missing
     }
   } catch (e) {
     console.error("Error in app embed check loader:", e);
