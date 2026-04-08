@@ -946,9 +946,9 @@ export default function GroupDetail() {
                         </Card>
 
                         <Card padding="0">
-                            <Box padding="400"><InlineStack align="space-between" blockAlign="center"><Text variant="headingMd">Products</Text><InlineStack gap="200"><Button icon={MagicIcon} onClick={handleAutoFill} variant="tertiary" disabled={localProducts.length === 0}>Auto-fill</Button><Button icon={PlusCircleIcon} onClick={handleOpenResourcePicker}>Add products</Button><Button icon={OrderIcon} variant="tertiary" /></InlineStack></InlineStack></Box>
+                            <Box padding="400"><InlineStack align="space-between" blockAlign="center"><Text variant="headingMd">Products</Text><InlineStack gap="200"><Button icon={MagicIcon} onClick={handleAutoFill} variant="tertiary" disabled={localProducts.length === 0} size="slim">Auto-fill</Button><Button icon={PlusCircleIcon} onClick={handleOpenResourcePicker} size="slim">Add products</Button><Button icon={OrderIcon} variant="tertiary" size="slim" /></InlineStack></InlineStack></Box>
                             <Divider />
-                            {localProducts.length === 0 ? <Box padding="1000"><BlockStack gap="200" align="center"><Text variant="bodyMd" tone="subdued">No products added yet.</Text><Button onClick={handleOpenResourcePicker}>Add products</Button></BlockStack></Box> : (
+                            {localProducts.length === 0 ? <Box padding="1000"><BlockStack gap="200" align="center"><Text variant="bodyMd" tone="subdued">No products added yet.</Text><Button onClick={handleOpenResourcePicker} size="slim">Add products</Button></BlockStack></Box> : (
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
                                     <SortableContext items={localProducts.map(p => p.productId)} strategy={verticalListSortingStrategy}>
                                         <BlockStack>{localProducts.map((p, idx) => <SortableItem key={p.productId} product={p} idx={idx} isLast={idx === localProducts.length - 1} shop={shop} handleRemoveProduct={handleRemoveProduct} handleUpdateField={handleUpdateField} getBorderRadius={getBorderRadius} localSelectorStyle={localSelectorStyle} />)}</BlockStack>
