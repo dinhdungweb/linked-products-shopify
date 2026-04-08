@@ -526,13 +526,13 @@ export default function Index() {
             <Text variant="bodySm" fontWeight="bold" tone="subdued">{title}</Text>
             <Text variant="headingLg" as="h2">{value}</Text>
           </BlockStack>
-          <div style={{ backgroundColor: `${color}15`, padding: '12px', borderRadius: '12px', color: color }}>
+          <div style={{ backgroundColor: '#F1F1F1', padding: '12px', borderRadius: '12px', color: '#5C5F62' }}>
             <Icon source={icon} tone="inherit" />
           </div>
         </InlineStack>
         {progress !== undefined && (
           <BlockStack gap="100">
-            <ProgressBar progress={progress} tone={progress > 90 ? "critical" : progress > 70 ? "caution" : "success"} size="small" />
+            <ProgressBar progress={progress} tone={progress > 90 ? "critical" : "primary"} size="small" />
             <Text variant="bodyXs" tone="subdued">{subtitle}</Text>
           </BlockStack>
         )}
@@ -583,13 +583,13 @@ export default function Index() {
     <Card padding="0">
       <Grid>
         <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-          <Box padding="400" background="bg-fill-info-secondary" borderRadius="200" height="100%">
+          <Box padding="400" background="bg-surface-secondary" borderRadius="200" height="100%">
             <BlockStack gap="400" align="center" inlineAlign="center">
-              <div style={{ color: '#2C6ECB' }}>
+              <div style={{ color: '#5C5F62' }}>
                 <Icon source={PlayCircleIcon} tone="inherit" />
               </div>
               <Text variant="headingMd" alignment="center">Tutorial</Text>
-              <Text variant="bodyMd" alignment="center" tone="subdued">Learn how to use our app in 2 minutes.</Text>
+              <Text variant="bodyMd" alignment="center" tone="subdued">Watch our 2-minute quick start guide.</Text>
               <Button fullWidth variant="secondary" onClick={() => window.open('https://youtube.com', '_blank')}>Watch Video</Button>
             </BlockStack>
           </Box>
@@ -598,10 +598,10 @@ export default function Index() {
           <Box padding="500">
             <BlockStack gap="400">
               <Text variant="headingLg" as="h3">How to use the app</Text>
-              <Text variant="bodyMd" tone="subdued">Watch a quick walkthrough to get set up faster and avoid common mistakes.</Text>
+              <Text variant="bodyMd" tone="subdued">A quick walkthrough to get you set up faster and avoid common mistakes.</Text>
               <InlineStack gap="300">
                 <Button variant="secondary" icon={ViewIcon} onClick={() => window.open('https://youtube.com', '_blank')}>Watch video</Button>
-                <Button variant="tertiary" url="/app/help">Learn more</Button>
+                <Button variant="tertiary" url="/app/help">Documentation</Button>
               </InlineStack>
             </BlockStack>
           </Box>
@@ -615,21 +615,21 @@ export default function Index() {
       <Card padding="400">
         <BlockStack gap="300">
           <InlineStack gap="200" blockAlign="center">
-            <div style={{ backgroundColor: '#EBEFFD', padding: '8px', borderRadius: '8px', color: '#2C6ECB', display: 'flex' }}><Icon source={EmailIcon} tone="inherit" /></div>
-            <Text variant="headingSm" as="h3">Get email support</Text>
+            <div style={{ backgroundColor: '#F1F1F1', padding: '8px', borderRadius: '8px', color: '#5C5F62', display: 'flex' }}><Icon source={EmailIcon} tone="inherit" /></div>
+            <Text variant="headingSm" as="h3">Email Support</Text>
           </InlineStack>
-          <Text variant="bodySm" tone="subdued">Email us for quick solutions.</Text>
+          <Text variant="bodySm" tone="subdued">Response time: <Text fontWeight="bold" as="span">Under 24h</Text></Text>
           <Button variant="plain" url="mailto:support@example.com">Contact us</Button>
         </BlockStack>
       </Card>
       <Card padding="400">
         <BlockStack gap="300">
           <InlineStack gap="200" blockAlign="center">
-            <div style={{ backgroundColor: '#E7F5EF', padding: '8px', borderRadius: '8px', color: '#008060', display: 'flex' }}><Icon source={ChatIcon} tone="inherit" /></div>
-            <Text variant="headingSm" as="h3">Start live chat</Text>
+            <div style={{ backgroundColor: '#F1F1F1', padding: '8px', borderRadius: '8px', color: '#5C5F62', display: 'flex' }}><Icon source={ChatIcon} tone="inherit" /></div>
+            <Text variant="headingSm" as="h3">Live Chat</Text>
           </InlineStack>
           <Text variant="bodySm" tone="subdued">Chat with us for instant help.</Text>
-          <Button variant="plain">Chat now</Button>
+          <Button variant="plain">Start chat</Button>
         </BlockStack>
       </Card>
     </BlockStack>
@@ -810,7 +810,7 @@ export default function Index() {
                     <InlineStack align="space-between" blockAlign="center">
                       <BlockStack gap="100">
                         <Text variant="headingMd" as="h2">Setup guide</Text>
-                        <Text variant="bodySm" tone="subdued">Complete these steps to get the most out of our app.</Text>
+                        <Text variant="bodySm" tone="subdued">Follow these steps to finish your setup.</Text>
                       </BlockStack>
                       <Badge tone={groups.length > 0 && isAppEmbedEnabled ? "success" : "attention"}>
                         {groups.length > 0 && isAppEmbedEnabled ? "2/2 completed" : groups.length > 0 || isAppEmbedEnabled ? "1/2 completed" : "0/2 completed"}
@@ -820,25 +820,26 @@ export default function Index() {
                     <ProgressBar 
                       progress={ (groups.length > 0 ? 50 : 0) + (isAppEmbedEnabled ? 50 : 0) } 
                       size="small" 
-                      tone="success" 
+                      tone="primary" 
                     />
 
                     <BlockStack gap="300">
                       {/* Step 1: Create Group */}
-                      <Box padding="300" background={groups.length > 0 ? "bg-surface-secondary" : "bg-surface"} borderRadius="300" borderStyle="solid" borderWidth="025" borderColor="border-subdued">
+                      <Box padding="300" background="bg-surface-secondary" borderRadius="300" borderStyle="solid" borderWidth="025" borderColor="border-subdued">
                         <InlineStack gap="400" align="start" blockAlign="center" wrap={false}>
                           <div style={{ 
-                            backgroundColor: groups.length > 0 ? '#E7F5EF' : '#F1F1f1', 
+                            backgroundColor: '#FFFFFF', 
                             padding: '10px', 
                             borderRadius: '12px',
                             color: groups.length > 0 ? '#008060' : '#8c9196',
-                            display: 'flex'
+                            display: 'flex',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                           }}>
                             <Icon source={groups.length > 0 ? CheckIcon : ClipboardChecklistIcon} tone="inherit" />
                           </div>
                           <BlockStack gap="050" flex="1">
                             <Text variant="bodyMd" fontWeight="bold">Create a product group</Text>
-                            <Text variant="bodySm" tone="subdued">Group products that link together to show them as variants.</Text>
+                            <Text variant="bodySm" tone="subdued">Link products together to show them as options.</Text>
                           </BlockStack>
                           <Button variant={groups.length > 0 ? "tertiary" : "primary"} url="/app/groups">
                             {groups.length > 0 ? "View Groups" : "Create Group"}
@@ -847,20 +848,21 @@ export default function Index() {
                       </Box>
 
                       {/* Step 2: Enable App Embed */}
-                      <Box padding="300" background={isAppEmbedEnabled ? "bg-surface-secondary" : "bg-surface"} borderRadius="300" borderStyle="solid" borderWidth="025" borderColor="border-subdued">
+                      <Box padding="300" background="bg-surface-secondary" borderRadius="300" borderStyle="solid" borderWidth="025" borderColor="border-subdued">
                         <InlineStack gap="400" align="start" blockAlign="center" wrap={false}>
                           <div style={{ 
-                            backgroundColor: isAppEmbedEnabled ? '#E7F5EF' : '#F1F1f1', 
+                            backgroundColor: '#FFFFFF', 
                             padding: '10px', 
                             borderRadius: '12px',
                             color: isAppEmbedEnabled ? '#008060' : '#8c9196',
-                            display: 'flex'
+                            display: 'flex',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                           }}>
                             <Icon source={isAppEmbedEnabled ? CheckIcon : AutomationIcon} tone="inherit" />
                           </div>
                           <BlockStack gap="050" flex="1">
                             <Text variant="bodyMd" fontWeight="bold">Enable app embed</Text>
-                            <Text variant="bodySm" tone="subdued">Activate the widget in your theme editor to show swatches.</Text>
+                            <Text variant="bodySm" tone="subdued">Activate the widget in your theme editor.</Text>
                           </BlockStack>
                           <Button variant={isAppEmbedEnabled ? "tertiary" : "primary"} onClick={() => {
                             const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
