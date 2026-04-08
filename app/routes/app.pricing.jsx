@@ -159,14 +159,14 @@ export default function PricingPage() {
         const formData = new FormData();
         formData.append("action", "subscribe");
         formData.append("plan", planKey);
-        submit(formData, { method: "POST" });
+        submit(formData, { method: "POST", action: `?${searchParams.toString()}` });
     };
 
     const handleCancel = () => {
         if (confirm("Are you sure you want to cancel your subscription?")) {
             const formData = new FormData();
             formData.append("action", "cancel");
-            submit(formData, { method: "POST" });
+            submit(formData, { method: "POST", action: `?${searchParams.toString()}` });
         }
     };
 
