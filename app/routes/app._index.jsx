@@ -579,33 +579,60 @@ export default function Index() {
     );
   };
 
-  const SupportGrid = () => (
-    <Grid>
-      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-        <Card padding="500">
-          <BlockStack gap="300">
-            <InlineStack gap="200" blockAlign="center">
-              <div style={{ backgroundColor: '#EBEFFD', padding: '8px', borderRadius: '8px', color: '#2C6ECB' }}><Icon source={ImportIcon} tone="inherit" /></div>
-              <Text variant="headingMd" as="h3">Get email support</Text>
-            </InlineStack>
-            <Text variant="bodyMd" tone="subdued">Email us for quick solutions.</Text>
-            <Button variant="plain" url="mailto:support@example.com">Contact us</Button>
-          </BlockStack>
-        </Card>
-      </Grid.Cell>
-      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-        <Card padding="500">
-          <BlockStack gap="300">
-            <InlineStack gap="200" blockAlign="center">
-              <div style={{ backgroundColor: '#E7F5EF', padding: '8px', borderRadius: '8px', color: '#008060' }}><Icon source={MenuHorizontalIcon} tone="inherit" /></div>
-              <Text variant="headingMd" as="h3">Start live chat</Text>
-            </InlineStack>
-            <Text variant="bodyMd" tone="subdued">Chat with us for instant help.</Text>
-            <Button variant="plain">Chat now</Button>
-          </BlockStack>
-        </Card>
-      </Grid.Cell>
-    </Grid>
+  const TutorialCard = () => (
+    <Card padding="0">
+      <Grid>
+        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
+          <Box padding="400" background="bg-fill-info-secondary" borderRadius="200" height="100%">
+            <BlockStack gap="400" align="center" inlineAlign="center">
+              <div style={{ color: '#2C6ECB' }}>
+                <Icon source={PlayCircleIcon} tone="inherit" />
+              </div>
+              <Text variant="headingMd" alignment="center">Tutorial</Text>
+              <Text variant="bodyMd" alignment="center" tone="subdued">Learn how to use our app in 2 minutes.</Text>
+              <Button fullWidth variant="secondary" onClick={() => window.open('https://youtube.com', '_blank')}>Watch Video</Button>
+            </BlockStack>
+          </Box>
+        </Grid.Cell>
+        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 8, lg: 8, xl: 8 }}>
+          <Box padding="500">
+            <BlockStack gap="400">
+              <Text variant="headingLg" as="h3">How to use the app</Text>
+              <Text variant="bodyMd" tone="subdued">Watch a quick walkthrough to get set up faster and avoid common mistakes.</Text>
+              <InlineStack gap="300">
+                <Button variant="secondary" icon={ViewIcon} onClick={() => window.open('https://youtube.com', '_blank')}>Watch video</Button>
+                <Button variant="tertiary" url="/app/help">Learn more</Button>
+              </InlineStack>
+            </BlockStack>
+          </Box>
+        </Grid.Cell>
+      </Grid>
+    </Card>
+  );
+
+  const SupportSideList = () => (
+    <BlockStack gap="300">
+      <Card padding="400">
+        <BlockStack gap="300">
+          <InlineStack gap="200" blockAlign="center">
+            <div style={{ backgroundColor: '#EBEFFD', padding: '8px', borderRadius: '8px', color: '#2C6ECB', display: 'flex' }}><Icon source={EmailIcon} tone="inherit" /></div>
+            <Text variant="headingSm" as="h3">Get email support</Text>
+          </InlineStack>
+          <Text variant="bodySm" tone="subdued">Email us for quick solutions.</Text>
+          <Button variant="plain" url="mailto:support@example.com">Contact us</Button>
+        </BlockStack>
+      </Card>
+      <Card padding="400">
+        <BlockStack gap="300">
+          <InlineStack gap="200" blockAlign="center">
+            <div style={{ backgroundColor: '#E7F5EF', padding: '8px', borderRadius: '8px', color: '#008060', display: 'flex' }}><Icon source={ChatIcon} tone="inherit" /></div>
+            <Text variant="headingSm" as="h3">Start live chat</Text>
+          </InlineStack>
+          <Text variant="bodySm" tone="subdued">Chat with us for instant help.</Text>
+          <Button variant="plain">Chat now</Button>
+        </BlockStack>
+      </Card>
+    </BlockStack>
   );
 
   const [actionBannerVisible, setActionBannerVisible] = useState(true);
@@ -849,12 +876,20 @@ export default function Index() {
 
                 {/* FAQ & Support Section */}
                 <FAQSection />
-                <SupportGrid />
               </BlockStack>
             </Layout.Section>
             <Layout.Section variant="oneThird">
               <BlockStack gap="400">
-                {/* Usage Info Card (moved from top) */}
+                {/* Tutorial Section Added Here */}
+                <TutorialCard />
+
+                {/* Support moved to side */}
+                <Box paddingBlockStart="200">
+                  <Text variant="headingSm" as="h3">Customer Support</Text>
+                </Box>
+                <SupportSideList />
+
+                {/* Usage Info Card */}
                 <Card background="bg-surface-secondary">
                   <BlockStack gap="300">
                     <Text variant="headingMd">Your Plan</Text>
