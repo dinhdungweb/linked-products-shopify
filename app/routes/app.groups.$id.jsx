@@ -314,6 +314,22 @@ export async function loader({ request, params }) {
             });
         }
 
+        // Fetch all products in other active groups to detect conflicts
+        const activeProducts = await prisma.productGroupItem.findMany({
+            where: {
+                group: {
+                    shop: session.shop,
+                    status: "active"
+                }
+            },
+            include: { group: { select: { name: true } } }
+        });
+        
+        const usedProductsMap = activeProducts.reduce((acc, p) => {
+            acc[p.productId] = p.group.name || "Untitled Group";
+            return acc;
+        }, {});
+
         return json({
             group: {
                 id: null,
@@ -326,7 +342,8 @@ export async function loader({ request, params }) {
             },
             shop: session.shop,
             styleSettings: formattedSettings,
-            appSettings
+            appSettings,
+            usedProductsMap // Quan trọng: Phải có biến này để không bị crash khi thêm sản phẩm
         });
     }
 
