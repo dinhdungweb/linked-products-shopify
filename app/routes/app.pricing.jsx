@@ -188,7 +188,13 @@ export default function PricingPage() {
         formData.append("action", "subscribe");
         formData.append("plan", planKey);
         formData.append("shop", shop);
-        formData.append("host", host || searchParams.get("host") || ""); // Fallback layers
+        
+        // Robust host detection
+        let currentHost = host || searchParams.get("host");
+        if (!currentHost && typeof window !== "undefined" && window.shopify?.config?.host) {
+            currentHost = window.shopify.config.host;
+        }
+        formData.append("host", currentHost || ""); 
         
         let headers = {};
         try {
@@ -210,7 +216,12 @@ export default function PricingPage() {
             const formData = new FormData();
             formData.append("action", "cancel");
             formData.append("shop", shop);
-            formData.append("host", host || searchParams.get("host") || "");
+            
+            let currentHost = host || searchParams.get("host");
+            if (!currentHost && typeof window !== "undefined" && window.shopify?.config?.host) {
+                currentHost = window.shopify.config.host;
+            }
+            formData.append("host", currentHost || "");
 
             let headers = {};
             try {
