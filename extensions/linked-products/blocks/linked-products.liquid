@@ -13,6 +13,11 @@
   {%- assign app_settings = shop.metafields.linked_products.settings.value -%}
   {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
   
+  {%- if app_settings.appEnabled == false -%}
+    {%- comment -%}App is disabled in settings{%- endcomment -%}
+    {%- return -%}
+  {%- endif -%}
+  
   {%- comment -%}Dynamic settings: prefer per-style customizations, fallback to hardcoded defaults (matches App BASE_SETTINGS){%- endcomment -%}
   {%- assign meta_selector_style = product.metafields.linked_products.selector_style.value -%}
   {%- assign meta_option_name = product.metafields.linked_products.option_name.value -%}
@@ -188,12 +193,18 @@
 
   {{ 'linked-products.css' | asset_url | stylesheet_tag }}
 
+  {%- if app_settings.customCssProduct != blank -%}
+    <style id="lp-custom-css-v3">
+      {{ app_settings.customCssProduct }}
+    </style>
+  {%- endif -%}
+
   <div class="linked-products-picker" style="
     --lp-swatch-size: {{ lp_swatch_size | replace: 'px', '' }}px;
     --lp-items-gap: {{ lp_items_gap }}px;
     --lp-swatch-padding: {{ lp_padding }}px;
-    --lp-block-padding-y: {{ lp_padding | default: 8 }}px;
-    --lp-block-padding-x: {{ lp_padding | times: 2 | default: 12 }}px;
+    --lp-block-padding-y: {{ app_settings.blockPaddingY | default: 8 }}px;
+    --lp-block-padding-x: {{ app_settings.blockPaddingX | default: 12 }}px;
     --lp-border-radius: {{ lp_border_radius }}{{ lp_radius_unit }};
     --lp-border-color: {{ lp_border_color }};
     --lp-selected-border-color: {{ lp_selected_border_color }};
@@ -223,8 +234,8 @@
     --lp-selected-weight: {{ lp_selected_weight }};
     --lp-show-selected: {% if lp_show_selected_variant %}block{% else %}none{% endif %};
     --lp-unavailable-style: {{ active_style_settings.unavailable.style | default: 'cross_mark' }};
-    --lp-block-bg: {{ active_style_settings.basic.blockBg | default: '#ffffff' }};
-    --lp-selected-bg: {{ active_style_settings.basic.selectedBg | default: '#f4f6f8' }};
+    --lp-block-bg: {{ app_settings.blockBgColor | default: '#ffffff' }};
+    --lp-selected-bg: {{ app_settings.selectedBgColor | default: '#f4f6f8' }};
     --lp-neutral-bg: #f5f5f5;
     --lp-neutral-border: rgba(0,0,0,0.05);
     {% if lp_shadow_show %}
@@ -245,6 +256,9 @@
           <div class="variant-picker__option-info" style="margin-bottom: {{ lp_label_gap }}px; justify-content: {{ lp_justify_content }};">
             <div class="h-stack" style="flex-direction: {% if lp_label_layout == 'stack' %}column{% else %}row{% endif %}; align-items: {% if lp_layout_align == 'center' %}center{% elsif lp_layout_align == 'right' %}flex-end{% else %}flex-start{% endif %};">
               {%- assign select_label = active_option_name -%}
+              {%- if app_settings.selectOptionLabel != blank -%}
+                {%- assign select_label = app_settings.selectOptionLabel | replace: '{option}', active_option_name -%}
+              {%- endif -%}
               <span class="text-subdued" style="font-size: {{ lp_label_font_size }}px; font-weight: {{ lp_label_font_weight }};">{{ select_label }}:</span>
               <span class="selected-value" style="font-size: {{ lp_label_font_size }}px;">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
             </div>
