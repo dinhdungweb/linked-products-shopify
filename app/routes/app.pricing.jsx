@@ -1,4 +1,4 @@
-import { json, redirect } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation, useSearchParams, useActionData } from "@remix-run/react";
 import {
     Page,
@@ -154,7 +154,9 @@ export const action = async ({ request }) => {
             const confirmationUrl = responseJson.data?.appSubscriptionCreate?.confirmationUrl;
             if (confirmationUrl) {
                 console.log("[Pricing] Redirecting to:", confirmationUrl);
-                return redirect(confirmationUrl);
+                // Use the redirect helper from shopify-app-remix to escape the iframe
+                const { redirect: shopifyRedirect } = await authenticate.admin(request);
+                return shopifyRedirect(confirmationUrl);
             }
 
             return json({ error: "Failed to create subscription, no confirmation URL returned." }, { status: 400 });
