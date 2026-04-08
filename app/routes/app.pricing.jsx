@@ -1,4 +1,4 @@
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation, useSearchParams, useActionData } from "@remix-run/react";
 import {
     Page,
@@ -103,34 +103,64 @@ export const action = async ({ request }) => {
         const requestedPlan = PLANS[plan] || PLANS.basic;
         const planKey = requestedPlan.key; // Example: 'basic_plan'
 
+        // Manual GraphQL request to get EXACT error from Shopify
         try {
-            console.log(`[Pricing] Action: subscribe, Original plan: ${plan}, Selected key: ${planKey}`);
+            console.log(`[Pricing] Manual GraphQL Request for plan: ${planKey}`);
             
             const url = new URL(request.url);
-            // Force HTTPS for returnUrl as Shopify billing requires it
             const origin = url.origin.replace('http://', 'https://');
             const returnUrl = `${origin}/app/pricing?plan=${plan}`;
 
-            console.log(`[Pricing] Calling billing.request with plan: ${planKey}, returnUrl: ${returnUrl}`);
-
-            return await billing.request({
-                plan: planKey,
-                isTest: true,
-                test: true,
-                returnUrl,
+            const response = await admin.graphql(`
+                mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
+                    appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $returnUrl, test: $test) {
+                        userErrors {
+                            field
+                            message
+                        }
+                        confirmationUrl
+                        appSubscription {
+                            id
+                        }
+                    }
+                }
+            `, {
+                variables: {
+                    name: planKey,
+                    test: true,
+                    returnUrl: returnUrl,
+                    lineItems: [{
+                        plan: {
+                            appRecurringPricingDetails: {
+                                price: {
+                                    amount: requestedPlan.price,
+                                    currencyCode: 'USD'
+                                },
+                                interval: 'EVERY_30_DAYS'
+                            }
+                        }
+                    }]
+                }
             });
+
+            const responseJson = await response.json();
+            console.log("[Pricing] Shopify GraphQL Response:", JSON.stringify(responseJson, null, 2));
+
+            if (responseJson.data?.appSubscriptionCreate?.userErrors?.length > 0) {
+                const errorMsg = responseJson.data.appSubscriptionCreate.userErrors.map(e => e.message).join(", ");
+                return json({ error: `Shopify Error: ${errorMsg}` }, { status: 400 });
+            }
+
+            const confirmationUrl = responseJson.data?.appSubscriptionCreate?.confirmationUrl;
+            if (confirmationUrl) {
+                console.log("[Pricing] Redirecting to:", confirmationUrl);
+                return redirect(confirmationUrl);
+            }
+
+            return json({ error: "Failed to create subscription, no confirmation URL returned." }, { status: 400 });
         } catch (error) {
-            if (error instanceof Response) throw error;
-            console.error("[Pricing] Billing request error:", error);
-            if (error.stack) console.error("[Pricing] Error stack:", error.stack);
-            
-            // Try to extract as much info as possible
-            const errorMessage = error.message || (typeof error === 'string' ? error : "Unknown billing error");
-            
-            return json({ 
-                error: `Billing Error: ${errorMessage}`,
-                details: error.response?.data || error.data || null
-            }, { status: 400 });
+            console.error("[Pricing] Manual GraphQL Error:", error);
+            return json({ error: `System Error: ${error.message}` }, { status: 500 });
         }
     }
 
