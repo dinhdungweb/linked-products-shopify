@@ -19,7 +19,7 @@ const shopify = shopifyApp({
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
   billing: {
-    "basic_plan": {
+    "basic-plan": {
       lineItems: [
         {
           amount: PLANS.basic.price,
@@ -30,7 +30,7 @@ const shopify = shopifyApp({
       trialDays: 7,
       replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
-    "advanced_plan": {
+    "advanced-plan": {
       lineItems: [
         {
           amount: PLANS.advanced.price,
@@ -41,7 +41,7 @@ const shopify = shopifyApp({
       trialDays: 7,
       replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
-    "premium_plan": {
+    "premium-plan": {
       lineItems: [
         {
           amount: PLANS.premium.price,
