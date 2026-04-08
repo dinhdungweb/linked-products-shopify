@@ -93,8 +93,9 @@ export const action = async ({ request }) => {
             console.log(`[Pricing] Manual GraphQL Request for plan: ${planKey}`);
             
             const url = new URL(request.url);
+            const host = url.searchParams.get("host");
             const origin = url.origin.replace('http://', 'https://');
-            const returnUrl = `${origin}/app/pricing?plan=${plan}&shop=${shop}`;
+            const returnUrl = `${origin}/app/pricing?plan=${plan}&shop=${shop}&host=${host}`;
 
             const response = await admin.graphql(`
                 mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
