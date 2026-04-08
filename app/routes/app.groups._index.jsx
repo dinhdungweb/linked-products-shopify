@@ -106,18 +106,24 @@ export async function loader({ request }) {
   try {
     const themeResponse = await admin.graphql(`
       query getAppEmbedStatus {
-        appInstallation {
-          appEmbedBlocks {
-            handle
-            enabled
+        themes(first: 1, roles: [MAIN]) {
+          nodes {
+            ... on Theme {
+              appEmbedBlocks {
+                handle
+                enabled
+              }
+            }
           }
         }
       }
     `);
     const themeData = await themeResponse.json();
-    const embedBlocks = themeData.data?.appInstallation?.appEmbedBlocks || [];
-    const ourEmbed = embedBlocks.find(b => b.handle === 'linked-products');
-    isAppEmbedEnabled = ourEmbed?.enabled || false;
+    const mainTheme = themeData.data?.themes?.nodes?.[0];
+    if (mainTheme) {
+      const ourEmbed = mainTheme.appEmbedBlocks?.find(b => b.handle === 'linked-products');
+      isAppEmbedEnabled = ourEmbed?.enabled || false;
+    }
   } catch (e) {
     console.error("Error checking app embed status:", e);
   }
