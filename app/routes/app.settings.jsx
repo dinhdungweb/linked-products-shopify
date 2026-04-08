@@ -23,6 +23,8 @@ import {
   CheckCircleIcon,
   ExternalIcon,
   LanguageIcon,
+  AlertCircleIcon,
+  InfoIcon
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 
@@ -42,7 +44,7 @@ export const loader = async ({ request }) => {
     });
   }
 
-  return json({ settings });
+  return json({ settings, shop });
 };
 
 export const action = async ({ request }) => {
@@ -121,7 +123,7 @@ export const action = async ({ request }) => {
 };
 
 export default function SettingsPage() {
-  const { settings: initialSettings } = useLoaderData();
+  const { settings: initialSettings, shop } = useLoaderData();
   const submit = useSubmit();
   const navigation = useNavigation();
   const isLoading = navigation.state !== "idle";
@@ -306,7 +308,7 @@ export default function SettingsPage() {
                             <InlineStack gap="300" blockAlign="center"><Icon source={AlertCircleIcon} tone="info" /><Text variant="bodyMd" fontWeight="semibold">Required Action</Text></InlineStack>
                             <Box paddingBlockStart="200"><Text variant="bodyMd">You must enable the app embed in your Shopify Theme Editor for the app to work.</Text></Box>
                             </Box>
-                            <Button primary url="https://admin.shopify.com/store/current/themes/current/editor?context=apps" target="_blank">Open Theme Editor</Button>
+                            <Button variant="primary" url={`https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`} target="_blank">Open Theme Editor</Button>
                         </BlockStack>
                         </Card>
                     </Layout.AnnotatedSection>
