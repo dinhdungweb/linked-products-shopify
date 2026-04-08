@@ -101,43 +101,46 @@ export async function loader({ request }) {
     }
   }
 
-  // Fetch App Embed Status via GraphQL Asset query (more stable than admin.rest in this environment)
+  // Fetch App Embed Status via direct REST fetch (most stable method, bypasses library/schema issues)
   let isAppEmbedEnabled = false;
   try {
     const themeResponse = await admin.graphql(`
-      query getThemeAsset {
+      query getThemeId {
         themes(first: 1, roles: [MAIN]) {
           nodes {
             id
-            asset(key: "config/settings_data.json") {
-              value
-            }
           }
         }
       }
     `);
-    
     const themeData = await themeResponse.json();
-    const mainTheme = themeData.data?.themes?.nodes?.[0];
-    const settingsValue = mainTheme?.asset?.value;
+    const themeId = themeData.data?.themes?.nodes?.[0]?.id.split('/').pop();
 
-    if (settingsValue) {
-      const settings = JSON.parse(settingsValue);
-      const blocks = settings.current?.blocks || {};
+    if (themeId) {
+      const restUrl = `https://${shop}/admin/api/2024-04/themes/${themeId}/assets.json?asset[key]=config/settings_data.json`;
+      const assetResponse = await fetch(restUrl, {
+        headers: {
+          "X-Shopify-Access-Token": session.accessToken,
+        },
+      });
       
-      // Check if any block of type 'shopify://apps/.../blocks/linked-products' is enabled (disabled: false)
-      isAppEmbedEnabled = Object.values(blocks).some(block => 
-        block.type?.includes('linked-products') && block.disabled === false
-      );
-      
-      console.log(`Checking app embed in settings_data.json. Found: ${isAppEmbedEnabled}`);
-    } else {
-      console.log("Could not find settings_data.json value via GraphQL");
-      isAppEmbedEnabled = true; // Safety default if asset missing
+      if (assetResponse.ok) {
+        const assetData = await assetResponse.json();
+        const settingsValue = assetData.asset?.value;
+        if (settingsValue) {
+          const settings = JSON.parse(settingsValue);
+          const blocks = settings.current?.blocks || {};
+          
+          isAppEmbedEnabled = Object.values(blocks).some(block => 
+            block.type?.includes('linked-products') && block.disabled === false
+          );
+          console.log(`Checking app embed via direct fetch. Found: ${isAppEmbedEnabled}`);
+        }
+      }
     }
   } catch (e) {
-    console.error("Error in app embed check loader:", e);
-    isAppEmbedEnabled = true; 
+    console.warn("Skipping app embed check due to fetch error:", e.message);
+    isAppEmbedEnabled = true; // Safety default
   }
   
   console.log(`Final isAppEmbedEnabled status: ${isAppEmbedEnabled}`);
