@@ -19,34 +19,22 @@ const shopify = shopifyApp({
   distribution: AppDistribution.AppStore,
   billing: {
     [PLANS.basic.key]: {
+      amount: PLANS.basic.price,
+      currencyCode: 'USD',
+      interval: BillingInterval.Every30Days,
       trialDays: 7,
-      lineItems: [
-        {
-          amount: PLANS.basic.price,
-          currencyCode: 'USD',
-          interval: BillingInterval.Every30Days,
-        },
-      ],
     },
     [PLANS.advanced.key]: {
+      amount: PLANS.advanced.price,
+      currencyCode: 'USD',
+      interval: BillingInterval.Every30Days,
       trialDays: 7,
-      lineItems: [
-        {
-          amount: PLANS.advanced.price,
-          currencyCode: 'USD',
-          interval: BillingInterval.Every30Days,
-        },
-      ],
     },
     [PLANS.premium.key]: {
+      amount: PLANS.premium.price,
+      currencyCode: 'USD',
+      interval: BillingInterval.Every30Days,
       trialDays: 7,
-      lineItems: [
-        {
-          amount: PLANS.premium.price,
-          currencyCode: 'USD',
-          interval: BillingInterval.Every30Days,
-        },
-      ],
     },
   },
   webhooks: {
@@ -122,7 +110,7 @@ async function createMetafieldDefinitions(admin) {
 }
 
 export default shopify;
-export const apiVersion = ApiVersion.October24;
+export const apiVersion = ApiVersion.April24;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const unauthenticated = shopify.unauthenticated;

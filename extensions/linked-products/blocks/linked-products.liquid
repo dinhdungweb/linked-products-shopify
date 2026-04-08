@@ -256,7 +256,12 @@
               <div class="lp-dropdown">
                   <div class="lp-dropdown__selected" onclick="this.nextElementSibling.classList.toggle('show')">
                       {%- if active_selector_style == 'image_dropdown' -%}
-                          <img src="{{ product.featured_image | image_url: width: 80 }}" alt="" class="lp-dropdown__img" loading="lazy">
+                          <img src="{{ product.featured_image | image_url: width: 80 }}" 
+                               alt="" 
+                               class="lp-dropdown__img" 
+                               loading="lazy"
+                               width="80"
+                               height="80">
                       {%- endif -%}
                       <span class="lp-dropdown__text">{{ product.metafields.linked_products.option_value.value | default: product.title }}</span>
                       <svg class="lp-dropdown__icon" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -273,9 +278,19 @@
                         <a href="{{ linked_prod.url }}" class="lp-dropdown__item {% if linked_prod.available == false %}is-sold-out{% endif %}">
                             {%- if active_selector_style == 'image_dropdown' -%}
                                 {%- if item.image != blank -%}
-                                    <img src="{{ item.image }}" alt="" class="lp-dropdown__img" loading="lazy">
+                                    <img src="{{ item.image }}" 
+                                         alt="" 
+                                         class="lp-dropdown__img" 
+                                         loading="lazy"
+                                         width="80"
+                                         height="80">
                                 {%- else -%}
-                                    <img src="{{ linked_prod.featured_image | image_url: width: 80 }}" alt="" class="lp-dropdown__img" loading="lazy">
+                                    <img src="{{ linked_prod.featured_image | image_url: width: 80 }}" 
+                                         alt="" 
+                                         class="lp-dropdown__img" 
+                                         loading="lazy"
+                                         width="80"
+                                         height="80">
                                 {%- endif -%}
                             {%- endif -%}
                             <span class="lp-dropdown__text">{{ value }}</span>

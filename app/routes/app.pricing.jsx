@@ -106,7 +106,15 @@ export const action = async ({ request }) => {
         } catch (error) {
             if (error instanceof Response) throw error;
             console.error("[Pricing] Billing request error:", error);
-            return json({ error: `Billing Error: ${error.message || "Request failed"}` }, { status: 400 });
+            if (error.stack) console.error("[Pricing] Error stack:", error.stack);
+            
+            // Try to extract as much info as possible
+            const errorMessage = error.message || (typeof error === 'string' ? error : "Unknown billing error");
+            
+            return json({ 
+                error: `Billing Error: ${errorMessage}`,
+                details: error.response?.data || error.data || null
+            }, { status: 400 });
         }
     }
 

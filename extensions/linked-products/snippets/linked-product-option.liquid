@@ -137,7 +137,11 @@
           <span class="lp-badge lp-badge--{{ settings.badge.position | default: 'top-right' }}">{{ settings.badge.text }}</span>
         {%- endif -%}
         {%- if final_image_url != blank -%}
-          <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
+          <img src="{{ final_image_url }}" 
+               alt="{{ value }}" 
+               loading="lazy"
+               width="150"
+               height="{{ 150 | divided_by: image.aspect_ratio | default: 150 | round }}">
         {%- else -%}
           <span class="no-image">{{ value | slice: 0, 2 }}</span>
         {%- endif -%}
@@ -155,7 +159,11 @@
         {%- endif -%}
         <div class="scroll-media">
           {%- if final_image_url != blank -%}
-            <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
+            <img src="{{ final_image_url }}" 
+                 alt="{{ value }}" 
+                 loading="lazy"
+                 width="150"
+                 height="{{ 150 | divided_by: image.aspect_ratio | default: 150 | round }}">
           {%- endif -%}
         </div>
         <div class="scroll-info">
@@ -180,7 +188,11 @@
         {%- endif -%}
         <div class="polaroid-inner">
           {%- if final_image_url != blank -%}
-            <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
+            <img src="{{ final_image_url }}" 
+                 alt="{{ value }}" 
+                 loading="lazy"
+                 width="150"
+                 height="{{ 150 | divided_by: image.aspect_ratio | default: 150 | round }}">
           {%- endif -%}
         </div>
         {%- if is_unavailable -%}<span class="lp-unavailable-effect"></span>{%- endif -%}
@@ -236,7 +248,11 @@
         {%- endif -%}
         <div class="card-media">
           {%- if final_image_url != blank -%}
-            <img src="{{ final_image_url }}" alt="{{ value }}" loading="lazy">
+            <img src="{{ final_image_url }}" 
+                 alt="{{ value }}" 
+                 loading="lazy"
+                 width="150"
+                 height="{{ 150 | divided_by: image.aspect_ratio | default: 150 | round }}">
           {%- else -%}
             <span class="no-image">{{ value | slice: 0, 1 }}</span>
           {%- endif -%}
