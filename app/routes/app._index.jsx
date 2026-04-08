@@ -771,24 +771,73 @@ export default function Index() {
                   </Grid.Cell>
                 </Grid>
 
-                {/* Setup Guide */}
-                <Card>
-                  <BlockStack gap="300">
-                    <InlineStack align="space-between">
-                      <Text variant="headingMd">Setup guide</Text>
-                      <Text variant="bodySm" tone="subdued">{groups.length > 0 ? "1/2" : "0/2"} completed</Text>
+                {/* Premium Setup Guide */}
+                <Card padding="500">
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <BlockStack gap="100">
+                        <Text variant="headingMd" as="h2">Setup guide</Text>
+                        <Text variant="bodySm" tone="subdued">Complete these steps to get the most out of our app.</Text>
+                      </BlockStack>
+                      <Badge tone={groups.length > 0 && isAppEmbedEnabled ? "success" : "attention"}>
+                        {groups.length > 0 && isAppEmbedEnabled ? "2/2 completed" : groups.length > 0 || isAppEmbedEnabled ? "1/2 completed" : "0/2 completed"}
+                      </Badge>
                     </InlineStack>
-                    <ProgressBar progress={groups.length > 0 ? 50 : 0} size="small" tone={groups.length > 0 ? "primary" : "warning"} />
-                    <div style={{ marginTop: "10px" }}>
-                      <InlineStack gap="400" align="start" blockAlign="start" wrap={false}>
-                        <Box background={groups.length > 0 ? "bg-surface-success" : "bg-surface-secondary"} padding="200" borderRadius="200"><Icon source={ClipboardChecklistIcon} tone={groups.length > 0 ? "success" : "base"} /></Box>
-                        <BlockStack gap="050" flex="1">
-                          <Text variant="bodyMd" fontWeight="semibold">Create a product group</Text>
-                          <Text variant="bodySm" tone="subdued">Group products that link together.</Text>
-                          <div style={{ marginTop: "8px" }}><Button size="slim" url="/app/groups">{groups.length > 0 ? "View Groups" : "Create Group"}</Button></div>
-                        </BlockStack>
-                      </InlineStack>
-                    </div>
+                    
+                    <ProgressBar 
+                      progress={ (groups.length > 0 ? 50 : 0) + (isAppEmbedEnabled ? 50 : 0) } 
+                      size="small" 
+                      tone="success" 
+                    />
+
+                    <BlockStack gap="300">
+                      {/* Step 1: Create Group */}
+                      <Box padding="300" background={groups.length > 0 ? "bg-surface-secondary" : "bg-surface"} borderRadius="300" borderStyle="solid" borderWidth="025" borderColor="border-subdued">
+                        <InlineStack gap="400" align="start" blockAlign="center" wrap={false}>
+                          <div style={{ 
+                            backgroundColor: groups.length > 0 ? '#E7F5EF' : '#F1F1f1', 
+                            padding: '10px', 
+                            borderRadius: '12px',
+                            color: groups.length > 0 ? '#008060' : '#8c9196',
+                            display: 'flex'
+                          }}>
+                            <Icon source={groups.length > 0 ? CheckIcon : ClipboardChecklistIcon} tone="inherit" />
+                          </div>
+                          <BlockStack gap="050" flex="1">
+                            <Text variant="bodyMd" fontWeight="bold">Create a product group</Text>
+                            <Text variant="bodySm" tone="subdued">Group products that link together to show them as variants.</Text>
+                          </BlockStack>
+                          <Button variant={groups.length > 0 ? "tertiary" : "primary"} url="/app/groups">
+                            {groups.length > 0 ? "View Groups" : "Create Group"}
+                          </Button>
+                        </InlineStack>
+                      </Box>
+
+                      {/* Step 2: Enable App Embed */}
+                      <Box padding="300" background={isAppEmbedEnabled ? "bg-surface-secondary" : "bg-surface"} borderRadius="300" borderStyle="solid" borderWidth="025" borderColor="border-subdued">
+                        <InlineStack gap="400" align="start" blockAlign="center" wrap={false}>
+                          <div style={{ 
+                            backgroundColor: isAppEmbedEnabled ? '#E7F5EF' : '#F1F1f1', 
+                            padding: '10px', 
+                            borderRadius: '12px',
+                            color: isAppEmbedEnabled ? '#008060' : '#8c9196',
+                            display: 'flex'
+                          }}>
+                            <Icon source={isAppEmbedEnabled ? CheckIcon : AutomationIcon} tone="inherit" />
+                          </div>
+                          <BlockStack gap="050" flex="1">
+                            <Text variant="bodyMd" fontWeight="bold">Enable app embed</Text>
+                            <Text variant="bodySm" tone="subdued">Activate the widget in your theme editor to show swatches.</Text>
+                          </BlockStack>
+                          <Button variant={isAppEmbedEnabled ? "tertiary" : "primary"} onClick={() => {
+                            const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
+                            window.open(url, '_blank');
+                          }}>
+                            {isAppEmbedEnabled ? "Review Theme" : "Enable Now"}
+                          </Button>
+                        </InlineStack>
+                      </Box>
+                    </BlockStack>
                   </BlockStack>
                 </Card>
 
