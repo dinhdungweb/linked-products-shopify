@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation, useSearchParams, useActionData } from "@remix-run/react";
 import {
@@ -38,7 +37,6 @@ export const loader = async ({ request }) => {
             const activeSub = billingCheck.appSubscriptions[0];
             let planKey = "free";
             
-            // Map subscription names OR keys to our internal plan keys
             const subName = activeSub.name;
             if (subName.includes("Premium") || subName === PLANS.premium.key) planKey = "premium";
             else if (subName.includes("Advanced") || subName === PLANS.advanced.key) planKey = "advanced";
@@ -67,21 +65,7 @@ export const action = async ({ request }) => {
     const { authenticate } = await import("../shopify.server");
     const { cancelSubscription } = await import("../billing.server");
 
-    let admin, session, billing;
-    try {
-        const auth = await authenticate.admin(request);
-        admin = auth.admin;
-        session = auth.session;
-        billing = auth.billing;
-    } catch (error) {
-        console.error("[Pricing] Authentication Error Details:", {
-            message: error.message,
-            stack: error.stack,
-            requestUrl: request.url,
-            headers: Object.fromEntries(request.headers)
-        });
-        throw error;
-    }
+    const { admin, session, billing } = await authenticate.admin(request);
     const shop = session.shop;
     const formData = await request.formData();
     const actionValue = formData.get("action");
@@ -100,68 +84,25 @@ export const action = async ({ request }) => {
             }
         }
 
-        // Map plan parameter to internal keys
         const requestedPlan = PLANS[plan] || PLANS.basic;
-        const planKey = requestedPlan.key; // Example: 'basic_plan'
+        const planKey = requestedPlan.key;
 
-        // Manual GraphQL request to get EXACT error from Shopify
         try {
-            console.log(`[Pricing] Manual GraphQL Request for plan: ${planKey}`);
+            console.log(`[Pricing] Requesting billing for plan: ${planKey}`);
             
             const url = new URL(request.url);
             const origin = url.origin.replace('http://', 'https://');
             const returnUrl = `${origin}/app/pricing?plan=${plan}`;
 
-            const response = await admin.graphql(`
-                mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
-                    appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $returnUrl, test: $test) {
-                        userErrors {
-                            field
-                            message
-                        }
-                        confirmationUrl
-                        appSubscription {
-                            id
-                        }
-                    }
-                }
-            `, {
-                variables: {
-                    name: planKey,
-                    test: true,
-                    returnUrl: returnUrl,
-                    lineItems: [{
-                        plan: {
-                            appRecurringPricingDetails: {
-                                price: {
-                                    amount: requestedPlan.price,
-                                    currencyCode: 'USD'
-                                },
-                                interval: 'EVERY_30_DAYS'
-                            }
-                        }
-                    }]
-                }
+            return await billing.request({
+                plan: planKey,
+                isTest: true,
+                returnUrl,
             });
-
-            const responseJson = await response.json();
-            console.log("[Pricing] Shopify GraphQL Response:", JSON.stringify(responseJson, null, 2));
-
-            if (responseJson.data?.appSubscriptionCreate?.userErrors?.length > 0) {
-                const errorMsg = responseJson.data.appSubscriptionCreate.userErrors.map(e => e.message).join(", ");
-                return json({ error: `Shopify Error: ${errorMsg}` }, { status: 400 });
-            }
-
-            const confirmationUrl = responseJson.data?.appSubscriptionCreate?.confirmationUrl;
-            if (confirmationUrl) {
-                console.log("[Pricing] Success! Returning confirmationUrl to frontend:", confirmationUrl);
-                return json({ confirmationUrl });
-            }
-
-            return json({ error: "Failed to create subscription, no confirmation URL returned." }, { status: 400 });
         } catch (error) {
-            console.error("[Pricing] Manual GraphQL Error:", error);
-            return json({ error: `System Error: ${error.message}` }, { status: 500 });
+            if (error instanceof Response) throw error;
+            console.error("[Pricing] Billing Error:", error);
+            return json({ error: error.message || "Billing failed" }, { status: 400 });
         }
     }
 
@@ -186,39 +127,18 @@ export default function PricingPage() {
     const [searchParams] = useSearchParams();
     const isSubmitting = navigation.state === "submitting";
  
-    useEffect(() => {
-        if (actionData?.confirmationUrl) {
-            console.log("[Pricing] Redirecting to confirmation URL:", actionData.confirmationUrl);
-            if (window.shopify && window.shopify.navigation) {
-                window.shopify.navigation.utils.open(actionData.confirmationUrl, { target: "top" });
-            } else {
-                window.top.location.href = actionData.confirmationUrl;
-            }
-        }
-    }, [actionData]);
-
-    const handleSubscribe = async (planKey) => {
-        const idToken = await window.shopify.idToken();
+    const handleSubscribe = (planKey) => {
         const formData = new FormData();
         formData.append("action", "subscribe");
         formData.append("plan", planKey);
-        submit(formData, { 
-            method: "POST", 
-            action: `?${searchParams.toString()}`,
-            headers: { Authorization: `Bearer ${idToken}` }
-        });
+        submit(formData, { method: "POST", action: `?${searchParams.toString()}` });
     };
-
-    const handleCancel = async () => {
+ 
+    const handleCancel = () => {
         if (confirm("Are you sure you want to cancel your subscription?")) {
-            const idToken = await window.shopify.idToken();
             const formData = new FormData();
             formData.append("action", "cancel");
-            submit(formData, { 
-                method: "POST", 
-                action: `?${searchParams.toString()}`,
-                headers: { Authorization: `Bearer ${idToken}` }
-            });
+            submit(formData, { method: "POST", action: `?${searchParams.toString()}` });
         }
     };
 
