@@ -101,7 +101,34 @@ export async function loader({ request }) {
     }
   }
 
-  return json({ groups, shop: shop, usageInfo, totalProducts, productImages });
+  // Fetch App Embed Status
+  let isAppEmbedEnabled = false;
+  try {
+    const themeResponse = await admin.graphql(`
+      query getThemeData {
+        themes(first: 10, roles: [MAIN]) {
+          nodes {
+            id
+            appEmbedBlocks(first: 20) {
+              appId
+              handle
+              enabled
+            }
+          }
+        }
+      }
+    `);
+    const themeData = await themeResponse.json();
+    const mainTheme = themeData.data?.themes?.nodes?.[0];
+    if (mainTheme) {
+      const ourEmbed = mainTheme.appEmbedBlocks?.find(b => b.handle === 'linked-products');
+      isAppEmbedEnabled = ourEmbed?.enabled || false;
+    }
+  } catch (e) {
+    console.error("Error checking app embed status:", e);
+  }
+
+  return json({ groups, shop: shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled });
 }
 
 // Action (copied from index for delete/import support here too)
@@ -188,7 +215,7 @@ export async function action({ request }) {
 }
 
 export default function GroupsPage() {
-  const { groups, usageInfo, totalProducts, productImages } = useLoaderData();
+  const { groups, usageInfo, totalProducts, productImages, isAppEmbedEnabled } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
@@ -381,6 +408,20 @@ export default function GroupsPage() {
               </InlineStack>
           </InlineStack>
 
+          {!isAppEmbedEnabled && (
+            <Banner 
+              title="App embed is disabled" 
+              tone="warning"
+              action={{ 
+                content: 'Enable in Theme', 
+                url: `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=4d61972862a38c319a8058f77c5c7d28/linked-products`,
+                external: true
+              }}
+            >
+              <p>Please enable the app embed to show product swatches on your storefront.</p>
+            </Banner>
+          )}
+
           {isLimitReached && (
             <Banner 
               title="You've reached your product group limit" 
@@ -388,15 +429,6 @@ export default function GroupsPage() {
               action={{ content: 'Upgrade plan', url: '/app/pricing' }}
             >
               <p>The <b>{usageInfo.planName}</b> allows a maximum of {usageInfo.limit} groups. Upgrade to continue expanding your store.</p>
-            </Banner>
-          )}
-
-          {bannerVisible && !isLimitReached && (
-            <Banner tone="info" onDismiss={() => setBannerVisible(false)}>
-              <InlineStack gap="200" blockAlign="center">
-                <Text variant="bodyMd">App embed is enabled. Learn how to configure it.</Text>
-                <Button variant="plain">Learn more</Button>
-              </InlineStack>
             </Banner>
           )}
 
