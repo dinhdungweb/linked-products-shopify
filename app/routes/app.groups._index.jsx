@@ -372,7 +372,7 @@ export default function GroupsPage() {
                   <Button icon={RefreshIcon} disabled>Bulk update options</Button>
                 </ButtonGroup>
                 {isLimitReached ? (
-                  <Tooltip content="Bạn đã đạt giới hạn nhóm sản phẩm của gói hiện tại. Vui lòng nâng cấp để tạo thêm.">
+                  <Tooltip content="You have reached the product group limit for your current plan. Please upgrade to create more.">
                     <Button variant="primary" icon={PlusIcon} disabled>Create group</Button>
                   </Tooltip>
                 ) : (
@@ -383,11 +383,11 @@ export default function GroupsPage() {
 
           {isLimitReached && (
             <Banner 
-              title="Bạn đã dùng hết hạn mức tạo nhóm sản phẩm" 
+              title="You've reached your product group limit" 
               tone="warning"
-              action={{ content: 'Nâng cấp gói cước', url: '/app/pricing' }}
+              action={{ content: 'Upgrade plan', url: '/app/pricing' }}
             >
-              <p>Gói <b>{usageInfo.planName}</b> chỉ cho phép tối đa {usageInfo.limit} nhóm. Hãy nâng cấp để tiếp tục mở rộng cửa hàng của bạn.</p>
+              <p>The <b>{usageInfo.planName}</b> allows a maximum of {usageInfo.limit} groups. Upgrade to continue expanding your store.</p>
             </Banner>
           )}
 
@@ -509,8 +509,8 @@ export default function GroupsPage() {
           >
             {isLimitReached ? (
               <BlockStack gap="200">
-                <p>Bạn đã đạt giới hạn của gói <b>{usageInfo.planName}</b>. Hãy nâng cấp để tiếp tục.</p>
-                <Button url="/app/pricing" variant="primary">Nâng cấp gói cước ngay</Button>
+                <p>You've reached the limit of the <b>{usageInfo.planName}</b>. Please upgrade to continue.</p>
+                <Button url="/app/pricing" variant="primary">Upgrade Plan Now</Button>
               </BlockStack>
             ) : (
               <p>Start by creating your first group to link products together.</p>
