@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation, useSearchParams, useActionData } from "@remix-run/react";
 import {
@@ -153,10 +154,8 @@ export const action = async ({ request }) => {
 
             const confirmationUrl = responseJson.data?.appSubscriptionCreate?.confirmationUrl;
             if (confirmationUrl) {
-                console.log("[Pricing] Redirecting to:", confirmationUrl);
-                // Use the redirect helper from shopify-app-remix to escape the iframe
-                const { redirect: shopifyRedirect } = await authenticate.admin(request);
-                return shopifyRedirect(confirmationUrl);
+                console.log("[Pricing] Success! Returning confirmationUrl to frontend:", confirmationUrl);
+                return json({ confirmationUrl });
             }
 
             return json({ error: "Failed to create subscription, no confirmation URL returned." }, { status: 400 });
@@ -186,6 +185,12 @@ export default function PricingPage() {
     const navigation = useNavigation();
     const [searchParams] = useSearchParams();
     const isSubmitting = navigation.state === "submitting";
+ 
+    useEffect(() => {
+        if (actionData?.confirmationUrl) {
+            window.shopify.navigation.utils.open(actionData.confirmationUrl, { target: "top" });
+        }
+    }, [actionData]);
 
     const handleSubscribe = async (planKey) => {
         const idToken = await window.shopify.idToken();
