@@ -108,7 +108,7 @@ export async function loader({ request }) {
       query getAppEmbedStatus {
         themes(first: 1, roles: [MAIN]) {
           nodes {
-            ... on Theme {
+            ... on OnlineStoreTheme {
               appEmbedBlocks {
                 handle
                 enabled
