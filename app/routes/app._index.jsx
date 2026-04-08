@@ -46,6 +46,16 @@ import {
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
+import { 
+  CheckIcon,
+  RefreshIcon,
+  PlusIcon,
+  SearchIcon,
+  XIcon,
+  QuestionCircleIcon,
+  ImportIcon,
+  MenuHorizontalIcon
+} from "@shopify/polaris-icons";
 
 // Loader - Get product groups list
 export async function loader({ request }) {
@@ -95,7 +105,48 @@ export async function loader({ request }) {
     orderBy: { createdAt: "desc" },
   });
 
-  return json({ groups, shop: shop, usageInfo });
+  const totalProducts = await prisma.productGroupItem.count({
+    where: { group: { shop: shop } }
+  });
+
+  // Fetch App Embed Status via direct REST fetch (most stable method)
+  let isAppEmbedEnabled = false;
+  try {
+    const themeResponse = await admin.graphql(`
+      query getThemeId {
+        themes(first: 1, roles: [MAIN]) {
+          nodes { id }
+        }
+      }
+    `);
+    const themeData = await themeResponse.json();
+    const themeId = themeData.data?.themes?.nodes?.[0]?.id.split('/').pop();
+
+    if (themeId) {
+      const restUrl = `https://${shop}/admin/api/2024-04/themes/${themeId}/assets.json?asset[key]=config/settings_data.json`;
+      const assetResponse = await fetch(restUrl, {
+        headers: { "X-Shopify-Access-Token": session.accessToken },
+      });
+      
+      if (assetResponse.ok) {
+        const assetData = await assetResponse.json();
+        const settingsValue = assetData.asset?.value;
+        if (settingsValue) {
+          const settings = JSON.parse(settingsValue);
+          const blocks = settings.current?.blocks || {};
+          isAppEmbedEnabled = Object.values(blocks).some(block => 
+            (block.type?.includes('linked-products') || block.type?.includes('app-card-injector')) && 
+            block.disabled === false
+          );
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Skipping app embed check:", e.message);
+    isAppEmbedEnabled = true; // Safety default
+  }
+
+  return json({ groups, shop: shop, usageInfo, totalProducts, isAppEmbedEnabled });
 }
 
 // Action - Create group, add products, and sync
@@ -466,11 +517,97 @@ export async function action({ request }) {
 }
 
 export default function Index() {
-  const { groups, usageInfo } = useLoaderData();
+  const { groups, usageInfo, totalProducts, isAppEmbedEnabled, shop } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
   const shopify = useAppBridge();
+
+  const isLimitReached = usageInfo?.used >= usageInfo?.limit;
+
+  const StatsCard = ({ title, value, icon, color, progress, subtitle }) => (
+    <Card padding="400">
+      <BlockStack gap="300">
+        <InlineStack align="space-between" blockAlign="center">
+          <BlockStack gap="100">
+            <Text variant="bodySm" fontWeight="bold" tone="subdued">{title}</Text>
+            <Text variant="headingLg" as="h2">{value}</Text>
+          </BlockStack>
+          <div style={{ backgroundColor: `${color}15`, padding: '12px', borderRadius: '12px', color: color }}>
+            <Icon source={icon} tone="inherit" />
+          </div>
+        </InlineStack>
+        {progress !== undefined && (
+          <BlockStack gap="100">
+            <ProgressBar progress={progress} tone={progress > 90 ? "critical" : progress > 70 ? "caution" : "success"} size="small" />
+            <Text variant="bodyXs" tone="subdued">{subtitle}</Text>
+          </BlockStack>
+        )}
+        {!progress && subtitle && <Text variant="bodySm" tone="subdued">{subtitle}</Text>}
+      </BlockStack>
+    </Card>
+  );
+
+  const FAQSection = () => {
+    const [openIndex, setOpenIndex] = useState(null);
+    const faqs = [
+      { question: "Can I change the position of the options?", answer: "Yes! You can use the Theme Editor to drag the 'Linked Product Variants' block to any position." },
+      { question: "How do I show options on collection pages?", answer: "Enable the 'App Card Injector' block in your Theme App Embeds settings." },
+      { question: "Can a product belong to multiple groups?", answer: "Each product can only belong to one active group to avoid conflicts." }
+    ];
+    return (
+      <Card padding="500">
+        <BlockStack gap="400">
+          <InlineStack gap="200" blockAlign="center">
+            <Icon source={QuestionCircleIcon} tone="base" />
+            <Text variant="headingMd" as="h2">Need help? FAQ</Text>
+          </InlineStack>
+          <BlockStack gap="200">
+            {faqs.map((faq, index) => (
+              <Box key={index} padding="300" background="bg-surface-secondary" borderRadius="200" cursor="pointer" onClick={() => setOpenIndex(openIndex === index ? null : index)}>
+                <BlockStack gap="200">
+                  <InlineStack align="space-between">
+                    <Text variant="bodyMd" fontWeight="semibold">{faq.question}</Text>
+                    <Icon source={openIndex === index ? XIcon : PlusIcon} size="extrasmall" />
+                  </InlineStack>
+                  {openIndex === index && <Box paddingBlockStart="200"><Text variant="bodyMd" tone="subdued">{faq.answer}</Text></Box>}
+                </BlockStack>
+              </Box>
+            ))}
+          </BlockStack>
+        </BlockStack>
+      </Card>
+    );
+  };
+
+  const SupportGrid = () => (
+    <Grid>
+      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+        <Card padding="500">
+          <BlockStack gap="300">
+            <InlineStack gap="200" blockAlign="center">
+              <div style={{ backgroundColor: '#EBEFFD', padding: '8px', borderRadius: '8px', color: '#2C6ECB' }}><Icon source={ImportIcon} tone="inherit" /></div>
+              <Text variant="headingMd" as="h3">Get email support</Text>
+            </InlineStack>
+            <Text variant="bodyMd" tone="subdued">Email us for quick solutions.</Text>
+            <Button variant="plain" url="mailto:support@example.com">Contact us</Button>
+          </BlockStack>
+        </Card>
+      </Grid.Cell>
+      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+        <Card padding="500">
+          <BlockStack gap="300">
+            <InlineStack gap="200" blockAlign="center">
+              <div style={{ backgroundColor: '#E7F5EF', padding: '8px', borderRadius: '8px', color: '#008060' }}><Icon source={MenuHorizontalIcon} tone="inherit" /></div>
+              <Text variant="headingMd" as="h3">Start live chat</Text>
+            </InlineStack>
+            <Text variant="bodyMd" tone="subdued">Chat with us for instant help.</Text>
+            <Button variant="plain">Chat now</Button>
+          </BlockStack>
+        </Card>
+      </Grid.Cell>
+    </Grid>
+  );
 
   const [actionBannerVisible, setActionBannerVisible] = useState(true);
 
@@ -585,211 +722,86 @@ export default function Index() {
 
           <Layout>
             <Layout.Section>
-              <BlockStack gap="400">
+              <BlockStack gap="500">
                 {actionData?.success && actionBannerVisible && (
                   <Banner tone="success" onDismiss={() => setActionBannerVisible(false)}>
                     <p>{actionData.message}</p>
                   </Banner>
                 )}
+
+                {/* Dynamic Alerts */}
+                {!isAppEmbedEnabled && (
+                  <Banner 
+                    title="Theme integration required" 
+                    tone="warning"
+                    action={{ 
+                      content: 'Enable in Theme', 
+                      onAction: () => {
+                        const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
+                        window.open(url, '_blank');
+                      }
+                    }}
+                  >
+                    <p>App embed is disabled. Enable it to show swatches on your storefront.</p>
+                  </Banner>
+                )}
+                
+                {/* Stats Cards Row */}
+                <Grid>
+                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
+                    <StatsCard 
+                      title="Plan Usage" 
+                      value={`${usageInfo?.used || 0} / ${usageInfo?.limit === Infinity ? "∞" : usageInfo?.limit}`}
+                      icon={CheckIcon}
+                      color="#008060"
+                      progress={usageInfo?.limit === Infinity ? 0 : ((usageInfo?.used || 0) / usageInfo?.limit) * 100}
+                      subtitle={isLimitReached ? "Limit reached" : "Group capacity"}
+                    />
+                  </Grid.Cell>
+                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
+                    <StatsCard 
+                      title="Linked Products" 
+                      value={totalProducts}
+                      icon={PlusIcon}
+                      color="#2C6ECB"
+                      subtitle="Across all groups"
+                    />
+                  </Grid.Cell>
+                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
+                    <StatsCard 
+                      title="App Status" 
+                      value={isAppEmbedEnabled ? "Active" : "Disabled"}
+                      icon={isAppEmbedEnabled ? CheckIcon : XIcon}
+                      color={isAppEmbedEnabled ? "#008060" : "#D82C0D"}
+                      subtitle="Storefront visibility"
+                    />
+                  </Grid.Cell>
+                </Grid>
+
                 {/* Setup Guide */}
                 <Card>
                   <BlockStack gap="300">
                     <InlineStack align="space-between">
                       <Text variant="headingMd">Setup guide</Text>
-                      <Text variant="bodySm" tone="subdued">
-                        {groups.length > 0 ? "1/2" : "0/2"} completed
-                      </Text>
+                      <Text variant="bodySm" tone="subdued">{groups.length > 0 ? "1/2" : "0/2"} completed</Text>
                     </InlineStack>
-                    <ProgressBar 
-                      progress={groups.length > 0 ? 50 : 0} 
-                      size="small" 
-                      tone={groups.length > 0 ? "primary" : "warning"} 
-                    />
-                    
+                    <ProgressBar progress={groups.length > 0 ? 50 : 0} size="small" tone={groups.length > 0 ? "primary" : "warning"} />
                     <div style={{ marginTop: "10px" }}>
                       <InlineStack gap="400" align="start" blockAlign="start" wrap={false}>
-                        <Box background={groups.length > 0 ? "bg-surface-success" : "bg-surface-secondary"} padding="200" borderRadius="200">
-                          <Icon source={ClipboardChecklistIcon} tone={groups.length > 0 ? "success" : "base"} />
-                        </Box>
+                        <Box background={groups.length > 0 ? "bg-surface-success" : "bg-surface-secondary"} padding="200" borderRadius="200"><Icon source={ClipboardChecklistIcon} tone={groups.length > 0 ? "success" : "base"} /></Box>
                         <BlockStack gap="050" flex="1">
                           <Text variant="bodyMd" fontWeight="semibold">Create a product group</Text>
-                          <Text variant="bodySm" tone="subdued">Group products that should link together. Choose a single-option group, or a multi-option group.</Text>
-                          <div style={{ marginTop: "8px" }}>
-                            {groups.length > 0 ? (
-                               <Button size="slim" url="/app/groups">View Groups</Button>
-                            ) : (
-                               <Button size="slim" onClick={() => setShowCreateModal(true)}>Create a group</Button>
-                            )}
-                          </div>
+                          <Text variant="bodySm" tone="subdued">Group products that link together.</Text>
+                          <div style={{ marginTop: "8px" }}><Button size="slim" url="/app/groups">{groups.length > 0 ? "View Groups" : "Create Group"}</Button></div>
                         </BlockStack>
                       </InlineStack>
                     </div>
-                    
-                    <Divider />
-                    
-                    <InlineStack gap="400" align="start" blockAlign="start" wrap={false}>
-                      <Box background="bg-surface-secondary" padding="200" borderRadius="200">
-                        <Icon source={InfoIcon} />
-                      </Box>
-                      <BlockStack gap="050" flex="1">
-                        <Text variant="bodyMd" fontWeight="semibold">Enable app embed</Text>
-                        <Text variant="bodySm" tone="subdued">Linked products won't show on your store until the app embed is active in your theme settings.</Text>
-                        <div style={{ marginTop: "8px" }}>
-                          <Button size="slim" url="/app/help">Review Guide</Button>
-                        </div>
-                      </BlockStack>
-                    </InlineStack>
                   </BlockStack>
                 </Card>
 
-                {/* How to use */}
-                <Card padding="0">
-                  <Grid>
-                    <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-                      <Box padding="400" background="bg-fill-info-secondary" borderRadius="200" height="100%">
-                         <BlockStack gap="400" align="center">
-                            <Icon source={PlayCircleIcon} tone="info" />
-                            <Text variant="headingMd" alignment="center">Tutorial</Text>
-                            <Text variant="bodyMd" alignment="center">Learn how to use our app in 2 minutes.</Text>
-                            <Button fullWidth url="/app/help">Watch Video</Button>
-                         </BlockStack>
-                      </Box>
-                    </Grid.Cell>
-                    <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 8, lg: 8, xl: 8 }}>
-                      <Box padding="400">
-                        <BlockStack gap="400">
-                           <Text variant="headingMd">How to use the app</Text>
-                           <Text variant="bodyMd" tone="subdued">Watch a quick walkthrough to get set up faster and avoid common mistakes.</Text>
-                           <InlineStack gap="200">
-                             <Button variant="secondary" icon={ViewIcon} url="/app/help">Watch video</Button>
-                             <Button variant="tertiary" url="/app/help">Learn more</Button>
-                           </InlineStack>
-                        </BlockStack>
-                      </Box>
-                    </Grid.Cell>
-                  </Grid>
-                </Card>
-
-                {/* What's New & Status */}
-                <Grid>
-                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 12, lg: 12, xl: 12 }}>
-                     <Card>
-                        <BlockStack gap="300">
-                          <Text variant="headingMd">App status</Text>
-                          <InlineStack align="space-between">
-                            <Text variant="bodyMd">App status</Text>
-                            <Badge tone="success">Active</Badge>
-                          </InlineStack>
-                          <InlineStack align="space-between">
-                            <Text variant="bodyMd">Collection widget status</Text>
-                            <Badge>Ready</Badge>
-                          </InlineStack>
-                          <InlineStack align="space-between">
-                            <Text variant="bodyMd">Manual refresh groups</Text>
-                            <Button size="slim" onClick={() => window.location.reload()}>Refresh</Button>
-                          </InlineStack>
-                          <Divider />
-                          <Button variant="plain" url="/app/help">View settings</Button>
-                        </BlockStack>
-                     </Card>
-                  </Grid.Cell>
-                </Grid>
-
-                {/* FAQ Section */}
-                <Card>
-                  <BlockStack gap="400">
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start', width: '100%' }}>
-                      <div style={{ margin: 0, display: 'flex' }}>
-                        <Icon source={QuestionCircleIcon} />
-                      </div>
-                      <Text variant="headingMd">Need help? FAQ</Text>
-                    </div>
-                    <BlockStack gap="200">
-                       {/* FAQ 1 */}
-                       <div style={{ cursor: 'pointer', width: '100%' }} onClick={() => toggleFaq(0)}>
-                         <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                             <Text variant="bodyMd" fontWeight="semibold">Can I change the position of the options?</Text>
-                             <div style={{ marginLeft: 'auto', display: 'flex' }}>
-                               <Icon source={openFaq === 0 ? MinusIcon : PlusIcon} size="extraSmall" />
-                             </div>
-                           </div>
-                         </Box>
-                       </div>
-                       {openFaq === 0 && (
-                         <Box padding="200">
-                           <Text variant="bodySm" tone="subdued">Yes, you can drag and drop products within a group details page to change their display order.</Text>
-                         </Box>
-                       )}
-                       
-                       {/* FAQ 2 */}
-                       <div style={{ cursor: 'pointer', width: '100%' }} onClick={() => toggleFaq(1)}>
-                         <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                             <Text variant="bodyMd" fontWeight="semibold">How do I show options on collection pages?</Text>
-                             <div style={{ marginLeft: 'auto', display: 'flex' }}>
-                               <Icon source={openFaq === 1 ? MinusIcon : PlusIcon} size="extraSmall" />
-                             </div>
-                           </div>
-                         </Box>
-                       </div>
-                       {openFaq === 1 && (
-                         <Box padding="200">
-                           <Text variant="bodySm" tone="subdued">Go to Theme Editor, navigate to your Collection page, and add the "Collection Swatches" app block to your product grid.</Text>
-                         </Box>
-                       )}
-
-                       {/* FAQ 3 */}
-                       <div style={{ cursor: 'pointer', width: '100%' }} onClick={() => toggleFaq(2)}>
-                         <Box padding="200" background="bg-surface-secondary" borderRadius="100">
-                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                             <Text variant="bodyMd" fontWeight="semibold">Can a product belong to multiple groups?</Text>
-                             <div style={{ marginLeft: 'auto', display: 'flex' }}>
-                               <Icon source={openFaq === 2 ? MinusIcon : PlusIcon} size="extraSmall" />
-                             </div>
-                           </div>
-                         </Box>
-                       </div>
-                       {openFaq === 2 && (
-                         <Box padding="200">
-                           <Text variant="bodySm" tone="subdued">No, to ensure SEO consistency and avoid conflicts, each product can only belong to one linked group at a time.</Text>
-                         </Box>
-                       )}
-                       
-                       <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                         <Button variant="plain" url="/app/help">View all FAQs</Button>
-                       </div>
-                    </BlockStack>
-                  </BlockStack>
-                </Card>
-
-                {/* Support Cards */}
-                <InlineStack gap="400" wrap={false}>
-                  <Box flex="1">
-                    <Card>
-                      <BlockStack gap="200" align="start" inlineAlign="start">
-                        <InlineStack gap="200" align="start" blockAlign="center">
-                          <Icon source={EmailIcon} tone="info" />
-                          <Text variant="headingSm">Get email support</Text>
-                        </InlineStack>
-                        <Text variant="bodySm" alignment="start">Email us and we'll get back to you as soon as possible.</Text>
-                        <Button variant="plain" url="mailto:support@example.com">Contact us</Button>
-                      </BlockStack>
-                    </Card>
-                  </Box>
-                  <Box flex="1">
-                    <Card>
-                      <BlockStack gap="200" align="start" inlineAlign="start">
-                        <InlineStack gap="200" align="start" blockAlign="center">
-                          <Icon source={ChatIcon} tone="info" />
-                          <Text variant="headingSm">Start live chat</Text>
-                        </InlineStack>
-                        <Text variant="bodySm" alignment="start">Chat with us for a quick solution to your questions.</Text>
-                        <Button variant="plain">Chat now</Button>
-                      </BlockStack>
-                    </Card>
-                  </Box>
-                </InlineStack>
+                {/* FAQ & Support Section */}
+                <FAQSection />
+                <SupportGrid />
               </BlockStack>
             </Layout.Section>
             <Layout.Section variant="oneThird">
