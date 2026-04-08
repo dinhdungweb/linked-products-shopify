@@ -433,7 +433,7 @@ export default function GroupsPage() {
               action={{ 
                 content: 'Enable in Theme', 
                 onAction: () => {
-                  const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/linked-products`;
+                  const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
                   window.open(url, '_blank');
                 }
               }}
