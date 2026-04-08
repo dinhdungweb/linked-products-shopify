@@ -122,23 +122,28 @@ export async function loader({ request }) {
         query: { "asset[key]": "config/settings_data.json" },
       });
       
+      console.log(`Checking app embed for theme: ${themeId}, status: ${assetResponse.status}`);
+      
       if (assetResponse.ok) {
         const assetData = await assetResponse.json();
         if (assetData.asset?.value) {
           const settings = JSON.parse(assetData.asset.value);
           const blocks = settings.current?.blocks || {};
           
-          // Check if any block of type 'shopify://apps/.../blocks/linked-products' is enabled
           isAppEmbedEnabled = Object.values(blocks).some(block => 
             block.type?.includes('linked-products') && block.disabled === false
           );
+          
+          console.log(`Found extension in blocks: ${isAppEmbedEnabled}`);
         }
       }
     }
   } catch (e) {
-    console.warn("Skipping app embed check due to error:", e.message);
-    isAppEmbedEnabled = true; // Safety default
+    console.error("Error in app embed check loader:", e);
+    isAppEmbedEnabled = true; 
   }
+  
+  console.log(`Final isAppEmbedEnabled status: ${isAppEmbedEnabled}`);
 
   return json({ groups, shop: shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled });
 }
