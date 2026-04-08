@@ -101,12 +101,11 @@ export async function loader({ request }) {
     }
   }
 
-  // Fetch App Embed Status - Temporarily disabled due to recurring GraphQL schema issues with 'appEmbedBlocks'
-  let isAppEmbedEnabled = true; // Default to true to avoid annoying customers if check fails
-  /*
+  // Fetch App Embed Status via REST (stable alternative to buggy GraphQL schema)
+  let isAppEmbedEnabled = false;
   try {
     const themeResponse = await admin.graphql(`
-      query getAppEmbedStatus {
+      query getMainTheme {
         themes(first: 1, roles: [MAIN]) {
           nodes {
             id
@@ -114,11 +113,32 @@ export async function loader({ request }) {
         }
       }
     `);
-    // Future: implement stable REST or Metafield check
+    const themeData = await themeResponse.json();
+    const themeId = themeData.data?.themes?.nodes?.[0]?.id.split('/').pop();
+
+    if (themeId) {
+      const assetResponse = await admin.rest.get({
+        path: `themes/${themeId}/assets`,
+        query: { "asset[key]": "config/settings_data.json" },
+      });
+      
+      if (assetResponse.ok) {
+        const assetData = await assetResponse.json();
+        if (assetData.asset?.value) {
+          const settings = JSON.parse(assetData.asset.value);
+          const blocks = settings.current?.blocks || {};
+          
+          // Check if any block of type 'shopify://apps/.../blocks/linked-products' is enabled
+          isAppEmbedEnabled = Object.values(blocks).some(block => 
+            block.type?.includes('linked-products') && block.disabled === false
+          );
+        }
+      }
+    }
   } catch (e) {
-    console.warn("Skipping app embed check due to schema error:", e.message);
+    console.warn("Skipping app embed check due to error:", e.message);
+    isAppEmbedEnabled = true; // Safety default
   }
-  */
 
   return json({ groups, shop: shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled });
 }
