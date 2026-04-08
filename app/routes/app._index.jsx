@@ -69,9 +69,11 @@ export async function loader({ request }) {
     if (billingCheck.hasActivePayment) {
       const activeSub = billingCheck.appSubscriptions[0];
       let planKey = "free";
-      if (activeSub.name.includes("Premium")) planKey = "premium";
-      else if (activeSub.name.includes("Advanced")) planKey = "advanced";
-      else if (activeSub.name.includes("Basic")) planKey = "basic";
+      const subName = activeSub.name;
+
+      if (subName.includes("Premium") || subName === PLANS.premium.key) planKey = "premium";
+      else if (subName.includes("Advanced") || subName === PLANS.advanced.key) planKey = "advanced";
+      else if (subName.includes("Basic") || subName === PLANS.basic.key) planKey = "basic";
 
       if (planKey !== currentKnownPlan) {
         await confirmSubscription(admin, shop, planKey, activeSub);
