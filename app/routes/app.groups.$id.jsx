@@ -466,6 +466,15 @@ export async function action({ request, params }) {
         
         let targetGroupId = groupId;
         if (groupId === "new") {
+            const { canAddLinks } = await import("../billing.server");
+            const canAdd = await canAddLinks(session.shop, 1);
+            if (!canAdd) {
+                return json({ 
+                    error: "You have reached your plan's group limit. Please upgrade to create more product groups.",
+                    limitReached: true 
+                }, { status: 400 });
+            }
+
             const appSettings = await prisma.appSetting.findUnique({ where: { shop: session.shop } });
             
             // Clean up card style if it inherited a page style
