@@ -94,7 +94,7 @@ export const action = async ({ request }) => {
             
             const url = new URL(request.url);
             const origin = url.origin.replace('http://', 'https://');
-            const returnUrl = `${origin}/app/pricing?plan=${plan}`;
+            const returnUrl = `${origin}/app/pricing?plan=${plan}&shop=${shop}`;
 
             const response = await admin.graphql(`
                 mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
