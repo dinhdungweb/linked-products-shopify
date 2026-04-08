@@ -155,18 +155,28 @@ export default function PricingPage() {
     const [searchParams] = useSearchParams();
     const isSubmitting = navigation.state === "submitting";
 
-    const handleSubscribe = (planKey) => {
+    const handleSubscribe = async (planKey) => {
+        const idToken = await window.shopify.idToken();
         const formData = new FormData();
         formData.append("action", "subscribe");
         formData.append("plan", planKey);
-        submit(formData, { method: "POST", action: `?${searchParams.toString()}` });
+        submit(formData, { 
+            method: "POST", 
+            action: `?${searchParams.toString()}`,
+            headers: { Authorization: `Bearer ${idToken}` }
+        });
     };
 
-    const handleCancel = () => {
+    const handleCancel = async () => {
         if (confirm("Are you sure you want to cancel your subscription?")) {
+            const idToken = await window.shopify.idToken();
             const formData = new FormData();
             formData.append("action", "cancel");
-            submit(formData, { method: "POST", action: `?${searchParams.toString()}` });
+            submit(formData, { 
+                method: "POST", 
+                action: `?${searchParams.toString()}`,
+                headers: { Authorization: `Bearer ${idToken}` }
+            });
         }
     };
 
