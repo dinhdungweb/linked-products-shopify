@@ -66,7 +66,21 @@ export const action = async ({ request }) => {
     const { authenticate } = await import("../shopify.server");
     const { cancelSubscription } = await import("../billing.server");
 
-    const { billing, session, admin } = await authenticate.admin(request);
+    let admin, session, billing;
+    try {
+        const auth = await authenticate.admin(request);
+        admin = auth.admin;
+        session = auth.session;
+        billing = auth.billing;
+    } catch (error) {
+        console.error("[Pricing] Authentication Error Details:", {
+            message: error.message,
+            stack: error.stack,
+            requestUrl: request.url,
+            headers: Object.fromEntries(request.headers)
+        });
+        throw error;
+    }
     const shop = session.shop;
     const formData = await request.formData();
     const actionValue = formData.get("action");
