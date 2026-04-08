@@ -42,20 +42,13 @@ import {
   AutomationIcon,
   InfoIcon,
   PlusIcon,
-  MinusIcon
+  MinusIcon,
+  CheckIcon,
+  RefreshIcon,
+  MenuHorizontalIcon
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
-import { 
-  CheckIcon,
-  RefreshIcon,
-  PlusIcon,
-  SearchIcon,
-  XIcon,
-  QuestionCircleIcon,
-  ImportIcon,
-  MenuHorizontalIcon
-} from "@shopify/polaris-icons";
 
 // Loader - Get product groups list
 export async function loader({ request }) {
