@@ -45,7 +45,9 @@ import {
   MinusIcon,
   CheckIcon,
   RefreshIcon,
-  MenuHorizontalIcon
+  MenuHorizontalIcon,
+  MenuVerticalIcon,
+  ExternalIcon
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
@@ -580,34 +582,108 @@ export default function Index() {
   };
 
   const TutorialCard = () => (
-    <Card padding="0">
-      <Grid>
-        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-          <Box padding="400" background="bg-surface-secondary" borderRadius="200" height="100%">
-            <BlockStack gap="400" align="center" inlineAlign="center">
-              <div style={{ color: '#5C5F62' }}>
-                <Icon source={PlayCircleIcon} tone="inherit" />
+    <div style={{ 
+      display: 'flex', 
+      backgroundColor: '#FFFFFF',
+      borderRadius: '16px',
+      overflow: 'hidden',
+      border: '1px solid #E1E1E1',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+      minHeight: '180px'
+    }}>
+      {/* Left Banner Section */}
+      <div style={{ 
+        width: '40%', 
+        background: 'linear-gradient(135deg, #6366F1 0%, #A855F7 100%)',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        padding: '24px',
+        color: 'white',
+        overflow: 'hidden'
+      }}>
+        {/* Background Illustration Overlay */}
+        <img 
+          src="file:///C:/Users/DUNG/.gemini/antigravity/brain/c3a366c7-9ba6-4d32-a9f2-7f65b53514d3/tutorial_banner_illustration_1775666504320.png" 
+          alt="" 
+          style={{
+            position: 'absolute',
+            bottom: '-10%',
+            right: '-10%',
+            width: '100%',
+            opacity: '0.4',
+            pointerEvents: 'none',
+            filter: 'brightness(1.5)'
+          }}
+        />
+        
+        <Box paddingBlockEnd="200">
+          <div style={{
+            display: 'inline-block',
+            padding: '4px 12px',
+            borderRadius: '100px',
+            background: 'rgba(255, 255, 255, 0.2)',
+            backdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            fontSize: '12px',
+            fontWeight: '600',
+            color: 'white'
+          }}>
+            Tutorial
+          </div>
+        </Box>
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <Text variant="headingLg" as="h2" tone="inherit">
+            Learn how to use our app
+          </Text>
+        </div>
+
+        <div style={{
+          position: 'absolute',
+          bottom: '16px',
+          left: '16px',
+          padding: '4px 8px',
+          background: 'rgba(0, 0, 0, 0.6)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '12px',
+          fontWeight: '600',
+          color: 'white',
+          zIndex: 2
+        }}>
+          <div style={{ display: 'flex' }}>
+            <Icon source={PlayCircleIcon} tone="inherit" />
+          </div>
+          7:31
+        </div>
+      </div>
+
+      {/* Right Content Section */}
+      <div style={{ width: '60%', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <BlockStack gap="400">
+          <BlockStack gap="100">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text variant="headingMd" as="h3">How to use the app</Text>
+              <div style={{ display: 'flex' }}>
+                <Icon source={MenuVerticalIcon} tone="subdued" />
               </div>
-              <Text variant="headingMd" alignment="center">Tutorial</Text>
-              <Text variant="bodyMd" alignment="center" tone="subdued">Watch our 2-minute quick start guide.</Text>
-              <Button fullWidth variant="secondary" onClick={() => window.open('https://youtube.com', '_blank')}>Watch Video</Button>
-            </BlockStack>
-          </Box>
-        </Grid.Cell>
-        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 8, lg: 8, xl: 8 }}>
-          <Box padding="500">
-            <BlockStack gap="400">
-              <Text variant="headingLg" as="h3">How to use the app</Text>
-              <Text variant="bodyMd" tone="subdued">A quick walkthrough to get you set up faster and avoid common mistakes.</Text>
-              <InlineStack gap="300">
-                <Button variant="secondary" icon={ViewIcon} onClick={() => window.open('https://youtube.com', '_blank')}>Watch video</Button>
-                <Button variant="tertiary" url="/app/help">Documentation</Button>
-              </InlineStack>
-            </BlockStack>
-          </Box>
-        </Grid.Cell>
-      </Grid>
-    </Card>
+            </div>
+            <Text variant="bodyMd" tone="subdued">
+              Watch a quick walkthrough to get set up faster and avoid common mistakes.
+            </Text>
+          </BlockStack>
+
+          <InlineStack gap="300">
+            <Button icon={PlayCircleIcon} onClick={() => window.open('https://youtube.com', '_blank')}>Watch video</Button>
+            <Button icon={ExternalIcon} url="/app/help">Learn more</Button>
+          </InlineStack>
+        </BlockStack>
+      </div>
+    </div>
   );
 
   const SupportSideList = () => (
