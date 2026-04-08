@@ -105,25 +105,19 @@ export async function loader({ request }) {
   let isAppEmbedEnabled = false;
   try {
     const themeResponse = await admin.graphql(`
-      query getThemeData {
-        themes(first: 10, roles: [MAIN]) {
-          nodes {
-            id
-            appEmbedBlocks(first: 20) {
-              appId
-              handle
-              enabled
-            }
+      query getAppEmbedStatus {
+        appInstallation {
+          appEmbedBlocks {
+            handle
+            enabled
           }
         }
       }
     `);
     const themeData = await themeResponse.json();
-    const mainTheme = themeData.data?.themes?.nodes?.[0];
-    if (mainTheme) {
-      const ourEmbed = mainTheme.appEmbedBlocks?.find(b => b.handle === 'linked-products');
-      isAppEmbedEnabled = ourEmbed?.enabled || false;
-    }
+    const embedBlocks = themeData.data?.appInstallation?.appEmbedBlocks || [];
+    const ourEmbed = embedBlocks.find(b => b.handle === 'linked-products');
+    isAppEmbedEnabled = ourEmbed?.enabled || false;
   } catch (e) {
     console.error("Error checking app embed status:", e);
   }
@@ -215,7 +209,7 @@ export async function action({ request }) {
 }
 
 export default function GroupsPage() {
-  const { groups, usageInfo, totalProducts, productImages, isAppEmbedEnabled } = useLoaderData();
+  const { groups, shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
