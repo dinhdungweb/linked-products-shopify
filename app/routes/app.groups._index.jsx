@@ -431,8 +431,10 @@ export default function GroupsPage() {
               tone="warning"
               action={{ 
                 content: 'Enable in Theme', 
-                url: `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/linked-products`,
-                external: true
+                onAction: () => {
+                  const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/linked-products`;
+                  window.open(url, '_blank');
+                }
               }}
             >
               <p>Please enable the app embed to show product swatches on your storefront.</p>
