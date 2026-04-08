@@ -551,10 +551,12 @@ export default function Index() {
     return (
       <Card padding="500">
         <BlockStack gap="400">
-          <InlineStack gap="200" blockAlign="center" align="start">
-            <Icon source={QuestionCircleIcon} tone="base" />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-start', width: '100%' }}>
+            <div style={{ margin: 0, display: 'flex' }}>
+              <Icon source={QuestionCircleIcon} />
+            </div>
             <Text variant="headingMd" as="h2">Need help? FAQ</Text>
-          </InlineStack>
+          </div>
           <BlockStack gap="200">
             {faqs.map((faq, index) => (
               <Box key={index} padding="300" background="bg-surface-secondary" borderRadius="200" cursor="pointer" onClick={() => setOpenIndex(openIndex === index ? null : index)}>
