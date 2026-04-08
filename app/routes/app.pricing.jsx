@@ -85,18 +85,17 @@ export const action = async ({ request }) => {
             }
         }
 
-        // Use the snake_case keys for the request
+        // Map plan parameter to internal keys
         const requestedPlan = PLANS[plan] || PLANS.basic;
-        const planKey = requestedPlan.key;
+        const planKey = requestedPlan.key; // Example: 'basic_plan'
 
         try {
-            console.log(`[Pricing] Requesting billing for plan: ${planKey}`);
+            console.log(`[Pricing] Action: subscribe, Original plan: ${plan}, Selected key: ${planKey}`);
             
-            // Using a more robust return URL logic
             const url = new URL(request.url);
             const returnUrl = `${url.origin}/app/pricing?plan=${plan}`;
 
-            console.log(`[Pricing] Requesting billing for plan: ${planKey}, returnUrl: ${returnUrl}`);
+            console.log(`[Pricing] Calling billing.request with plan: ${planKey}, returnUrl: ${returnUrl}`);
 
             return await billing.request({
                 plan: planKey,
