@@ -188,7 +188,12 @@ export default function PricingPage() {
  
     useEffect(() => {
         if (actionData?.confirmationUrl) {
-            window.shopify.navigation.utils.open(actionData.confirmationUrl, { target: "top" });
+            console.log("[Pricing] Redirecting to confirmation URL:", actionData.confirmationUrl);
+            if (window.shopify && window.shopify.navigation) {
+                window.shopify.navigation.utils.open(actionData.confirmationUrl, { target: "top" });
+            } else {
+                window.top.location.href = actionData.confirmationUrl;
+            }
         }
     }, [actionData]);
 
