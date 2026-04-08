@@ -93,7 +93,9 @@ export const action = async ({ request }) => {
             console.log(`[Pricing] Action: subscribe, Original plan: ${plan}, Selected key: ${planKey}`);
             
             const url = new URL(request.url);
-            const returnUrl = `${url.origin}/app/pricing?plan=${plan}`;
+            // Force HTTPS for returnUrl as Shopify billing requires it
+            const origin = url.origin.replace('http://', 'https://');
+            const returnUrl = `${origin}/app/pricing?plan=${plan}`;
 
             console.log(`[Pricing] Calling billing.request with plan: ${planKey}, returnUrl: ${returnUrl}`);
 
