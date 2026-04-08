@@ -102,6 +102,7 @@ export const action = async ({ request }) => {
             return await billing.request({
                 plan: planKey,
                 isTest: true,
+                test: true,
                 returnUrl,
             });
         } catch (error) {
