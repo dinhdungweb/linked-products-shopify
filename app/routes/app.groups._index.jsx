@@ -101,32 +101,24 @@ export async function loader({ request }) {
     }
   }
 
-  // Fetch App Embed Status
-  let isAppEmbedEnabled = false;
+  // Fetch App Embed Status - Temporarily disabled due to recurring GraphQL schema issues with 'appEmbedBlocks'
+  let isAppEmbedEnabled = true; // Default to true to avoid annoying customers if check fails
+  /*
   try {
     const themeResponse = await admin.graphql(`
       query getAppEmbedStatus {
         themes(first: 1, roles: [MAIN]) {
           nodes {
-            ... on OnlineStoreTheme {
-              appEmbedBlocks {
-                handle
-                enabled
-              }
-            }
+            id
           }
         }
       }
     `);
-    const themeData = await themeResponse.json();
-    const mainTheme = themeData.data?.themes?.nodes?.[0];
-    if (mainTheme) {
-      const ourEmbed = mainTheme.appEmbedBlocks?.find(b => b.handle === 'linked-products');
-      isAppEmbedEnabled = ourEmbed?.enabled || false;
-    }
+    // Future: implement stable REST or Metafield check
   } catch (e) {
-    console.error("Error checking app embed status:", e);
+    console.warn("Skipping app embed check due to schema error:", e.message);
   }
+  */
 
   return json({ groups, shop: shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled });
 }
