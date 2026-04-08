@@ -643,11 +643,8 @@ export default function Index() {
       setActionBannerVisible(true);
     }
   }, [actionData]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newGroupName, setNewGroupName] = useState("");
   const [openFaq, setOpenFaq] = useState(null);
   const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
-  const [selectedProducts, setSelectedProducts] = useState([]);
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvData, setCsvData] = useState("");
 
@@ -666,45 +663,7 @@ export default function Index() {
     return {};
   };
 
-  // Open Resource Picker to select products
-  const handleSelectProducts = useCallback(async () => {
-    try {
-      const selection = await shopify.resourcePicker({
-        type: "product",
-        multiple: true,
-        action: "select",
-      });
 
-      if (selection && selection.length > 0) {
-        setSelectedProducts(selection.map((p) => ({
-          id: p.id,
-          title: p.title,
-          handle: p.handle,
-          image: p.images?.[0]?.originalSrc || null,
-        })));
-      }
-    } catch (error) {
-      console.error("Resource picker error:", error);
-    }
-  }, [shopify]);
-
-  // Remove product from selected list
-  const handleRemoveProduct = useCallback((productId) => {
-    setSelectedProducts((prev) => prev.filter((p) => p.id !== productId));
-  }, []);
-
-  const handleCreateGroup = useCallback(async () => {
-    const formData = new FormData();
-    formData.append("action", "createWithProducts");
-    formData.append("name", newGroupName);
-    formData.append("products", JSON.stringify(selectedProducts));
-    const headers = await fetchIdToken();
-    submit(formData, { method: "POST", headers });
-    // Reset modal state immediately, isLoading will be handled by actionData/navigation.state
-    setShowCreateModal(false);
-    setNewGroupName("");
-    setSelectedProducts([]);
-  }, [newGroupName, selectedProducts, submit]);
 
   const handleDeleteGroup = useCallback(async (groupId) => {
     if (confirm("Are you sure you want to delete this group?")) {
@@ -740,7 +699,7 @@ export default function Index() {
                   Link and manage products as SEO-friendly variants with unique URLs, titles, and descriptions.
                 </Text>
               </BlockStack>
-              <Button variant="primary" icon={PlusCircleIcon} onClick={() => setShowCreateModal(true)}>
+              <Button variant="primary" icon={PlusCircleIcon} url="/app/groups/new">
                 Create new group
               </Button>
             </InlineStack>
@@ -843,7 +802,7 @@ export default function Index() {
                               <Text variant="bodySm" tone="subdued">Link products together to show them as options.</Text>
                             </BlockStack>
                           </div>
-                          <Button variant={groups.length > 0 ? "tertiary" : "primary"} url="/app/groups">
+                          <Button variant={groups.length > 0 ? "tertiary" : "primary"} url={groups.length > 0 ? "/app/groups" : "/app/groups/new"}>
                             {groups.length > 0 ? "View Groups" : "Create Group"}
                           </Button>
                         </div>
@@ -920,7 +879,7 @@ export default function Index() {
                     <Text variant="headingMd">Quick Actions</Text>
                     <Grid>
                       <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 11, lg: 6, xl: 6 }}>
-                        <Button fullWidth textAlign="left" icon={PlusCircleIcon} onClick={() => setShowCreateModal(true)}>Create Group</Button>
+                        <Button fullWidth textAlign="left" icon={PlusCircleIcon} url="/app/groups/new">Create Group</Button>
                       </Grid.Cell>
                       <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
                         <Button fullWidth textAlign="left" icon={PlusCircleIcon} url="/app/groups">Manage Groups</Button>
@@ -945,121 +904,6 @@ export default function Index() {
           </Layout>
         </BlockStack>
       </div>
-
-      {/* Create Group Modal */}
-      <Modal
-        open={showCreateModal}
-        onClose={() => {
-          setShowCreateModal(false);
-          setNewGroupName("");
-          setSelectedProducts([]);
-        }}
-        title="Create Product Group"
-        primaryAction={{
-          content: "Create & Sync",
-          onAction: handleCreateGroup,
-          loading: isLoading && navigation.formData?.get("action") === "createWithProducts",
-          disabled: !newGroupName || selectedProducts.length < 2,
-        }}
-        secondaryActions={[
-          {
-            content: "Cancel",
-            onAction: () => {
-              setShowCreateModal(false);
-              setNewGroupName("");
-              setSelectedProducts([]);
-            },
-          },
-        ]}
-      >
-        <Modal.Section>
-          <FormLayout>
-            <TextField
-              label="Group Name"
-              value={newGroupName}
-              onChange={setNewGroupName}
-              placeholder="e.g. T-Shirt Basic Colors"
-              autoComplete="off"
-              requiredIndicator
-            />
-
-            <BlockStack gap="300">
-              <Text variant="bodyMd" fontWeight="semibold">
-                Products
-              </Text>
-
-              {/* Search box + Browse button like Collection */}
-              <InlineStack gap="200" blockAlign="center">
-                <div style={{ flex: 1, cursor: 'pointer' }} onClick={handleSelectProducts}>
-                  <TextField
-                    placeholder="Search products"
-                    autoComplete="off"
-                    readOnly
-                    prefix={
-                      <Icon source={SearchIcon} tone="subdued" />
-                    }
-                  />
-                </div>
-                <Button onClick={handleSelectProducts} variant="secondary">
-                  Browse
-                </Button>
-              </InlineStack>
-
-              {selectedProducts.length === 0 ? (
-                <Box padding="400" background="bg-surface-secondary" borderRadius="200">
-                  <Text tone="subdued" alignment="center">
-                    Select at least 2 products to create a group
-                  </Text>
-                </Box>
-              ) : (
-                <Box
-                  borderColor="border"
-                  borderWidth="025"
-                  borderRadius="200"
-                  overflow="hidden"
-                >
-                  {selectedProducts.map((product, index) => (
-                    <div key={product.id}>
-                      <Box padding="300" background="bg-surface">
-                        <InlineStack gap="300" blockAlign="center" wrap={false}>
-                          <Text variant="bodyMd" tone="subdued" fontWeight="medium">
-                            {index + 1}.
-                          </Text>
-                          <Thumbnail
-                            source={product.image || "https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"}
-                            alt={product.title}
-                            size="small"
-                          />
-                          <Box minWidth="0" maxWidth="100%">
-                            <Text variant="bodyMd">
-                              {product.title}
-                            </Text>
-                          </Box>
-                          <div style={{ marginLeft: 'auto' }}>
-                            <Button
-                              variant="plain"
-                              icon={<Icon source={XIcon} />}
-                              onClick={() => handleRemoveProduct(product.id)}
-                              accessibilityLabel={`Remove ${product.title}`}
-                            />
-                          </div>
-                        </InlineStack>
-                      </Box>
-                      {index < selectedProducts.length - 1 && <Divider />}
-                    </div>
-                  ))}
-                </Box>
-              )}
-
-              {selectedProducts.length > 0 && selectedProducts.length < 2 && (
-                <Banner tone="warning">
-                  <p>At least 2 products are required to create a linked group</p>
-                </Banner>
-              )}
-            </BlockStack>
-          </FormLayout>
-        </Modal.Section>
-      </Modal>
 
       {/* Import CSV Modal */}
       <Modal
