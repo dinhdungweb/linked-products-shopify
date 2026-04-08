@@ -21,6 +21,10 @@ export const loader = async ({ request }) => {
     const { authenticate } = await import("../shopify.server");
     const { getUsageInfo, confirmSubscription } = await import("../billing.server");
 
+    // Important: Get host from URL in loader since it's present on initial load
+    const url = new URL(request.url);
+    const host = url.searchParams.get("host");
+
     const { admin, session, billing } = await authenticate.admin(request);
     const shop = session.shop;
 
@@ -57,6 +61,7 @@ export const loader = async ({ request }) => {
 
     return json({
         shop,
+        host, // Return host to frontend
         usageInfo,
         plans: PLANS,
     });
@@ -67,12 +72,13 @@ export const action = async ({ request }) => {
     const { cancelSubscription } = await import("../billing.server");
 
     const { admin, session } = await authenticate.admin(request);
-    const shop = session.shop;
     const formData = await request.formData();
     const actionValue = formData.get("action");
     const plan = formData.get("plan");
+    const shop = formData.get("shop") || session.shop;
+    const host = formData.get("host");
 
-    console.log(`Action: ${actionValue}, Plan: ${plan}, Shop: ${shop}`);
+    console.log(`Action: ${actionValue}, Plan: ${plan}, Shop: ${shop}, Host: ${host}`);
 
     if (actionValue === "subscribe") {
         if (plan === "free") {
@@ -88,14 +94,13 @@ export const action = async ({ request }) => {
         const requestedPlan = PLANS[plan] || PLANS.basic;
         const planKey = requestedPlan.key;
 
-        // Manual GraphQL request to get EXACT error from Shopify and support redirection
         try {
-            console.log(`[Pricing] Manual GraphQL Request for plan: ${planKey}`);
-            
             const url = new URL(request.url);
-            const host = url.searchParams.get("host");
             const origin = url.origin.replace('http://', 'https://');
+            // Explicitly use the host and shop from formData to ensure it's never null
             const returnUrl = `${origin}/app/pricing?plan=${plan}&shop=${shop}&host=${host}`;
+            
+            console.log(`[Pricing] Requesting billing. ReturnUrl: ${returnUrl}`);
 
             const response = await admin.graphql(`
                 mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
@@ -159,7 +164,7 @@ export const action = async ({ request }) => {
 };
 
 export default function PricingPage() {
-    const { usageInfo } = useLoaderData();
+    const { usageInfo, shop, host } = useLoaderData();
     const actionData = useActionData();
     const submit = useSubmit();
     const navigation = useNavigation();
@@ -168,7 +173,6 @@ export default function PricingPage() {
  
     useEffect(() => {
         if (actionData?.confirmationUrl) {
-            console.log("[Pricing] Redirecting to:", actionData.confirmationUrl);
             if (typeof window !== "undefined") {
               if (window.shopify && window.shopify.navigation) {
                   window.shopify.navigation.utils.open(actionData.confirmationUrl, { target: "top" });
@@ -183,17 +187,16 @@ export default function PricingPage() {
         const formData = new FormData();
         formData.append("action", "subscribe");
         formData.append("plan", planKey);
+        formData.append("shop", shop);
+        formData.append("host", host || searchParams.get("host") || ""); // Fallback layers
         
-        // Try to get token if available, otherwise fallback to standard submit
         let headers = {};
         try {
           if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
             const idToken = await window.shopify.idToken();
             headers = { Authorization: `Bearer ${idToken}` };
           }
-        } catch (e) {
-          console.warn("[Pricing] Could not fetch idToken", e);
-        }
+        } catch (e) {}
 
         submit(formData, { 
           method: "POST", 
@@ -206,7 +209,9 @@ export default function PricingPage() {
         if (confirm("Are you sure you want to cancel your subscription?")) {
             const formData = new FormData();
             formData.append("action", "cancel");
-            
+            formData.append("shop", shop);
+            formData.append("host", host || searchParams.get("host") || "");
+
             let headers = {};
             try {
               if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
