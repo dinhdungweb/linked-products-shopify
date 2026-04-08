@@ -826,51 +826,55 @@ export default function Index() {
                     <BlockStack gap="300">
                       {/* Step 1: Create Group */}
                       <Box padding="300" background="bg-surface-secondary" borderRadius="300" borderStyle="solid" borderWidth="025" borderColor="border-subdued">
-                        <InlineStack gap="400" align="start" blockAlign="center" wrap={false}>
-                          <div style={{ 
-                            backgroundColor: '#FFFFFF', 
-                            padding: '10px', 
-                            borderRadius: '12px',
-                            color: groups.length > 0 ? '#008060' : '#8c9196',
-                            display: 'flex',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                          }}>
-                            <Icon source={groups.length > 0 ? CheckIcon : ClipboardChecklistIcon} tone="inherit" />
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                            <div style={{ 
+                              backgroundColor: '#FFFFFF', 
+                              padding: '10px', 
+                              borderRadius: '12px',
+                              color: groups.length > 0 ? '#008060' : '#8c9196',
+                              display: 'flex',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                            }}>
+                              <Icon source={groups.length > 0 ? CheckIcon : ClipboardChecklistIcon} tone="inherit" />
+                            </div>
+                            <BlockStack gap="050">
+                              <Text variant="bodyMd" fontWeight="bold">Create a product group</Text>
+                              <Text variant="bodySm" tone="subdued">Link products together to show them as options.</Text>
+                            </BlockStack>
                           </div>
-                          <BlockStack gap="050" flex="1">
-                            <Text variant="bodyMd" fontWeight="bold">Create a product group</Text>
-                            <Text variant="bodySm" tone="subdued">Link products together to show them as options.</Text>
-                          </BlockStack>
                           <Button variant={groups.length > 0 ? "tertiary" : "primary"} url="/app/groups">
                             {groups.length > 0 ? "View Groups" : "Create Group"}
                           </Button>
-                        </InlineStack>
+                        </div>
                       </Box>
 
                       {/* Step 2: Enable App Embed */}
                       <Box padding="300" background="bg-surface-secondary" borderRadius="300" borderStyle="solid" borderWidth="025" borderColor="border-subdued">
-                        <InlineStack gap="400" align="start" blockAlign="center" wrap={false}>
-                          <div style={{ 
-                            backgroundColor: '#FFFFFF', 
-                            padding: '10px', 
-                            borderRadius: '12px',
-                            color: isAppEmbedEnabled ? '#008060' : '#8c9196',
-                            display: 'flex',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                          }}>
-                            <Icon source={isAppEmbedEnabled ? CheckIcon : AutomationIcon} tone="inherit" />
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                            <div style={{ 
+                              backgroundColor: '#FFFFFF', 
+                              padding: '10px', 
+                              borderRadius: '12px',
+                              color: isAppEmbedEnabled ? '#008060' : '#8c9196',
+                              display: 'flex',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                            }}>
+                              <Icon source={isAppEmbedEnabled ? CheckIcon : AutomationIcon} tone="inherit" />
+                            </div>
+                            <BlockStack gap="050">
+                              <Text variant="bodyMd" fontWeight="bold">Enable app embed</Text>
+                              <Text variant="bodySm" tone="subdued">Activate the widget in your theme editor.</Text>
+                            </BlockStack>
                           </div>
-                          <BlockStack gap="050" flex="1">
-                            <Text variant="bodyMd" fontWeight="bold">Enable app embed</Text>
-                            <Text variant="bodySm" tone="subdued">Activate the widget in your theme editor.</Text>
-                          </BlockStack>
                           <Button variant={isAppEmbedEnabled ? "tertiary" : "primary"} onClick={() => {
                             const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
                             window.open(url, '_blank');
                           }}>
                             {isAppEmbedEnabled ? "Review Theme" : "Enable Now"}
                           </Button>
-                        </InlineStack>
+                        </div>
                       </Box>
                     </BlockStack>
                   </BlockStack>
