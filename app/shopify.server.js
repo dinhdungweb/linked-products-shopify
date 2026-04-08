@@ -11,7 +11,7 @@ import { PLANS } from "./billing.config";
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: ApiVersion.October24, // Using a more stable version
+  apiVersion: ApiVersion.April24, // Matches shopify.app.toml
   scopes: process.env.SCOPES?.split(","),
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
@@ -19,32 +19,32 @@ const shopify = shopifyApp({
   distribution: AppDistribution.AppStore,
   billing: {
     [PLANS.basic.key]: {
+      trialDays: 7,
       lineItems: [
         {
           amount: PLANS.basic.price,
           currencyCode: 'USD',
           interval: BillingInterval.Every30Days,
-          trialDays: 7, // Re-adding trial days as it was working before
         },
       ],
     },
     [PLANS.advanced.key]: {
+      trialDays: 7,
       lineItems: [
         {
           amount: PLANS.advanced.price,
           currencyCode: 'USD',
           interval: BillingInterval.Every30Days,
-          trialDays: 7,
         },
       ],
     },
     [PLANS.premium.key]: {
+      trialDays: 7,
       lineItems: [
         {
           amount: PLANS.premium.price,
           currencyCode: 'USD',
           interval: BillingInterval.Every30Days,
-          trialDays: 7,
         },
       ],
     },

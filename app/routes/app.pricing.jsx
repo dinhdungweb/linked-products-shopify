@@ -92,13 +92,16 @@ export const action = async ({ request }) => {
         try {
             console.log(`[Pricing] Requesting billing for plan: ${planKey}`);
             
-            // Using a more robust handle logic
-            const appHandle = process.env.SHOPIFY_APP_HANDLE || 'variants-linked-products';
+            // Using a more robust return URL logic
+            const url = new URL(request.url);
+            const returnUrl = `${url.origin}/app/pricing?plan=${plan}`;
+
+            console.log(`[Pricing] Requesting billing for plan: ${planKey}, returnUrl: ${returnUrl}`);
 
             return await billing.request({
                 plan: planKey,
                 isTest: true,
-                returnUrl: `https://${shop}/admin/apps/${appHandle}/app/pricing?plan=${plan}`,
+                returnUrl,
             });
         } catch (error) {
             if (error instanceof Response) throw error;
