@@ -431,7 +431,7 @@ export default function GroupsPage() {
               tone="warning"
               action={{ 
                 content: 'Enable in Theme', 
-                url: `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=4d61972862a38c319a8058f77c5c7d28/linked-products`,
+                url: `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/linked-products`,
                 external: true
               }}
             >
