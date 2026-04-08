@@ -876,21 +876,16 @@ export default function Index() {
                   </BlockStack>
                 </Card>
 
-                {/* FAQ & Support Section */}
+                        {/* Tutorial Section moved to Main */}
+                <Box paddingBlockStart="200">
+                  <TutorialCard />
+                </Box>
+
                 <FAQSection />
               </BlockStack>
             </Layout.Section>
             <Layout.Section variant="oneThird">
               <BlockStack gap="400">
-                {/* Tutorial Section Added Here */}
-                <TutorialCard />
-
-                {/* Support moved to side */}
-                <Box paddingBlockStart="200">
-                  <Text variant="headingSm" as="h3">Customer Support</Text>
-                </Box>
-                <SupportSideList />
-
                 {/* Usage Info Card */}
                 <Card background="bg-surface-secondary">
                   <BlockStack gap="300">
@@ -920,7 +915,7 @@ export default function Index() {
                   <BlockStack gap="300">
                     <Text variant="headingMd">Quick Actions</Text>
                     <Grid>
-                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 11, lg: 6, xl: 6 }}>
                         <Button fullWidth textAlign="left" icon={PlusCircleIcon} onClick={() => setShowCreateModal(true)}>Create Group</Button>
                       </Grid.Cell>
                       <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
@@ -935,6 +930,12 @@ export default function Index() {
                     </Grid>
                   </BlockStack>
                 </Card>
+
+                {/* Support moved below quick actions */}
+                <Box paddingBlockStart="100">
+                  <Text variant="headingSm" as="h3">Customer Support</Text>
+                </Box>
+                <SupportSideList />
               </BlockStack>
             </Layout.Section>
           </Layout>
