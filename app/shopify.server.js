@@ -2,6 +2,7 @@ import {
   ApiVersion,
   AppDistribution,
   BillingInterval,
+  BillingReplacementBehavior,
   shopifyApp,
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
@@ -19,22 +20,37 @@ const shopify = shopifyApp({
   distribution: AppDistribution.AppStore,
   billing: {
     [PLANS.basic.key]: {
-      amount: PLANS.basic.price,
-      currencyCode: 'USD',
-      interval: BillingInterval.Every30Days,
+      lineItems: [
+        {
+          amount: PLANS.basic.price,
+          currencyCode: 'USD',
+          interval: BillingInterval.Every30Days,
+        },
+      ],
       trialDays: 7,
+      replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
     [PLANS.advanced.key]: {
-      amount: PLANS.advanced.price,
-      currencyCode: 'USD',
-      interval: BillingInterval.Every30Days,
+      lineItems: [
+        {
+          amount: PLANS.advanced.price,
+          currencyCode: 'USD',
+          interval: BillingInterval.Every30Days,
+        },
+      ],
       trialDays: 7,
+      replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
     [PLANS.premium.key]: {
-      amount: PLANS.premium.price,
-      currencyCode: 'USD',
-      interval: BillingInterval.Every30Days,
+      lineItems: [
+        {
+          amount: PLANS.premium.price,
+          currencyCode: 'USD',
+          interval: BillingInterval.Every30Days,
+        },
+      ],
       trialDays: 7,
+      replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
   },
   webhooks: {
