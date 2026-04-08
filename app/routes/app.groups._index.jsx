@@ -132,7 +132,8 @@ export async function loader({ request }) {
           const blocks = settings.current?.blocks || {};
           
           isAppEmbedEnabled = Object.values(blocks).some(block => 
-            block.type?.includes('linked-products') && block.disabled === false
+            (block.type?.includes('linked-products') || block.type?.includes('app-card-injector')) && 
+            block.disabled === false
           );
           console.log(`Checking app embed via direct fetch. Found: ${isAppEmbedEnabled}`);
         }
