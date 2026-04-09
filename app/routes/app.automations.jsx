@@ -238,6 +238,7 @@ export default function AutomationsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState(null);
   const [selectedTab, setSelectedTab] = useState(0);
+  const [selectedCreationTab, setSelectedCreationTab] = useState(0);
   const [formState, setFormState] = useState({
     name: "",
     type: "title_pattern",
@@ -354,24 +355,47 @@ export default function AutomationsPage() {
             {/* Automation Type Cards */}
             <Card>
               <BlockStack gap="400">
-                <Text variant="headingMd">Available Automation Types</Text>
+                <InlineStack align="space-between" blockAlign="center">
+                  <Text variant="headingMd">Available Automation Types</Text>
+                  <div style={{ marginRight: '-8px' }}>
+                    <Tabs
+                      tabs={[
+                        { id: 'single', content: 'Single Option' },
+                        { id: 'multi', content: 'Multi/Batch Option' },
+                      ]}
+                      selected={selectedCreationTab}
+                      onSelect={setSelectedCreationTab}
+                      fitted
+                    />
+                  </div>
+                </InlineStack>
+                <Divider />
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
-                  {AUTOMATION_TYPES.map((type) => (
+                  {AUTOMATION_TYPES.filter(type => {
+                    if (selectedCreationTab === 0) return type.badge === "Single Option";
+                    return type.badge.includes("Multi");
+                  }).map((type) => (
                     <div
                       key={type.value}
                       style={{
                         border: '1px solid #e5e5e5',
                         borderRadius: '8px',
                         padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
                       }}
                     >
                       <BlockStack gap="200">
                         <InlineStack gap="200" blockAlign="center">
                           <Text variant="headingSm">{type.label}</Text>
-                          <Badge>{type.badge}</Badge>
+                          <Badge tone={type.badge === "Single Option" ? "info" : "attention"}>{type.badge}</Badge>
                         </InlineStack>
                         <Text tone="subdued" variant="bodySm">{type.description}</Text>
+                      </BlockStack>
+                      <div style={{ marginTop: '12px' }}>
                         <Button
+                          fullWidth
                           size="slim"
                           onClick={() => {
                             setFormState(prev => ({ ...prev, type: type.value }));
@@ -380,7 +404,7 @@ export default function AutomationsPage() {
                         >
                           Configure
                         </Button>
-                      </BlockStack>
+                      </div>
                     </div>
                   ))}
                 </div>
