@@ -261,7 +261,7 @@ export async function action({ request }) {
         
         let groupName = "";
         let optionName = settings?.selectOptionLabel?.replace("{option}", "Color") || "Color";
-        let selectorStyle = settings?.defaultProductPageStyle || "block";
+        let selectorStyle = settings?.defaultProductPageStyle || "button";
         let cardStyle = "same";
         let status = "active";
         let handles = [];
@@ -330,7 +330,7 @@ export async function action({ request }) {
             shop: session.shop, 
             name: groupName, 
             optionName: optionName, 
-            selectorStyle: selectorStyle,
+            selectorStyle: selectorStyle || "button",
             cardSelectorStyle: cardStyle,
             status: status === "active" ? "active" : "draft"
           },
@@ -510,7 +510,7 @@ export default function GroupsPage() {
       const row = [
         group.name || "Untitled Group",
         group.optionName || "Color",
-        group.selectorStyle || "block",
+        group.selectorStyle || "button",
         group.cardSelectorStyle || "same",
         group.status || "active",
         ...handles
