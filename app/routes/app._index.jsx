@@ -563,7 +563,7 @@ export default function Index() {
     const [openIndex, setOpenIndex] = useState(null);
     const faqs = [
       { question: "Can I change the position of the options?", answer: "Yes! You can use the Theme Editor to drag the 'Linked Product Variants' block to any position." },
-      { question: "How do I show options on collection pages?", answer: "Enable the 'App Card Injector' block in your Theme App Embeds settings." },
+      { question: "How do I show options on collection pages?", answer: "Enable the 'Linked Product Variants' block in your Theme App Embeds settings." },
       { question: "Can a product belong to multiple groups?", answer: "Each product can only belong to one active group to avoid conflicts." }
     ];
     return (

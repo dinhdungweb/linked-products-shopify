@@ -8,7 +8,6 @@
 
 {%- if linked_handles_raw != blank and linked_handles_raw.size > 0 and group_status == 'active' -%}
   
-  {%- assign current_handle = product.handle -%}
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
   {%- assign app_settings = shop.metafields.linked_products.settings.value -%}
   {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
@@ -172,9 +171,6 @@
   {%- assign lp_shadow_x = active_style_settings.shadow.offsetX | default: 0 -%}
   {%- assign lp_shadow_y = active_style_settings.shadow.offsetY | default: 2 -%}
 
-  {%- assign lp_badge_show = active_style_settings.badge.show | default: false -%}
-  {%- assign lp_badge_text = active_style_settings.badge.text | default: 'NEW' -%}
-  {%- assign lp_badge_pos = active_style_settings.badge.position | default: 'top-right' -%}
   {%- assign lp_badge_size = active_style_settings.badge.fontSize | default: 10 -%}
   {%- assign lp_badge_color = active_style_settings.badge.color | default: '#ffffff' -%}
   {%- assign lp_badge_bg = active_style_settings.badge.bgColor | default: '#000000' -%}
