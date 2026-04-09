@@ -28,6 +28,7 @@ import {
   LanguageIcon,
   InfoIcon,
   PaintBrushFlatIcon,
+  MagicIcon,
   EmailIcon,
   CheckIcon,
   XIcon
