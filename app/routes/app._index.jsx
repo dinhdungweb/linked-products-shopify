@@ -602,18 +602,18 @@ export default function Index() {
       borderRadius: '16px',
       overflow: 'hidden',
       border: '1px solid #E1E1E1',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-      minHeight: '180px'
+      boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+      minHeight: '170px'
     }}>
       {/* Left Banner Section */}
       <div style={{
-        width: '40%',
-        background: 'linear-gradient(135deg, #6366F1 0%, #A855F7 100%)',
+        width: '35%',
+        background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
-        padding: '24px',
+        justifyContent: 'space-between',
+        padding: '20px',
         color: 'white',
         overflow: 'hidden'
       }}>
@@ -625,49 +625,53 @@ export default function Index() {
             position: 'absolute',
             bottom: '-10%',
             right: '-10%',
-            width: '100%',
-            opacity: '0.4',
+            width: '120%',
+            opacity: '0.25',
             pointerEvents: 'none',
-            filter: 'brightness(1.5)'
+            filter: 'brightness(2)'
           }}
         />
 
-        <Box paddingBlockEnd="200">
-          <div style={{
-            display: 'inline-block',
-            padding: '4px 12px',
-            borderRadius: '100px',
-            background: 'rgba(255, 255, 255, 0.2)',
-            backdropFilter: 'blur(4px)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            fontSize: '12px',
-            fontWeight: '600',
-            color: 'white'
-          }}>
-            Tutorial
-          </div>
-        </Box>
-
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <Text variant="headingLg" as="h2" tone="inherit">
-            Learn how to use our app
-          </Text>
+          <Box paddingBlockEnd="150">
+            <div style={{
+              display: 'inline-block',
+              padding: '2px 10px',
+              borderRadius: '100px',
+              background: 'rgba(255, 255, 255, 0.25)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.4)',
+              fontSize: '11px',
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              color: 'white'
+            }}>
+              Tutorial
+            </div>
+          </Box>
+          <div style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            <Text variant="headingMd" as="h2" tone="inherit">
+              Learn how to use our app
+            </Text>
+          </div>
         </div>
 
         <div style={{
-          position: 'absolute',
-          bottom: '16px',
-          left: '16px',
-          padding: '4px 8px',
-          background: 'rgba(0, 0, 0, 0.6)',
-          borderRadius: '8px',
+          position: 'relative',
+          alignSelf: 'flex-start',
+          padding: '4px 10px',
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(4px)',
+          borderRadius: '100px',
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
           fontSize: '12px',
           fontWeight: '600',
           color: 'white',
-          zIndex: 2
+          zIndex: 2,
+          marginTop: 'auto'
         }}>
           <div style={{ display: 'flex' }}>
             <Icon source={PlayCircleIcon} tone="inherit" />
@@ -677,26 +681,28 @@ export default function Index() {
       </div>
 
       {/* Right Content Section */}
-      <div style={{ width: '60%', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div style={{ width: '65%', padding: '24px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <BlockStack gap="400">
           <BlockStack gap="100">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text variant="headingMd" as="h3">How to use the app</Text>
-              <div style={{ display: 'flex' }}>
-                <Icon source={MenuVerticalIcon} tone="subdued" />
+              <div style={{ display: 'flex', cursor: 'pointer', color: '#8C9196' }}>
+                <Icon source={MenuVerticalIcon} tone="inherit" />
               </div>
             </div>
             <Text variant="bodyMd" tone="subdued">
-              Watch a quick walkthrough to get set up faster and avoid common mistakes.
+              Watch a quick walkthrough to get set up faster and avoid common mistakes in product linking.
             </Text>
           </BlockStack>
 
           <InlineStack gap="300">
-            <Button icon={PlayCircleIcon} onClick={() => window.open('https://youtube.com', '_blank')}>Watch video</Button>
-            <Button icon={ExternalIcon} url="/app/help">Learn more</Button>
+            <Button variant="primary" icon={PlayCircleIcon} onClick={() => window.open('https://youtube.com', '_blank')}>Watch video</Button>
+            <Button variant="secondary" icon={ExternalIcon} url="/app/help">Learn more</Button>
           </InlineStack>
         </BlockStack>
       </div>
+    </div>
+  );
     </div>
   );
 
