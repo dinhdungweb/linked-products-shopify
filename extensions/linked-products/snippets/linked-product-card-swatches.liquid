@@ -94,7 +94,7 @@
     } 
   </style>
 
-  <div id="lp-card-{{ product.id }}" class="linked-product-swatches linked-products-picker" 
+  <div id="lp-card-{{ product.id }}" class="linked-product-swatches linked-products-picker" data-lp-handle="{{ product.handle }}" 
        style="
          --lp-border-radius: {{ lp_border_radius }}{% if card_style contains 'swatch' %}%{% else %}px{% endif %};
          --lp-swatch-size: {{ lp_swatch_size }}px;

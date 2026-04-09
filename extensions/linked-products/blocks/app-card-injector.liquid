@@ -57,40 +57,44 @@
                 // 2. Find the closest card container
                 let card = link.closest(COMMON_CARD_SELECTORS);
                 
-                // Fallback: If no common class, go up 3 levels to find a reasonable container
+                // Fallback for custom themes
                 if (!card) {
                     let parent = link.parentElement;
                     for (let i = 0; i < 3 && parent; i++) {
-                        if (parent.querySelectorAll('a[href*="/products/"]').length === 1 || parent.className.includes('item') || parent.className.includes('column')) {
+                        if (parent.querySelectorAll('a[href*="/products/"]').length === 1 || parent.className.includes('card') || parent.className.includes('item')) {
                             card = parent;
                         }
                         parent = parent.parentElement;
                     }
                 }
 
-                if (!card || card.querySelector(`.linked-product-swatches[data-lp-handle="${handle}"]`)) return;
+                // ABSOLUTE PROTECTION: If card already has swatches for THIS handle, skip.
+                if (!card || card.querySelector(`[data-lp-handle="${handle}"]`)) {
+                    processedLinks.add(handle);
+                    return;
+                }
 
                 // Find pre-rendered content
                 const source = storage.querySelector(`[data-handle="${handle}"]`);
-                if (!source || !source.innerHTML.trim()) return;
+                if (!source || !source.innerHTML.trim()) {
+                    processedLinks.add(handle);
+                    return;
+                }
 
                 const container = document.createElement('div');
-                container.className = 'lp-injected-container linked-product-swatches';
+                container.className = 'lp-injected-container';
                 container.style.width = '100%';
-                container.setAttribute('data-lp-handle', handle);
+                // We keep the innerHTML as is, which now includes the data-lp-handle from Liquid
                 container.innerHTML = source.innerHTML;
 
                 // 3. Smart Insertion Point
-                // Priority 1: After Price
                 const priceElement = card.querySelector(PRICE_SELECTORS);
                 if (priceElement) {
                     priceElement.parentNode.insertBefore(container, priceElement.nextSibling);
                 } else {
-                    // Priority 2: At the end of card content or card itself
                     card.appendChild(container);
                 }
                 
-                // Mark this link/product as processed for this pass to avoid duplicate injection in same card
                 processedLinks.add(handle); 
             });
             
