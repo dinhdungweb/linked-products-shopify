@@ -14,6 +14,7 @@ import {
   TextField,
   InlineStack,
   Loading,
+  Frame,
   Banner,
   Box,
   Divider,
@@ -742,7 +743,8 @@ export default function GroupsPage() {
 
 
   return (
-    <Page fullWidth>
+    <Frame>
+      <Page fullWidth>
       {isLoading && <Loading />}
       {/* Header Section */}
       <Box paddingBlockEnd="400">
@@ -1110,5 +1112,6 @@ export default function GroupsPage() {
         </Modal.Section>
       </Modal>
     </Page>
+  </Frame>
   );
 }
