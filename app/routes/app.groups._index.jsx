@@ -32,13 +32,13 @@ import {
   Spinner,
   useIndexResourceState,
 } from "@shopify/polaris";
-import { 
-  XIcon, 
-  SearchIcon, 
-  ViewIcon, 
-  DeleteIcon, 
-  ImportIcon, 
-  ExportIcon, 
+import {
+  XIcon,
+  SearchIcon,
+  ViewIcon,
+  DeleteIcon,
+  ImportIcon,
+  ExportIcon,
   PlusIcon,
   FilterIcon,
   QuestionCircleIcon,
@@ -78,12 +78,11 @@ export async function loader({ request }) {
 
   // Fetch product images for thumbnails
   const allProductIds = [...new Set(groups.flatMap(g => g.products.map(p => p.productId)))];
-  
+
   let productImages = {};
   if (allProductIds.length > 0) {
     try {
-      // Chunk IDs to avoid query complexity limits if there are huge amounts (though IndexTable usually shows 50)
-      const queryIds = allProductIds.slice(0, 200); 
+      const queryIds = allProductIds.slice(0, 200);
       const response = await admin.graphql(`
         query getProductImages($ids: [ID!]!) {
           nodes(ids: $ids) {
@@ -109,7 +108,7 @@ export async function loader({ request }) {
     }
   }
 
-  // Fetch App Embed Status via direct REST fetch (most stable method, bypasses library/schema issues)
+  // Fetch App Embed Status
   let isAppEmbedEnabled = false;
   try {
     const themeResponse = await admin.graphql(`
@@ -131,28 +130,24 @@ export async function loader({ request }) {
           "X-Shopify-Access-Token": session.accessToken,
         },
       });
-      
+
       if (assetResponse.ok) {
         const assetData = await assetResponse.json();
         const settingsValue = assetData.asset?.value;
         if (settingsValue) {
           const settings = JSON.parse(settingsValue);
           const blocks = settings.current?.blocks || {};
-          
-          isAppEmbedEnabled = Object.values(blocks).some(block => 
-            (block.type?.includes('linked-products') || block.type?.includes('app-card-injector')) && 
+
+          isAppEmbedEnabled = Object.values(blocks).some(block =>
+            (block.type?.includes('linked-products') || block.type?.includes('app-card-injector')) &&
             block.disabled === false
           );
-          console.log(`Checking app embed via direct fetch. Found: ${isAppEmbedEnabled}`);
         }
       }
     }
   } catch (e) {
-    console.warn("Skipping app embed check due to fetch error:", e.message);
     isAppEmbedEnabled = true; // Safety default
   }
-  
-  console.log(`Final isAppEmbedEnabled status: ${isAppEmbedEnabled}`);
 
   const enrichedGroups = groups.map(group => ({
     ...group,
@@ -162,7 +157,6 @@ export async function loader({ request }) {
   return json({ groups: enrichedGroups, shop: shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled });
 }
 
-// Action (copied from index for delete/import support here too)
 export async function action({ request }) {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
@@ -208,7 +202,6 @@ export async function action({ request }) {
             mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
               metafieldsDelete(metafields: $metafields) {
                 deletedMetafields { ownerId }
-                userErrors { field message }
               }
             }
           `, { variables: { metafields: metafieldsToDelete } });
@@ -226,12 +219,12 @@ export async function action({ request }) {
     const groupId = formData.get("groupId");
     const currentStatus = formData.get("currentStatus");
     const newStatus = currentStatus === "active" ? "draft" : "active";
-    
+
     await prisma.productGroup.update({
       where: { id: groupId },
       data: { status: newStatus }
     });
-    
+
     await syncGroupMetafields(admin, prisma, groupId);
     return json({ success: true, message: `Group set to ${newStatus}` });
   }
@@ -249,7 +242,6 @@ export async function action({ request }) {
     const { canAddLinks, getUsageInfo } = await import("../billing.server");
     const usageInfo = await getUsageInfo(session.shop);
 
-    // Fetch global settings for fallback
     const settings = await prisma.appSetting.findUnique({
       where: { shop: session.shop },
     });
@@ -258,7 +250,6 @@ export async function action({ request }) {
       const allLines = csvData.split("\n").map(l => l.trim()).filter(l => l.length > 0);
       if (allLines.length === 0) return json({ success: true, message: "No data to import" });
 
-      // Check for header
       const hasHeader = allLines[0].toLowerCase().includes("group name") || allLines[0].toLowerCase().includes("option name");
       const dataLines = hasHeader ? allLines.slice(1) : allLines;
 
@@ -267,7 +258,7 @@ export async function action({ request }) {
 
       for (const line of dataLines) {
         const parts = line.split(",").map(s => s.trim()).filter(s => s.length > 0);
-        
+
         let groupName = "";
         let optionName = settings?.selectOptionLabel?.replace("{option}", "Color") || "Color";
         let selectorStyle = settings?.defaultProductPageStyle || "image_swatch";
@@ -276,7 +267,6 @@ export async function action({ request }) {
         let handles = [];
 
         if (hasHeader) {
-          // Format: Name, Option, Style, Card Style, Status, Handles...
           groupName = parts[0] || "Untitled Group";
           optionName = parts[1] || optionName;
           selectorStyle = parts[2] || selectorStyle;
@@ -284,7 +274,6 @@ export async function action({ request }) {
           status = parts[4] || status;
           handles = parts.slice(5);
         } else {
-          // Legacy format: Name, Handle1, Handle2...
           if (parts.length < 3) {
             errors.push(`Skipped line: "${line}" (need at least group name + 2 product handles)`);
             continue;
@@ -293,7 +282,6 @@ export async function action({ request }) {
           handles = parts.slice(1);
         }
 
-        // Lookup product IDs from handles
         const products = [];
         for (const handle of handles) {
           try {
@@ -316,14 +304,12 @@ export async function action({ request }) {
           continue;
         }
 
-        // Check group limit
         const canAdd = await canAddLinks(session.shop, 1);
         if (!canAdd) {
           errors.push(`Skipped group "${groupName}": group limit reached`);
           break;
         }
 
-        // Check for conflicts
         const productIds = products.map(p => p.id);
         const existingItems = await prisma.productGroupItem.findMany({
           where: { productId: { in: productIds } },
@@ -333,19 +319,17 @@ export async function action({ request }) {
           continue;
         }
 
-        // Create group with metadata
         const newGroup = await prisma.productGroup.create({
-          data: { 
-            shop: session.shop, 
-            name: groupName, 
-            optionName: optionName, 
+          data: {
+            shop: session.shop,
+            name: groupName,
+            optionName: optionName,
             selectorStyle: selectorStyle || "image_swatch",
             cardSelectorStyle: cardStyle,
             status: status === "active" ? "active" : "draft"
           },
         });
 
-        // Add products to group
         for (let i = 0; i < products.length; i++) {
           await prisma.productGroupItem.create({
             data: {
@@ -360,18 +344,15 @@ export async function action({ request }) {
           });
         }
 
-        // AUTO-SYNC to Shopify using centralized logic
         try {
           await syncGroupMetafields(admin, prisma, newGroup.id);
           groupsCreated++;
         } catch (e) {
-          console.warn(`Group "${groupName}" created but sync failed:`, e.message);
           groupsCreated++;
         }
       }
 
-      const message = `Import completed: ${groupsCreated} groups created.` +
-        (errors.length > 0 ? `\n${errors.join("\n")}` : "");
+      const message = `Import completed: ${groupsCreated} groups created.` + (errors.length > 0 ? `\n${errors.join("\n")}` : "");
       return json({ success: true, message });
     } catch (error) {
       return json({ error: `Import failed: ${error.message}` }, { status: 500 });
@@ -380,7 +361,7 @@ export async function action({ request }) {
 
   if (actionType === "bulkAction") {
     const selectedIdsStr = formData.get("selectedIds") || "[]";
-    const bulkType = formData.get("bulkType"); // active, draft, delete
+    const bulkType = formData.get("bulkType");
     const selectedIds = JSON.parse(selectedIdsStr);
 
     if (selectedIds.length === 0) return json({ error: "No items selected" }, { status: 400 });
@@ -394,7 +375,6 @@ export async function action({ request }) {
           });
 
           if (group) {
-            // Clean up metafields
             for (const product of group.products) {
               const metafieldQuery = await admin.graphql(`
                 query GetProductMetafields($productId: ID!) {
@@ -438,14 +418,12 @@ export async function action({ request }) {
             where: { id: groupId },
             data: { status: newStatus }
           });
-          // Sync with Shopify
           await syncGroupMetafields(admin, prisma, groupId);
         }
         return json({ success: true, message: `Successfully set ${selectedIds.length} groups to ${newStatus}` });
       }
 
     } catch (error) {
-      console.error("Bulk action failed:", error);
       return json({ error: `Bulk action failed: ${error.message}` }, { status: 500 });
     }
   }
@@ -472,21 +450,15 @@ export default function GroupsPage() {
   const toggleFilterActive = useCallback(() => setIsFilterActive((a) => !a), []);
 
   const filteredGroups = groups.filter((group) => {
-    // Tab filter
     if (selectedTab === 2) return false;
     if (selectedTab === 3) return false;
-
-    // Status filter
     if (filterStatus !== "all" && group.status !== filterStatus) return false;
-
-    // Search filter
     if (searchValue !== "") {
       const searchLower = searchValue.toLowerCase();
       const matchName = group.name && group.name.toLowerCase().includes(searchLower);
       const matchOption = group.optionName && group.optionName.toLowerCase().includes(searchLower);
       if (!matchName && !matchOption) return false;
     }
-
     return true;
   });
 
@@ -496,15 +468,21 @@ export default function GroupsPage() {
     handleSelectionChange,
   } = useIndexResourceState(groups);
 
-  // Import/Export states
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvData, setCsvData] = useState("");
   const [file, setFile] = useState(null);
+  const [activeBulkAction, setActiveBulkAction] = useState(null);
 
   const isLoading = navigation.state !== "idle";
-  const isBulkLoading = isLoading && navigation.formData?.get("action") === "bulkAction";
+  const isBulkLoading = isLoading && (navigation.formData?.get("action") === "bulkAction" || activeBulkAction !== null);
   const isImporting = isLoading && navigation.formData?.get("action") === "importCSV";
   const isLimitReached = usageInfo.limit !== Infinity && usageInfo.used >= usageInfo.limit;
+
+  useEffect(() => {
+    if (navigation.state === "idle") {
+      setActiveBulkAction(null);
+    }
+  }, [navigation.state]);
 
   useEffect(() => {
     if (actionData?.success) {
@@ -526,8 +504,7 @@ export default function GroupsPage() {
           const idToken = await window.shopify.idToken();
           headers = { Authorization: `Bearer ${idToken}` };
         }
-      } catch (e) {}
-
+      } catch (e) { }
       submit(formData, { method: "POST", headers });
     }
   }, [submit]);
@@ -544,8 +521,7 @@ export default function GroupsPage() {
         const idToken = await window.shopify.idToken();
         headers = { Authorization: `Bearer ${idToken}` };
       }
-    } catch (e) {}
-
+    } catch (e) { }
     submit(formData, { method: "POST", headers });
   }, [submit]);
 
@@ -554,7 +530,6 @@ export default function GroupsPage() {
       if (acceptedFiles.length > 0) {
         const file = acceptedFiles[0];
         setFile(file);
-        
         const reader = new FileReader();
         reader.onload = (e) => {
           setCsvData(e.target.result);
@@ -567,24 +542,20 @@ export default function GroupsPage() {
 
   const handleImportFile = useCallback(async () => {
     if (!csvData) return;
-    
     const formData = new FormData();
     formData.append("action", "importCSV");
     formData.append("csvData", csvData);
-    
     let headers = {};
     try {
       if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
         const idToken = await window.shopify.idToken();
         headers = { Authorization: `Bearer ${idToken}` };
       }
-    } catch (e) {}
-
+    } catch (e) { }
     submit(formData, { method: "POST", headers });
   }, [csvData, submit]);
 
   useEffect(() => {
-    // Tự động đóng modal khi import thành công
     if (actionData?.success && actionData?.message?.includes("Import completed") && showImportModal) {
       setShowImportModal(false);
       setFile(null);
@@ -596,45 +567,36 @@ export default function GroupsPage() {
     const formData = new FormData();
     formData.append("action", "sync");
     formData.append("groupId", groupId);
-
     let headers = {};
     try {
       if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
         const idToken = await window.shopify.idToken();
         headers = { Authorization: `Bearer ${idToken}` };
       }
-    } catch (e) {}
-
+    } catch (e) { }
     submit(formData, { method: "POST", headers });
   }, [submit]);
 
   const handleBulkAction = useCallback(async (bulkType) => {
+    setActiveBulkAction(bulkType);
     const formData = new FormData();
     formData.append("action", "bulkAction");
     formData.append("bulkType", bulkType);
     formData.append("selectedIds", JSON.stringify(selectedResources));
-
     let headers = {};
     try {
       if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
         const idToken = await window.shopify.idToken();
         headers = { Authorization: `Bearer ${idToken}` };
       }
-    } catch (e) {}
-
+    } catch (e) { }
     submit(formData, { method: "POST", headers });
   }, [selectedResources, submit]);
 
   const handleExport = useCallback(() => {
-    // Header
     const header = "Group Name,Option Name,Selector Style,Card Style,Status,Product Handles\n";
-    
-    // Rows
     const csvRows = groups.map(group => {
-      const handles = group.products
-        .map(p => p.productHandle)
-        .filter(Boolean);
-      
+      const handles = group.products.map(p => p.productHandle).filter(Boolean);
       const row = [
         group.name || "Untitled Group",
         group.optionName || "Color",
@@ -645,12 +607,10 @@ export default function GroupsPage() {
       ];
       return row.join(",");
     });
-
     if (csvRows.length === 0) {
       shopify.toast.show("No groups to export", { isError: true });
       return;
     }
-
     shopify.toast.show("Exporting groups...");
     const blob = new Blob([header + csvRows.join("\n")], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -680,13 +640,10 @@ export default function GroupsPage() {
       <Popover
         active={active}
         activator={
-          <Button 
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleActive();
-            }} 
-            icon={MenuHorizontalIcon} 
-            variant="tertiary" 
+          <Button
+            onClick={(e) => { e.stopPropagation(); toggleActive(); }}
+            icon={MenuHorizontalIcon}
+            variant="tertiary"
           />
         }
         onClose={toggleActive}
@@ -695,8 +652,8 @@ export default function GroupsPage() {
           actionRole="menuitem"
           items={[
             { content: 'Edit group', icon: ViewIcon, url: `/app/groups/${groupId}` },
-            { 
-              content: status === "active" ? 'Set as draft' : 'Set as active', 
+            {
+              content: status === "active" ? 'Set as draft' : 'Set as active',
               icon: status === "active" ? XIcon : CheckIcon,
               onAction: () => { handleToggleStatus(groupId, status); toggleActive(); }
             },
@@ -714,11 +671,11 @@ export default function GroupsPage() {
     return (
       <InlineStack gap="100" blockAlign="center">
         {imagesToShow.map((p, idx) => (
-          <div key={p.productId} style={{ 
-            width: '36px', 
-            height: '36px', 
-            borderRadius: '8px', 
-            overflow: 'hidden', 
+          <div key={p.productId} style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '8px',
+            overflow: 'hidden',
             border: '1px solid #e1e3e5',
             backgroundColor: '#fff',
             display: 'flex',
@@ -741,107 +698,103 @@ export default function GroupsPage() {
     );
   };
 
-
   return (
     <Frame>
       <Page fullWidth>
-      {/* Header Section */}
-      <Box paddingBlockEnd="400">
-        <BlockStack gap="500">
-          {usageInfo.isOverLimit && (
-            <Banner tone="critical" title="Plan limit exceeded">
-              <p>
-                Your current plan only supports <strong>{usageInfo.limit}</strong> groups.
-                We have temporarily disabled <strong>{usageInfo.used - usageInfo.limit}</strong> of your oldest groups on the storefront. 
-                Please upgrade your plan to reactive them.
-              </p>
-              <div style={{ marginTop: '10px' }}>
-                <Button url="/app/pricing" variant="primary">Upgrade Plan Now</Button>
-              </div>
-            </Banner>
-          )}
+        <Box paddingBlockEnd="400">
+          <BlockStack gap="500">
+            {usageInfo.isOverLimit && (
+              <Banner tone="critical" title="Plan limit exceeded">
+                <p>
+                  Your current plan only supports <strong>{usageInfo.limit}</strong> groups.
+                  We have temporarily disabled <strong>{usageInfo.used - usageInfo.limit}</strong> of your oldest groups on the storefront.
+                </p>
+                <div style={{ marginTop: '10px' }}>
+                  <Button url="/app/pricing" variant="primary">Upgrade Plan Now</Button>
+                </div>
+              </Banner>
+            )}
 
-          <BlockStack gap="400">
-            <InlineStack align="space-between" blockAlign="start">
-              <BlockStack gap="100">
-                <Text variant="headingXl" as="h1">Product groups</Text>
-                <Text variant="bodyMd" tone="subdued">Product groups combine multiple product listings into variant options.</Text>
-              </BlockStack>
+            <BlockStack gap="400">
+              <InlineStack align="space-between" blockAlign="start">
+                <BlockStack gap="100">
+                  <Text variant="headingXl" as="h1">Product groups</Text>
+                  <Text variant="bodyMd" tone="subdued">Product groups combine multiple product listings into variant options.</Text>
+                </BlockStack>
                 <InlineStack gap="200">
                   <ButtonGroup>
                     <Button icon={ExportIcon} onClick={handleExport}>Export</Button>
                     <Button icon={ImportIcon} onClick={() => setShowImportModal(true)}>Import</Button>
                   </ButtonGroup>
                   {isLimitReached ? (
-                    <Tooltip content="You have reached the product group limit for your current plan. Please upgrade to create more.">
+                    <Tooltip content="You have reached the product group limit for your current plan.">
                       <Button variant="primary" icon={PlusIcon} disabled>Create group</Button>
                     </Tooltip>
                   ) : (
                     <Button variant="primary" icon={PlusIcon} url="/app/groups/new">Create group</Button>
                   )}
                 </InlineStack>
-            </InlineStack>
-
-            {!isAppEmbedEnabled && (
-              <Banner 
-                title="App embed is disabled" 
-                tone="warning"
-                action={{ 
-                  content: 'Enable in Theme', 
-                  onAction: () => {
-                    const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
-                    window.open(url, '_blank');
-                  }
-                }}
-              >
-                <p>Please enable the app embed to show product swatches on your storefront.</p>
-              </Banner>
-            )}
-
-            {/* Stats Row */}
-            <Box background={isLimitReached ? "bg-surface-caution" : "bg-surface"} padding="400" borderRadius="300" borderColor={isLimitReached ? "border-caution" : "border"} borderWidth="025">
-              <InlineStack align="space-between" blockAlign="center">
-                <Box flex="1">
-                  <BlockStack gap="100">
-                    <Text variant="bodySm" fontWeight="bold" tone="subdued">Created product groups</Text>
-                    <Text variant="bodyMd" tone={isLimitReached ? "caution" : "default"}>{groups.length} groups</Text>
-                  </BlockStack>
-                </Box>
-                <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
-                <Box flex="1">
-                  <BlockStack gap="100">
-                    <Text variant="bodySm" fontWeight="bold" tone="subdued">Remaining product groups</Text>
-                    <InlineStack gap="100" blockAlign="center">
-                      <Text variant="bodyMd" tone={isLimitReached ? "caution" : "subdued"}>
-                        {usageInfo.limit === Infinity ? "Unlimited" : Math.max(0, usageInfo.limit - groups.length)} groups
-                      </Text>
-                      <div style={{ color: '#8c9196' }}>•</div>
-                      <Button variant="plain" tone={isLimitReached ? "caution" : "info"} size="micro" url="/app/pricing">Upgrade</Button>
-                    </InlineStack>
-                  </BlockStack>
-                </Box>
-                <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
-                <Box flex="1">
-                  <BlockStack gap="100">
-                    <Text variant="bodySm" fontWeight="bold" tone="subdued">Total products</Text>
-                    <Text variant="bodyMd">{totalProducts} products</Text>
-                  </BlockStack>
-                </Box>
               </InlineStack>
-            </Box>
-          </BlockStack>
-        </BlockStack>
-      </Box>
 
-      <LegacyCard>
-        <Box paddingBlock="0">
-          <InlineStack align="space-between" blockAlign="center">
-            <div style={{ flex: 1 }}>
-              <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} suppressContent={true} />
-            </div>
-            <Box paddingInlineEnd="300">
-              <InlineStack gap="100" blockAlign="center">
-                 {!isSearchVisible ? null : (
+              {!isAppEmbedEnabled && (
+                <Banner
+                  title="App embed is disabled"
+                  tone="warning"
+                  action={{
+                    content: 'Enable in Theme',
+                    onAction: () => {
+                      const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
+                      window.open(url, '_blank');
+                    }
+                  }}
+                >
+                  <p>Please enable the app embed to show product swatches on your storefront.</p>
+                </Banner>
+              )}
+
+              <Box background={isLimitReached ? "bg-surface-caution" : "bg-surface"} padding="400" borderRadius="300" borderColor={isLimitReached ? "border-caution" : "border"} borderWidth="025">
+                <InlineStack align="space-between" blockAlign="center">
+                  <Box flex="1">
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" fontWeight="bold" tone="subdued">Created product groups</Text>
+                      <Text variant="bodyMd" tone={isLimitReached ? "caution" : "default"}>{groups.length} groups</Text>
+                    </BlockStack>
+                  </Box>
+                  <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
+                  <Box flex="1">
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" fontWeight="bold" tone="subdued">Remaining product groups</Text>
+                      <InlineStack gap="100" blockAlign="center">
+                        <Text variant="bodyMd" tone={isLimitReached ? "caution" : "subdued"}>
+                          {usageInfo.limit === Infinity ? "Unlimited" : Math.max(0, usageInfo.limit - groups.length)} groups
+                        </Text>
+                        <div style={{ color: '#8c9196' }}>•</div>
+                        <Button variant="plain" tone={isLimitReached ? "caution" : "info"} size="micro" url="/app/pricing">Upgrade</Button>
+                      </InlineStack>
+                    </BlockStack>
+                  </Box>
+                  <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
+                  <Box flex="1">
+                    <BlockStack gap="100">
+                      <Text variant="bodySm" fontWeight="bold" tone="subdued">Total products</Text>
+                      <Text variant="bodyMd">{totalProducts} products</Text>
+                    </BlockStack>
+                  </Box>
+                </InlineStack>
+              </Box>
+            </BlockStack>
+          </BlockStack>
+        </Box>
+
+        <LegacyCard>
+          <Box paddingBlock="0">
+            <InlineStack align="space-between" blockAlign="center">
+              <div style={{ flex: 1 }}>
+                <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} suppressContent={true} />
+              </div>
+              <Box paddingInlineEnd="300">
+                <InlineStack gap="100" blockAlign="center">
+                  {!isSearchVisible ? null : (
                     <div style={{ width: '200px', marginRight: '8px' }}>
                       <TextField
                         prefix={<Icon source={SearchIcon} tone="subdued" />}
@@ -855,13 +808,13 @@ export default function GroupsPage() {
                         size="slim"
                       />
                     </div>
-                 )}
-                 <Button 
-                  icon={SearchIcon} 
-                  variant={isSearchVisible ? "secondary" : "tertiary"} 
-                  onClick={() => setIsSearchVisible(!isSearchVisible)}
-                 />
-                 <Popover
+                  )}
+                  <Button
+                    icon={SearchIcon}
+                    variant={isSearchVisible ? "secondary" : "tertiary"}
+                    onClick={() => setIsSearchVisible(!isSearchVisible)}
+                  />
+                  <Popover
                     active={isFilterActive}
                     activator={
                       <Button icon={FilterIcon} variant={filterStatus !== "all" ? "secondary" : "tertiary"} onClick={toggleFilterActive}>
@@ -869,7 +822,7 @@ export default function GroupsPage() {
                       </Button>
                     }
                     onClose={toggleFilterActive}
-                 >
+                  >
                     <ActionList
                       actionRole="menuitem"
                       items={[
@@ -878,125 +831,124 @@ export default function GroupsPage() {
                         { content: 'Draft', onAction: () => { setFilterStatus("draft"); toggleFilterActive(); } },
                       ]}
                     />
-                 </Popover>
-              </InlineStack>
-            </Box>
-          </InlineStack>
-        </Box>
+                  </Popover>
+                </InlineStack>
+              </Box>
+            </InlineStack>
+          </Box>
 
-        {filteredGroups.length === 0 ? (
-          <EmptyState
-            heading="No product groups found"
-            action={isLimitReached ? undefined : { content: 'Create group', url: '/app/groups/new', variant: 'primary' }}
-            image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-          >
-            {isLimitReached ? (
-              <BlockStack gap="200">
-                <p>You've reached the limit of the <b>{usageInfo.planName}</b>. Please upgrade to continue.</p>
-                <Button url="/app/pricing" variant="primary">Upgrade Plan Now</Button>
-              </BlockStack>
-            ) : (
-              <p>Start by creating your first group to link products together.</p>
-            )}
-          </EmptyState>
-        ) : (
-          <IndexTable
-            resourceName={{ singular: "group", plural: "groups" }}
-            itemCount={filteredGroups.length}
-            headings={[
-              { title: "Product group" },
-              { title: "Products" },
-              { title: "Total products" },
-              { title: "Type" },
-              { title: "Option name" },
-              { title: "Status" },
-              { title: "Created" },
-              { title: "", alignment: 'end' },
-            ]}
-            selectable={true}
-            selectedItemsCount={allResourcesSelected ? 'All' : selectedResources.length}
-            onSelectionChange={handleSelectionChange}
-            promotedBulkActions={[
-              {
-                content: 'Set as active',
-                onAction: () => handleBulkAction('active'),
-                loading: isBulkLoading && navigation.formData?.get("bulkType") === 'active',
-              },
-              {
-                content: 'Set as draft',
-                onAction: () => handleBulkAction('draft'),
-                loading: isBulkLoading && navigation.formData?.get("bulkType") === 'draft',
-              },
-            ]}
-            bulkActions={[
-              {
-                content: 'Delete',
-                destructive: true,
-                onAction: () => {
-                   if (confirm(`Are you sure you want to delete ${selectedResources.length} groups?`)) {
-                      handleBulkAction('delete');
-                   }
+          {filteredGroups.length === 0 ? (
+            <EmptyState
+              heading="No product groups found"
+              action={isLimitReached ? undefined : { content: 'Create group', url: '/app/groups/new', variant: 'primary' }}
+              image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+            >
+              {isLimitReached ? (
+                <BlockStack gap="200">
+                  <p>You've reached the limit of the <b>{usageInfo.planName}</b>. Please upgrade to continue.</p>
+                  <Button url="/app/pricing" variant="primary">Upgrade Plan Now</Button>
+                </BlockStack>
+              ) : (
+                <p>Start by creating your first group to link products together.</p>
+              )}
+            </EmptyState>
+          ) : (
+            <IndexTable
+              resourceName={{ singular: "group", plural: "groups" }}
+              itemCount={filteredGroups.length}
+              headings={[
+                { title: "Product group" },
+                { title: "Products" },
+                { title: "Total products" },
+                { title: "Type" },
+                { title: "Option name" },
+                { title: "Status" },
+                { title: "Created" },
+                { title: "", alignment: 'end' },
+              ]}
+              selectable={true}
+              selectedItemsCount={allResourcesSelected ? 'All' : selectedResources.length}
+              onSelectionChange={handleSelectionChange}
+              promotedBulkActions={[
+                {
+                  content: 'Set as active',
+                  onAction: () => handleBulkAction('active'),
+                  loading: isBulkLoading && (activeBulkAction === 'active' || navigation.formData?.get("bulkType") === 'active'),
                 },
-                loading: isBulkLoading && navigation.formData?.get("bulkType") === 'delete',
-              },
-            ]}
-          >
-            {filteredGroups.map((group, index) => (
-              <IndexTable.Row 
-                id={group.id} 
-                key={group.id} 
-                selected={selectedResources.includes(group.id)}
-                position={index}
-              >
-                <IndexTable.Cell>
-                  <Link 
-                    to={`/app/groups/${group.id}`} 
-                    style={{ textDecoration: 'none', color: 'inherit' }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Text variant="bodyMd" fontWeight="semibold">{group.name || "Untitled Group"}</Text>
-                  </Link>
-                </IndexTable.Cell>
-                <IndexTable.Cell>
-                  <ProductThumbnailGroup 
-                    productIds={group.products} 
-                    totalCount={group._count.products} 
-                  />
-                </IndexTable.Cell>
-                <IndexTable.Cell>
-                  <Text tone="subdued" variant="bodyMd">{group._count.products} products</Text>
-                </IndexTable.Cell>
-                <IndexTable.Cell>
-                  <Text tone="subdued" variant="bodyMd">Single option</Text>
-                </IndexTable.Cell>
-                <IndexTable.Cell>
-                  <Text variant="bodyMd">{group.optionName}</Text>
-                </IndexTable.Cell>
-                <IndexTable.Cell>
-                  <InlineStack gap="200" blockAlign="center">
-                    {group.status === "active" ? (
+                {
+                  content: 'Set as draft',
+                  onAction: () => handleBulkAction('draft'),
+                  loading: isBulkLoading && (activeBulkAction === 'draft' || navigation.formData?.get("bulkType") === 'draft'),
+                },
+              ]}
+              bulkActions={[
+                {
+                  content: 'Delete',
+                  onAction: () => {
+                    if (confirm(`Are you sure you want to delete ${selectedResources.length} groups?`)) {
+                      handleBulkAction('delete');
+                    }
+                  },
+                  loading: isBulkLoading && (activeBulkAction === 'delete' || navigation.formData?.get("bulkType") === 'delete'),
+                },
+              ]}
+            >
+              {filteredGroups.map((group, index) => (
+                <IndexTable.Row
+                  id={group.id}
+                  key={group.id}
+                  selected={selectedResources.includes(group.id)}
+                  position={index}
+                >
+                  <IndexTable.Cell>
+                    <Link
+                      to={`/app/groups/${group.id}`}
+                      style={{ textDecoration: 'none', color: 'inherit' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Text variant="bodyMd" fontWeight="semibold">{group.name || "Untitled Group"}</Text>
+                    </Link>
+                  </IndexTable.Cell>
+                  <IndexTable.Cell>
+                    <ProductThumbnailGroup
+                      productIds={group.products}
+                      totalCount={group._count.products}
+                    />
+                  </IndexTable.Cell>
+                  <IndexTable.Cell>
+                    <Text tone="subdued" variant="bodyMd">{group._count.products} products</Text>
+                  </IndexTable.Cell>
+                  <IndexTable.Cell>
+                    <Text tone="subdued" variant="bodyMd">Single option</Text>
+                  </IndexTable.Cell>
+                  <IndexTable.Cell>
+                    <Text variant="bodyMd">{group.optionName}</Text>
+                  </IndexTable.Cell>
+                  <IndexTable.Cell>
+                    <InlineStack gap="200" blockAlign="center">
+                      {group.status === "active" ? (
                         <Badge tone={group.isPlanDisabled ? "attention" : "success"}>
                           {group.isPlanDisabled ? "Paused by Plan" : "Active"}
                         </Badge>
-                    ) : (
+                      ) : (
                         <Badge tone="subdued">Draft</Badge>
-                    )}
-                    {group.isPlanDisabled && (
-                      <Tooltip content="This group is disabled because it exceeds your plan limit.">
-                         <Icon source={QuestionCircleIcon} tone="caution" />
-                      </Tooltip>
-                    )}
-                  </InlineStack>
-                </IndexTable.Cell>
-                <IndexTable.Cell>
-                  <Text tone="subdued" variant="bodyMd">{new Date(group.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
-                </IndexTable.Cell>
-                <IndexTable.Cell>
-                   <InlineStack align="end" gap="100" onClick={(e) => e.stopPropagation()}>
+                      )}
+                      {group.isPlanDisabled && (
+                        <Tooltip content="This group is disabled because it exceeds your plan limit.">
+                          <Icon source={QuestionCircleIcon} tone="caution" />
+                        </Tooltip>
+                      )}
+                    </InlineStack>
+                  </IndexTable.Cell>
+                  <IndexTable.Cell>
+                    <Text tone="subdued" variant="bodyMd">{new Date(group.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
+                  </IndexTable.Cell>
+                  <IndexTable.Cell>
+                    <InlineStack align="end" gap="100" onClick={(e) => e.stopPropagation()}>
                       <Button icon={DuplicateIcon} variant="tertiary" />
-                      <Button 
-                        icon={RefreshIcon} 
-                        variant="tertiary" 
+                      <Button
+                        icon={RefreshIcon}
+                        variant="tertiary"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSyncGroup(group.id);
@@ -1004,113 +956,111 @@ export default function GroupsPage() {
                         loading={isLoading && navigation.formData?.get("groupId") === group.id && navigation.formData?.get("action") === "sync"}
                       />
                       <ActionMenu groupId={group.id} />
-                   </InlineStack>
-                </IndexTable.Cell>
-              </IndexTable.Row>
-            ))}
-          </IndexTable>
-        )}
-      </LegacyCard>
+                    </InlineStack>
+                  </IndexTable.Cell>
+                </IndexTable.Row>
+              ))}
+            </IndexTable>
+          )}
+        </LegacyCard>
 
-      {/* Footer Footer */}
-      <Box paddingBlock="800">
-        <InlineStack align="center" gap="100">
-          <Icon source={QuestionCircleIcon} tone="subdued" />
-          <Button variant="plain" url="/app/help">Help Center</Button>
-        </InlineStack>
-      </Box>
+        <Box paddingBlock="800">
+          <InlineStack align="center" gap="100">
+            <Icon source={QuestionCircleIcon} tone="subdued" />
+            <Button variant="plain" url="/app/help">Help Center</Button>
+          </InlineStack>
+        </Box>
 
-      {/* Import Modal */}
-      <Modal
-        open={showImportModal}
-        onClose={() => {
-          if (isImporting) return;
-          setShowImportModal(false);
-          setCsvData("");
-          setFile(null);
-        }}
-        title="Import Groups from CSV"
-        primaryAction={{
-          content: isImporting ? "Importing..." : "Import",
-          onAction: handleImportFile,
-          loading: isImporting,
-          disabled: !csvData.trim() || isImporting,
-        }}
-        secondaryActions={[{
-          content: "Cancel",
-          onAction: () => {
+        <Modal
+          open={showImportModal}
+          onClose={() => {
+            if (isImporting) return;
             setShowImportModal(false);
             setCsvData("");
             setFile(null);
-          },
-          disabled: isImporting,
-        }]}
-      >
-        <Modal.Section>
-          <BlockStack gap="400">
-            {isImporting ? (
-               <Box padding="800">
+          }}
+          title="Import Groups from CSV"
+          primaryAction={{
+            content: isImporting ? "Importing..." : "Import",
+            onAction: handleImportFile,
+            loading: isImporting,
+            disabled: !csvData.trim() || isImporting,
+          }}
+          secondaryActions={[{
+            content: "Cancel",
+            onAction: () => {
+              setShowImportModal(false);
+              setCsvData("");
+              setFile(null);
+            },
+            disabled: isImporting,
+          }]}
+        >
+          <Modal.Section>
+            <BlockStack gap="400">
+              {isImporting ? (
+                <Box padding="800">
                   <BlockStack gap="400" align="center">
                     <Spinner size="large" />
                     <Text variant="headingMd" as="h2">Importing and syncing your products...</Text>
                     <Text variant="bodyMd" tone="subdued">This may take a moment depending on the number of groups.</Text>
                   </BlockStack>
-               </Box>
-            ) : (
-              <>
-                <Banner tone="info">
-                  <BlockStack gap="200">
-                    <p><strong>CSV Format:</strong> Each line creates one group.</p>
-                    <p><code>Group Name, product-handle-1, product-handle-2, ...</code></p>
-                    <p><strong>Example:</strong></p>
-                    <p><code>T-Shirt Colors, red-tshirt, blue-tshirt, green-tshirt</code></p>
-                  </BlockStack>
-                </Banner>
-                
-                <Box paddingBlock="200">
-                  <DropZone onDrop={handleDrop} allowMultiple={false} accept=".csv, text/csv">
-                    {file ? (
-                      <Box padding="400">
-                        <InlineStack gap="300" blockAlign="center">
-                          <Thumbnail
-                            size="small"
-                            alt="CSV File"
-                            source={NoteIcon}
-                          />
-                          <BlockStack gap="100">
-                            <Text variant="bodyMd" fontWeight="bold">
-                              {file.name}
-                            </Text>
-                            <Text variant="bodySm" tone="subdued">
-                              {Math.round(file.size / 1024)} KB
-                            </Text>
-                          </BlockStack>
-                          <Button variant="plain" tone="critical" onClick={(e) => { e.stopPropagation(); setFile(null); setCsvData(""); }}>
-                            Remove
-                          </Button>
-                        </InlineStack>
-                      </Box>
-                    ) : (
-                      <DropZone.FileUpload actionHint="Accepts .csv files" />
-                    )}
-                  </DropZone>
                 </Box>
+              ) : (
+                <>
+                  <Banner tone="info">
+                    <BlockStack gap="200">
+                      <p><strong>CSV Format:</strong> Each line creates one group.</p>
+                      <p><code>Group Name, product-handle-1, product-handle-2, ...</code></p>
+                      <p><strong>Example:</strong></p>
+                      <p><code>T-Shirt Colors, red-tshirt, blue-tshirt, green-tshirt</code></p>
+                    </BlockStack>
+                  </Banner>
 
-                <TextField
-                  label="Or paste CSV Data here"
-                  value={csvData}
-                  onChange={setCsvData}
-                  multiline={4}
-                  placeholder={"Group Name, product-handle-1, product-handle-2"}
-                  autoComplete="off"
-                  helpText="Each line = one new group."
-                />
-              </>
-            )}
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
-    </Page>
-  </Frame>
+                  <Box paddingBlock="200">
+                    <DropZone onDrop={handleDrop} allowMultiple={false} accept=".csv, text/csv">
+                      {file ? (
+                        <Box padding="400">
+                          <InlineStack gap="300" blockAlign="center">
+                            <Thumbnail
+                              size="small"
+                              alt="CSV File"
+                              source={NoteIcon}
+                            />
+                            <BlockStack gap="100">
+                              <Text variant="bodyMd" fontWeight="bold">
+                                {file.name}
+                              </Text>
+                              <Text variant="bodySm" tone="subdued">
+                                {Math.round(file.size / 1024)} KB
+                              </Text>
+                            </BlockStack>
+                            <Button variant="plain" tone="critical" onClick={(e) => { e.stopPropagation(); setFile(null); setCsvData(""); }}>
+                              Remove
+                            </Button>
+                          </InlineStack>
+                        </Box>
+                      ) : (
+                        <DropZone.FileUpload actionHint="Accepts .csv files" />
+                      )}
+                    </DropZone>
+                  </Box>
+
+                  <TextField
+                    label="Or paste CSV Data here"
+                    value={csvData}
+                    onChange={setCsvData}
+                    multiline={4}
+                    placeholder={"Group Name, product-handle-1, product-handle-2"}
+                    autoComplete="off"
+                    helpText="Each line = one new group."
+                  />
+                </>
+              )}
+            </BlockStack>
+          </Modal.Section>
+        </Modal>
+      </Page>
+    </Frame>
   );
 }
