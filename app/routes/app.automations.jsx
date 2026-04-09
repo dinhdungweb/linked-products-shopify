@@ -424,9 +424,7 @@ export default function AutomationsPage() {
                 </Box>
               ) : (
                 <>
-                  <Box padding="400" paddingBlockEnd="0">
-                    <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab} />
-                  </Box>
+                  <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab} />
                   <IndexTable
                     resourceName={{ singular: "rule", plural: "rules" }}
                     itemCount={filteredRules.length}
