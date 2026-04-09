@@ -26,6 +26,8 @@ import {
   CalloutCard,
   Grid,
   InlineGrid,
+  DropZone,
+  Spinner,
 } from "@shopify/polaris";
 import {
   XIcon,
@@ -48,7 +50,8 @@ import {
   RefreshIcon,
   MenuHorizontalIcon,
   MenuVerticalIcon,
-  ExternalIcon
+  ExternalIcon,
+  NoteIcon
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
@@ -713,11 +716,49 @@ export default function Index() {
   const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvData, setCsvData] = useState("");
+  const [file, setFile] = useState(null);
 
   const isLoading = navigation.state === "submitting" || navigation.state === "loading";
+  const isImporting = isLoading && navigation.formData?.get("action") === "importCSV";
   const isSyncing = navigation.state !== "idle" && (
     navigation.formData?.get("action") === "createWithProducts"
   );
+
+  const handleDrop = useCallback(
+    (_droppedFiles, acceptedFiles, _rejectedFiles) => {
+      if (acceptedFiles.length > 0) {
+        const file = acceptedFiles[0];
+        setFile(file);
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setCsvData(e.target.result);
+        };
+        reader.readAsText(file);
+      }
+    },
+    [],
+  );
+
+  const handleImportFile = useCallback(async () => {
+    if (!csvData) return;
+    
+    const formData = new FormData();
+    formData.append("action", "importCSV");
+    formData.append("csvData", csvData);
+    
+    const headers = await fetchIdToken();
+    submit(formData, { method: "POST", headers });
+  }, [csvData, submit]);
+
+  useEffect(() => {
+    // Tự động đóng modal khi import thành công
+    if (actionData?.success && actionData?.message?.includes("Import completed") && showImportModal) {
+      setShowImportModal(false);
+      setFile(null);
+      setCsvData("");
+    }
+  }, [actionData, showImportModal]);
 
   const fetchIdToken = async () => {
     try {
@@ -973,51 +1014,89 @@ export default function Index() {
       <Modal
         open={showImportModal}
         onClose={() => {
+          if (isImporting) return;
           setShowImportModal(false);
           setCsvData("");
+          setFile(null);
         }}
         title="Import Groups from CSV"
         primaryAction={{
-          content: "Import",
-          onAction: () => {
-            const formData = new FormData();
-            formData.append("action", "importCSV");
-            formData.append("csvData", csvData);
-            submit(formData, { method: "POST" });
-            setShowImportModal(false);
-            setCsvData("");
-          },
-          loading: isLoading && navigation.formData?.get("action") === "importCSV",
-          disabled: !csvData.trim(),
+          content: isImporting ? "Importing..." : "Import",
+          onAction: handleImportFile,
+          loading: isImporting,
+          disabled: !csvData.trim() || isImporting,
         }}
         secondaryActions={[{
           content: "Cancel",
           onAction: () => {
             setShowImportModal(false);
             setCsvData("");
+            setFile(null);
           },
+          disabled: isImporting,
         }]}
       >
         <Modal.Section>
           <BlockStack gap="400">
-            <Banner tone="info">
-              <BlockStack gap="200">
-                <p><strong>CSV Format:</strong> Each line creates one group.</p>
-                <p><code>Group Name, product-handle-1, product-handle-2, ...</code></p>
-                <p><strong>Example:</strong></p>
-                <p><code>T-Shirt Colors, red-tshirt, blue-tshirt, green-tshirt</code></p>
-                <p><code>Phone Cases, iphone-case-black, iphone-case-white</code></p>
-              </BlockStack>
-            </Banner>
-            <TextField
-              label="CSV Data"
-              value={csvData}
-              onChange={setCsvData}
-              multiline={8}
-              placeholder={"Group Name, product-handle-1, product-handle-2\nAnother Group, handle-a, handle-b, handle-c"}
-              autoComplete="off"
-              helpText="Paste your CSV data here. Each line = one new group."
-            />
+            {isImporting ? (
+               <Box padding="800">
+                  <BlockStack gap="400" align="center">
+                    <Spinner size="large" />
+                    <Text variant="headingMd" as="h2">Importing and syncing your products...</Text>
+                    <Text variant="bodyMd" tone="subdued">This may take a moment depending on the number of groups.</Text>
+                  </BlockStack>
+               </Box>
+            ) : (
+              <>
+                <Banner tone="info">
+                  <BlockStack gap="200">
+                    <p><strong>CSV Format:</strong> Each line creates one group.</p>
+                    <p><code>Group Name, product-handle-1, product-handle-2, ...</code></p>
+                    <p><strong>Example:</strong></p>
+                    <p><code>T-Shirt Colors, red-tshirt, blue-tshirt, green-tshirt</code></p>
+                  </BlockStack>
+                </Banner>
+                
+                <Box paddingBlock="200">
+                  <DropZone onDrop={handleDrop} allowMultiple={false} accept=".csv, text/csv">
+                    {file ? (
+                      <Box padding="400">
+                        <InlineStack gap="300" blockAlign="center">
+                          <Thumbnail
+                            size="small"
+                            alt="CSV File"
+                            source={NoteIcon}
+                          />
+                          <BlockStack gap="100">
+                            <Text variant="bodyMd" fontWeight="bold">
+                              {file.name}
+                            </Text>
+                            <Text variant="bodySm" tone="subdued">
+                              {Math.round(file.size / 1024)} KB
+                            </Text>
+                          </BlockStack>
+                          <Button variant="plain" tone="critical" onClick={(e) => { e.stopPropagation(); setFile(null); setCsvData(""); }}>
+                            Remove
+                          </Button>
+                        </InlineStack>
+                      </Box>
+                    ) : (
+                      <DropZone.FileUpload actionHint="Accepts .csv files" />
+                    )}
+                  </DropZone>
+                </Box>
+
+                <TextField
+                  label="Or paste CSV Data here"
+                  value={csvData}
+                  onChange={setCsvData}
+                  multiline={4}
+                  placeholder={"Group Name, product-handle-1, product-handle-2"}
+                  autoComplete="off"
+                  helpText="Each line = one new group."
+                />
+              </>
+            )}
           </BlockStack>
         </Modal.Section>
       </Modal>
