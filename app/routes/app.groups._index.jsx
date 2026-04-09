@@ -58,9 +58,8 @@ export async function loader({ request }) {
     where: { shop: shop },
     include: {
       products: {
-        take: 5,
         orderBy: { position: "asc" },
-        select: { productId: true },
+        select: { productId: true, productHandle: true },
       },
       _count: { select: { products: true } },
     },
@@ -415,16 +414,12 @@ export default function GroupsPage() {
 
   const handleExport = useCallback(() => {
     // Generate CSV content: Name, product-handle-1, product-handle-2, ...
-    // Note: We need handles for export to be useful for import. 
-    // Since loader 'groups' only has productId, we might need to rely on what the app has.
-    // Wait, let's just export what we have.
     const csvRows = groups.map(group => {
-      const row = [group.name || "Untitled Group"];
-      // In this index table, we don't have all handles, only IDs. 
-      // But for export to be useful, it needs handles.
-      // Let's check what 'group.products' contains. In loader it's { productId: true }.
-      // This is a limitation of the current index loader.
-      // For now, let's export IDs if handle is not available, but inform the format.
+      const handles = group.products
+        .map(p => p.productHandle)
+        .filter(Boolean);
+      
+      const row = [group.name || "Untitled Group", ...handles];
       return row.join(",");
     });
 
@@ -433,7 +428,7 @@ export default function GroupsPage() {
       return;
     }
 
-    shopify.toast.show("Exporting groups... (Note: Only names exported in current version)");
+    shopify.toast.show("Exporting groups...");
     const blob = new Blob([csvRows.join("\n")], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
