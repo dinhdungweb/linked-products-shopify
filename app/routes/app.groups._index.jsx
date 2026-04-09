@@ -820,9 +820,6 @@ export default function GroupsPage() {
         </BlockStack>
       </Box>
 
-      <LegacyCard>
-        <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
-        
         <Box paddingInline="300" paddingBlock="300">
           <InlineStack align="space-between" blockAlign="center">
             <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
@@ -870,6 +867,9 @@ export default function GroupsPage() {
             </InlineStack>
           </InlineStack>
         </Box>
+
+      <LegacyCard>
+        <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} suppressContent={true} />
 
         {filteredGroups.length === 0 ? (
           <EmptyState
@@ -933,7 +933,11 @@ export default function GroupsPage() {
                 position={index}
               >
                 <IndexTable.Cell>
-                  <Link to={`/app/groups/${group.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <Link 
+                    to={`/app/groups/${group.id}`} 
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Text variant="bodyMd" fontWeight="semibold">{group.name || "Untitled Group"}</Text>
                   </Link>
                 </IndexTable.Cell>
