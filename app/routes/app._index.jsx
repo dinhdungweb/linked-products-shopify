@@ -25,6 +25,7 @@ import {
   Tabs,
   CalloutCard,
   Grid,
+  InlineGrid,
 } from "@shopify/polaris";
 import { 
   XIcon, 
@@ -816,36 +817,30 @@ export default function Index() {
                 )}
                 
                 {/* Stats Cards Row */}
-                <Grid>
-                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-                    <StatsCard 
-                      title="Plan Usage" 
-                      value={`${usageInfo?.used || 0} / ${usageInfo?.limit === Infinity ? "∞" : usageInfo?.limit}`}
-                      icon={CheckIcon}
-                      color="#008060"
-                      progress={usageInfo?.limit === Infinity ? 0 : ((usageInfo?.used || 0) / usageInfo?.limit) * 100}
-                      subtitle={isLimitReached ? "Limit reached" : "Group capacity"}
-                    />
-                  </Grid.Cell>
-                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-                    <StatsCard 
-                      title="Linked Products" 
-                      value={totalProducts}
-                      icon={PlusIcon}
-                      color="#2C6ECB"
-                      subtitle="Across all groups"
-                    />
-                  </Grid.Cell>
-                  <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 4, lg: 4, xl: 4 }}>
-                    <StatsCard 
-                      title="App Status" 
-                      value={isAppEmbedEnabled ? "Active" : "Disabled"}
-                      icon={isAppEmbedEnabled ? CheckIcon : XIcon}
-                      color={isAppEmbedEnabled ? "#008060" : "#D82C0D"}
-                      subtitle="Storefront visibility"
-                    />
-                  </Grid.Cell>
-                </Grid>
+                <InlineGrid columns={{ xs: 1, md: 3 }} gap="400">
+                  <StatsCard 
+                    title="Plan Usage" 
+                    value={`${usageInfo?.used || 0} / ${usageInfo?.limit === Infinity ? "∞" : usageInfo?.limit}`}
+                    icon={CheckIcon}
+                    color="#008060"
+                    progress={usageInfo?.limit === Infinity ? 0 : ((usageInfo?.used || 0) / usageInfo?.limit) * 100}
+                    subtitle={isLimitReached ? "Limit reached" : "Group capacity"}
+                  />
+                  <StatsCard 
+                    title="Linked Products" 
+                    value={totalProducts}
+                    icon={PlusIcon}
+                    color="#2C6ECB"
+                    subtitle="Across all groups"
+                  />
+                  <StatsCard 
+                    title="App Status" 
+                    value={isAppEmbedEnabled ? "Active" : "Disabled"}
+                    icon={isAppEmbedEnabled ? CheckIcon : XIcon}
+                    color={isAppEmbedEnabled ? "#008060" : "#D82C0D"}
+                    subtitle="Storefront visibility"
+                  />
+                </InlineGrid>
 
                 {/* Premium Setup Guide */}
                 <Card padding="500">
