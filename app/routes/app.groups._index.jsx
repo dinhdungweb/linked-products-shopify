@@ -938,7 +938,12 @@ export default function GroupsPage() {
             ]}
           >
             {filteredGroups.map((group, index) => (
-              <IndexTable.Row id={group.id} key={group.id} position={index}>
+              <IndexTable.Row 
+                id={group.id} 
+                key={group.id} 
+                selected={selectedResources.includes(group.id)}
+                position={index}
+              >
                 <IndexTable.Cell>
                   <Link to={`/app/groups/${group.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <Text variant="bodyMd" fontWeight="semibold">{group.name || "Untitled Group"}</Text>
