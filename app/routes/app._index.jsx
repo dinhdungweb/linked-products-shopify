@@ -406,7 +406,7 @@ export async function action({ request }) {
         
         let groupName = "";
         let optionName = settings?.selectOptionLabel?.replace("{option}", "Color") || "Color";
-        let selectorStyle = settings?.defaultProductPageStyle || "button";
+        let selectorStyle = settings?.defaultProductPageStyle || "image_swatch";
         let cardStyle = "same";
         let status = "active";
         let handles = [];

@@ -261,7 +261,7 @@ export async function action({ request }) {
         
         let groupName = "";
         let optionName = settings?.selectOptionLabel?.replace("{option}", "Color") || "Color";
-        let selectorStyle = settings?.defaultProductPageStyle || "button";
+        let selectorStyle = settings?.defaultProductPageStyle || "image_swatch";
         let cardStyle = "same";
         let status = "active";
         let handles = [];
@@ -330,7 +330,7 @@ export async function action({ request }) {
             shop: session.shop, 
             name: groupName, 
             optionName: optionName, 
-            selectorStyle: selectorStyle || "button",
+            selectorStyle: selectorStyle || "image_swatch",
             cardSelectorStyle: cardStyle,
             status: status === "active" ? "active" : "draft"
           },

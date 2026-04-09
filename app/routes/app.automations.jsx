@@ -90,7 +90,7 @@ export async function action({ request }) {
     const type = formData.get("type");
     const pattern = formData.get("pattern");
     const optionName = formData.get("optionName") || "Color";
-    const selectorStyle = formData.get("selectorStyle") || "block";
+    const selectorStyle = formData.get("selectorStyle") || "image_swatch";
 
     if (!name || !type || !pattern) {
       return json({ error: "Name, type, and pattern are required" }, { status: 400 });
@@ -110,7 +110,7 @@ export async function action({ request }) {
     const type = formData.get("type");
     const pattern = formData.get("pattern");
     const optionName = formData.get("optionName") || "Color";
-    const selectorStyle = formData.get("selectorStyle") || "block";
+    const selectorStyle = formData.get("selectorStyle") || "image_swatch";
 
     await prisma.automationRule.update({
       where: { id: ruleId },
@@ -211,7 +211,7 @@ export default function AutomationsPage() {
     type: "title_pattern",
     pattern: "",
     optionName: "Color",
-    selectorStyle: "button",
+    selectorStyle: "image_swatch",
   });
   const [actionBannerVisible, setActionBannerVisible] = useState(true);
 
@@ -247,7 +247,7 @@ export default function AutomationsPage() {
     submit(fd, { method: "POST" });
     setShowCreateModal(false);
     setEditingRuleId(null);
-    setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "button" });
+    setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "image_swatch" });
   }, [formState, submit, editingRuleId]);
 
   const handleEditRule = useCallback((rule) => {
@@ -465,21 +465,7 @@ export default function AutomationsPage() {
       <Modal
         open={showCreateModal}
         onClose={() => {
-          setShowCreateModal(false);
-          setEditingRuleId(null);
-          setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "block" });
-        }}
-        title={editingRuleId ? "Edit Automation Rule" : "Create Automation Rule"}
-        primaryAction={{
-          content: editingRuleId ? "Save Changes" : "Create Rule",
-          onAction: handleCreateRule,
-          disabled: !formState.name || !formState.pattern,
-          loading: isLoading && (navigation.formData?.get("action") === "createRule" || navigation.formData?.get("action") === "updateRule"),
-        }}
-        secondaryActions={[{ content: "Cancel", onAction: () => {
-          setShowCreateModal(false);
-          setEditingRuleId(null);
-          setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "block" });
+          setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "image_swatch" });
         } }]}
       >
         <Modal.Section>
