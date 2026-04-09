@@ -693,19 +693,21 @@ export default function GroupsPage() {
         }
         onClose={toggleActive}
       >
-        <ActionList
-          actionRole="menuitem"
-          items={[
-            { content: 'Edit group', icon: ViewIcon, url: `/app/groups/${groupId}`, disabled: isRowLoading },
-            {
-              content: status === "active" ? 'Set as draft' : 'Set as active',
-              icon: status === "active" ? XIcon : CheckIcon,
-              onAction: () => { handleToggleStatus(groupId, status); toggleActive(); },
-              disabled: isRowLoading
-            },
-            { content: 'Delete', icon: DeleteIcon, destructive: true, onAction: () => { handleDeleteGroup(groupId); toggleActive(); }, disabled: isRowLoading },
-          ]}
-        />
+        <div onClick={(e) => e.stopPropagation()}>
+          <ActionList
+            actionRole="menuitem"
+            items={[
+              { content: 'Edit group', icon: ViewIcon, url: `/app/groups/${groupId}`, disabled: isRowLoading },
+              {
+                content: status === "active" ? 'Set as draft' : 'Set as active',
+                icon: status === "active" ? XIcon : CheckIcon,
+                onAction: () => { handleToggleStatus(groupId, status); toggleActive(); },
+                disabled: isRowLoading
+              },
+              { content: 'Delete', icon: DeleteIcon, destructive: true, onAction: () => { handleDeleteGroup(groupId); toggleActive(); }, disabled: isRowLoading },
+            ]}
+          />
+        </div>
       </Popover>
     );
   };
