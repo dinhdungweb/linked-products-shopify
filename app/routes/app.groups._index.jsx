@@ -13,6 +13,7 @@ import {
   EmptyState,
   TextField,
   InlineStack,
+  Loading,
   Banner,
   Box,
   Divider,
@@ -742,6 +743,7 @@ export default function GroupsPage() {
 
   return (
     <Page fullWidth>
+      {isLoading && <Loading />}
       {/* Header Section */}
       <Box paddingBlockEnd="400">
         <BlockStack gap="500">
