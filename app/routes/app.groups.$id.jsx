@@ -1137,7 +1137,26 @@ export default function GroupDetail() {
             </Layout>
 
             <Box padding="400" background="bg-surface" borderColor="border" borderWidth="025" borderRadius="300" position="sticky" insetBlockEnd="0" zIndex="10" marginBlockStart="800">
-                <InlineStack align="space-between" blockAlign="center"><Button variant="primary" tone="critical" onClick={handleDeleteGroup} loading={isLoading && navigation.formData?.get("action") === "deleteGroup"}>Delete</Button><Button variant="primary" size="large" onClick={handleSync} loading={isLoading && navigation.formData?.get("action") === "saveAll"}>Save</Button></InlineStack>
+                <InlineStack align={group.id ? "space-between" : "end"} blockAlign="center">
+                    {group.id && (
+                        <Button 
+                            variant="primary" 
+                            tone="critical" 
+                            onClick={handleDeleteGroup} 
+                            loading={isLoading && navigation.formData?.get("action") === "deleteGroup"}
+                        >
+                            Delete
+                        </Button>
+                    )}
+                    <Button 
+                        variant="primary" 
+                        size="large" 
+                        onClick={handleSync} 
+                        loading={isLoading && navigation.formData?.get("action") === "saveAll"}
+                    >
+                        Save
+                    </Button>
+                </InlineStack>
             </Box>
 
             <Modal
