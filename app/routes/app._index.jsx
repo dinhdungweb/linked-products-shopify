@@ -27,11 +27,11 @@ import {
   Grid,
   InlineGrid,
 } from "@shopify/polaris";
-import { 
-  XIcon, 
-  SearchIcon, 
-  ViewIcon, 
-  DeleteIcon, 
+import {
+  XIcon,
+  SearchIcon,
+  ViewIcon,
+  DeleteIcon,
   ImportIcon,
   PlayCircleIcon,
   ClipboardChecklistIcon,
@@ -123,15 +123,15 @@ export async function loader({ request }) {
       const assetResponse = await fetch(restUrl, {
         headers: { "X-Shopify-Access-Token": session.accessToken },
       });
-      
+
       if (assetResponse.ok) {
         const assetData = await assetResponse.json();
         const settingsValue = assetData.asset?.value;
         if (settingsValue) {
           const settings = JSON.parse(settingsValue);
           const blocks = settings.current?.blocks || {};
-          isAppEmbedEnabled = Object.values(blocks).some(block => 
-            (block.type?.includes('linked-products') || block.type?.includes('app-card-injector')) && 
+          isAppEmbedEnabled = Object.values(blocks).some(block =>
+            (block.type?.includes('linked-products') || block.type?.includes('app-card-injector')) &&
             block.disabled === false
           );
         }
@@ -536,7 +536,7 @@ export default function Index() {
               </div>
             </InlineStack>
           </BlockStack>
-          
+
           <Box paddingBlockStart="300">
             {progress !== undefined ? (
               <BlockStack gap="100">
@@ -591,8 +591,8 @@ export default function Index() {
   };
 
   const TutorialCard = () => (
-    <div style={{ 
-      display: 'flex', 
+    <div style={{
+      display: 'flex',
       backgroundColor: '#FFFFFF',
       borderRadius: '16px',
       overflow: 'hidden',
@@ -601,8 +601,8 @@ export default function Index() {
       minHeight: '180px'
     }}>
       {/* Left Banner Section */}
-      <div style={{ 
-        width: '40%', 
+      <div style={{
+        width: '40%',
         background: 'linear-gradient(135deg, #6366F1 0%, #A855F7 100%)',
         position: 'relative',
         display: 'flex',
@@ -613,9 +613,9 @@ export default function Index() {
         overflow: 'hidden'
       }}>
         {/* Background Illustration Overlay */}
-        <img 
-          src="file:///C:/Users/DUNG/.gemini/antigravity/brain/c3a366c7-9ba6-4d32-a9f2-7f65b53514d3/tutorial_banner_illustration_1775666504320.png" 
-          alt="" 
+        <img
+          src="file:///C:/Users/DUNG/.gemini/antigravity/brain/c3a366c7-9ba6-4d32-a9f2-7f65b53514d3/tutorial_banner_illustration_1775666504320.png"
+          alt=""
           style={{
             position: 'absolute',
             bottom: '-10%',
@@ -626,7 +626,7 @@ export default function Index() {
             filter: 'brightness(1.5)'
           }}
         />
-        
+
         <Box paddingBlockEnd="200">
           <div style={{
             display: 'inline-block',
@@ -801,11 +801,11 @@ export default function Index() {
 
                 {/* Dynamic Alerts */}
                 {!isAppEmbedEnabled && (
-                  <Banner 
-                    title="Theme integration required" 
+                  <Banner
+                    title="Theme integration required"
                     tone="warning"
-                    action={{ 
-                      content: 'Enable in Theme', 
+                    action={{
+                      content: 'Enable in Theme',
                       onAction: () => {
                         const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
                         window.open(url, '_blank');
@@ -815,26 +815,26 @@ export default function Index() {
                     <p>App embed is disabled. Enable it to show swatches on your storefront.</p>
                   </Banner>
                 )}
-                
+
                 {/* Stats Cards Row */}
                 <InlineGrid columns={{ xs: 1, md: 3 }} gap="400">
-                  <StatsCard 
-                    title="Plan Usage" 
+                  <StatsCard
+                    title="Plan Usage"
                     value={`${usageInfo?.used || 0} / ${usageInfo?.limit === Infinity ? "∞" : usageInfo?.limit}`}
                     icon={CheckIcon}
                     color="#008060"
                     progress={usageInfo?.limit === Infinity ? 0 : ((usageInfo?.used || 0) / usageInfo?.limit) * 100}
                     subtitle={isLimitReached ? "Limit reached" : "Group capacity"}
                   />
-                  <StatsCard 
-                    title="Linked Products" 
+                  <StatsCard
+                    title="Linked Products"
                     value={totalProducts}
                     icon={PlusIcon}
                     color="#2C6ECB"
                     subtitle="Across all groups"
                   />
-                  <StatsCard 
-                    title="App Status" 
+                  <StatsCard
+                    title="App Status"
                     value={isAppEmbedEnabled ? "Active" : "Disabled"}
                     icon={isAppEmbedEnabled ? CheckIcon : XIcon}
                     color={isAppEmbedEnabled ? "#008060" : "#D82C0D"}
@@ -854,21 +854,21 @@ export default function Index() {
                         {groups.length > 0 && isAppEmbedEnabled ? "2/2 completed" : groups.length > 0 || isAppEmbedEnabled ? "1/2 completed" : "0/2 completed"}
                       </Badge>
                     </InlineStack>
-                    
-                    <ProgressBar 
-                      progress={ (groups.length > 0 ? 50 : 0) + (isAppEmbedEnabled ? 50 : 0) } 
-                      size="small" 
-                      tone="primary" 
+
+                    <ProgressBar
+                      progress={(groups.length > 0 ? 50 : 0) + (isAppEmbedEnabled ? 50 : 0)}
+                      size="small"
+                      tone="primary"
                     />
 
                     <BlockStack gap="300">
                       {/* Step 1: Create Group */}
-                      <Box padding="300" background="bg-surface-secondary" borderRadius="300" borderStyle="solid" borderWidth="025" borderColor="border-subdued">
+                      <Box padding="300" background="bg-surface-secondary" borderRadius="300" borderStyle="solid" borderWidth="025" style={{ borderColor: '#ddd' }}>
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                           <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                            <div style={{ 
-                              backgroundColor: '#FFFFFF', 
-                              padding: '10px', 
+                            <div style={{
+                              backgroundColor: '#FFFFFF',
+                              padding: '10px',
                               borderRadius: '12px',
                               color: groups.length > 0 ? '#008060' : '#8c9196',
                               display: 'flex',
@@ -888,12 +888,12 @@ export default function Index() {
                       </Box>
 
                       {/* Step 2: Enable App Embed */}
-                      <Box padding="300" background="bg-surface-secondary" borderRadius="300" borderStyle="solid" borderWidth="025" borderColor="border-subdued">
+                      <Box padding="300" background="bg-surface-secondary" borderRadius="300" borderStyle="solid" borderWidth="025" style={{ borderColor: '#ddd' }}>
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                           <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                            <div style={{ 
-                              backgroundColor: '#FFFFFF', 
-                              padding: '10px', 
+                            <div style={{
+                              backgroundColor: '#FFFFFF',
+                              padding: '10px',
                               borderRadius: '12px',
                               color: isAppEmbedEnabled ? '#008060' : '#8c9196',
                               display: 'flex',
@@ -918,7 +918,7 @@ export default function Index() {
                   </BlockStack>
                 </Card>
 
-                        {/* Tutorial Section moved to Main */}
+                {/* Tutorial Section moved to Main */}
                 <Box paddingBlockStart="200">
                   <TutorialCard />
                 </Box>
@@ -933,12 +933,12 @@ export default function Index() {
                   <BlockStack gap="300">
                     <Text variant="headingMd">Your Plan</Text>
                     <BlockStack gap="100">
-                       <Text variant="bodyMd" fontWeight="bold">
-                         {usageInfo.planName} Plan
-                       </Text>
-                       <Text variant="bodySm" tone="subdued">
-                         {usageInfo.used} / {usageInfo.limit === Infinity ? "Unlimited" : usageInfo.limit} links used
-                       </Text>
+                      <Text variant="bodyMd" fontWeight="bold">
+                        {usageInfo.planName} Plan
+                      </Text>
+                      <Text variant="bodySm" tone="subdued">
+                        {usageInfo.used} / {usageInfo.limit === Infinity ? "Unlimited" : usageInfo.limit} links used
+                      </Text>
                     </BlockStack>
                     {usageInfo.limit !== Infinity && (
                       <ProgressBar
