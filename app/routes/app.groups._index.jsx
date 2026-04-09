@@ -676,7 +676,16 @@ export default function GroupsPage() {
     return (
       <Popover
         active={active}
-        activator={<Button onClick={toggleActive} icon={MenuHorizontalIcon} variant="tertiary" />}
+        activator={
+          <Button 
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleActive();
+            }} 
+            icon={MenuHorizontalIcon} 
+            variant="tertiary" 
+          />
+        }
         onClose={toggleActive}
       >
         <ActionList
@@ -976,12 +985,15 @@ export default function GroupsPage() {
                   <Text tone="subdued" variant="bodyMd">{new Date(group.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
                 </IndexTable.Cell>
                 <IndexTable.Cell>
-                   <InlineStack align="end" gap="100">
+                   <InlineStack align="end" gap="100" onClick={(e) => e.stopPropagation()}>
                       <Button icon={DuplicateIcon} variant="tertiary" />
                       <Button 
                         icon={RefreshIcon} 
                         variant="tertiary" 
-                        onClick={() => handleSyncGroup(group.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSyncGroup(group.id);
+                        }}
                         loading={isLoading && navigation.formData?.get("groupId") === group.id && navigation.formData?.get("action") === "sync"}
                       />
                       <ActionMenu groupId={group.id} />
