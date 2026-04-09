@@ -511,6 +511,8 @@ export async function action({ request }) {
   }
 
   return json({ error: "Invalid action" }, { status: 400 });
+}
+
 export default function Index() {
   const { groups, usageInfo, totalProducts, isAppEmbedEnabled, shop } = useLoaderData();
   const actionData = useActionData();
