@@ -646,13 +646,13 @@ export default function GroupsPage() {
 
   const promotedBulkActions = useMemo(() => [
     {
-      content: 'Set as active',
+      content: activeBulkAction === 'active' ? 'Activating...' : 'Set as active',
       onAction: () => handleBulkAction('active'),
       loading: activeBulkAction === 'active' || (navigation.state !== "idle" && navigation.formData?.get("bulkType") === 'active'),
       disabled: activeBulkAction !== null || navigation.state !== "idle",
     },
     {
-      content: 'Set as draft',
+      content: activeBulkAction === 'draft' ? 'Drafting...' : 'Set as draft',
       onAction: () => handleBulkAction('draft'),
       loading: activeBulkAction === 'draft' || (navigation.state !== "idle" && navigation.formData?.get("bulkType") === 'draft'),
       disabled: activeBulkAction !== null || navigation.state !== "idle",
@@ -661,7 +661,7 @@ export default function GroupsPage() {
 
   const bulkActions = useMemo(() => [
     {
-      content: 'Delete',
+      content: activeBulkAction === 'delete' ? 'Deleting...' : 'Delete',
       onAction: () => {
         if (confirm(`Are you sure you want to delete ${selectedResources.length} groups?`)) {
           handleBulkAction('delete');
