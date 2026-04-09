@@ -14,14 +14,22 @@ export async function syncGroupMetafields(admin, prisma, gId) {
     const allowedIds = await getGroupsWithinLimit(group.shop);
     const isPlanDisabled = allowedIds !== null && !allowedIds.includes(gId);
 
-    const metafieldValue = group.products.map(p => ({
-        handle: p.productHandle,
-        title: p.optionValue || "",
-        image: p.customImageUrl || "",
-        color: p.customColor || "#FFFFFF",
-        color2: p.customColor2 || "",
-        style: p.style || "one"
-    }));
+    const seenHandles = new Set();
+    const metafieldValue = [];
+    
+    for (const p of group.products) {
+        if (!p.productHandle || seenHandles.has(p.productHandle)) continue;
+        seenHandles.add(p.productHandle);
+        
+        metafieldValue.push({
+            handle: p.productHandle,
+            title: p.optionValue || "",
+            image: p.customImageUrl || "",
+            color: p.customColor || "#FFFFFF",
+            color2: p.customColor2 || "",
+            style: p.style || "one"
+        });
+    }
 
     const metafields = [];
     for (const product of group.products) {
