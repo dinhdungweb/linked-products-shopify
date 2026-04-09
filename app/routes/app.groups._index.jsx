@@ -482,14 +482,18 @@ export default function GroupsPage() {
   const isImporting = isLoading && navigation.formData?.get("action") === "importCSV";
   const isLimitReached = usageInfo.limit !== Infinity && usageInfo.used >= usageInfo.limit;
 
+  const [isProcessing, setIsProcessing] = useState(false);
+
   useEffect(() => {
-    // Only reset loading states when transitioning BACK to idle from a working state
-    if (navigation.state === "idle") {
+    if (navigation.state !== "idle") {
+      setIsProcessing(true);
+    } else if (navigation.state === "idle" && isProcessing) {
       setActiveBulkAction(null);
       setSyncingId(null);
       setStatusLoadingId(null);
+      setIsProcessing(false);
     }
-  }, [navigation.state]);
+  }, [navigation.state, isProcessing]);
 
   useEffect(() => {
     if (actionData?.success) {
