@@ -52,11 +52,12 @@ import { syncGroupMetafields } from "../sync.server";
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { getUsageInfo } = await import("../billing.server");
-
   const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
+  const { getUsageInfo, getGroupsWithinLimit } = await import("../billing.server");
+
   const usageInfo = await getUsageInfo(shop);
+  const allowedIds = await getGroupsWithinLimit(shop);
 
   const groups = await prisma.productGroup.findMany({
     where: { shop: shop },
@@ -150,7 +151,12 @@ export async function loader({ request }) {
   
   console.log(`Final isAppEmbedEnabled status: ${isAppEmbedEnabled}`);
 
-  return json({ groups, shop: shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled });
+  const enrichedGroups = groups.map(group => ({
+    ...group,
+    isPlanDisabled: allowedIds !== null && !allowedIds.includes(group.id)
+  }));
+
+  return json({ groups: enrichedGroups, shop: shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled });
 }
 
 // Action (copied from index for delete/import support here too)
@@ -631,85 +637,90 @@ export default function GroupsPage() {
     <Page fullWidth>
       {/* Header Section */}
       <Box paddingBlockEnd="400">
-        <BlockStack gap="400">
-          <InlineStack align="space-between" blockAlign="start">
-            <BlockStack gap="100">
-              <Text variant="headingXl" as="h1">Product groups</Text>
-              <Text variant="bodyMd" tone="subdued">Product groups combine multiple product listings into variant options.</Text>
-            </BlockStack>
-              <InlineStack gap="200">
-                <ButtonGroup>
-                  <Button icon={ExportIcon} onClick={handleExport}>Export</Button>
-                  <Button icon={ImportIcon} onClick={() => setShowImportModal(true)}>Import</Button>
-                  <Button icon={RefreshIcon} disabled>Bulk update options</Button>
-                </ButtonGroup>
-                {isLimitReached ? (
-                  <Tooltip content="You have reached the product group limit for your current plan. Please upgrade to create more.">
-                    <Button variant="primary" icon={PlusIcon} disabled>Create group</Button>
-                  </Tooltip>
-                ) : (
-                  <Button variant="primary" icon={PlusIcon} url="/app/groups/new">Create group</Button>
-                )}
-              </InlineStack>
-          </InlineStack>
-
-          {!isAppEmbedEnabled && (
-            <Banner 
-              title="App embed is disabled" 
-              tone="warning"
-              action={{ 
-                content: 'Enable in Theme', 
-                onAction: () => {
-                  const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
-                  window.open(url, '_blank');
-                }
-              }}
-            >
-              <p>Please enable the app embed to show product swatches on your storefront.</p>
+        <BlockStack gap="500">
+          {usageInfo.isOverLimit && (
+            <Banner tone="critical" title="Plan limit exceeded">
+              <p>
+                Your current plan only supports <strong>{usageInfo.limit}</strong> groups.
+                We have temporarily disabled <strong>{usageInfo.used - usageInfo.limit}</strong> of your oldest groups on the storefront. 
+                Please upgrade your plan to reactive them.
+              </p>
+              <div style={{ marginTop: '10px' }}>
+                <Button url="/app/pricing" variant="primary">Upgrade Plan Now</Button>
+              </div>
             </Banner>
           )}
 
-          {isLimitReached && (
-            <Banner 
-              title="You've reached your product group limit" 
-              tone="warning"
-              action={{ content: 'Upgrade plan', url: '/app/pricing' }}
-            >
-              <p>The <b>{usageInfo.planName}</b> allows a maximum of {usageInfo.limit} groups. Upgrade to continue expanding your store.</p>
-            </Banner>
-          )}
-
-          {/* Stats Row */}
-          <Box background={isLimitReached ? "bg-surface-caution" : "bg-surface"} padding="400" borderRadius="300" borderColor={isLimitReached ? "border-caution" : "border"} borderWidth="025">
-            <InlineStack align="space-between" blockAlign="center">
-              <Box flex="1">
-                <BlockStack gap="100">
-                  <Text variant="bodySm" fontWeight="bold" tone="subdued">Created product groups</Text>
-                  <Text variant="bodyMd" tone={isLimitReached ? "caution" : "default"}>{groups.length} groups</Text>
-                </BlockStack>
-              </Box>
-              <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
-              <Box flex="1">
-                <BlockStack gap="100">
-                  <Text variant="bodySm" fontWeight="bold" tone="subdued">Remaining product groups</Text>
-                  <InlineStack gap="100" blockAlign="center">
-                    <Text variant="bodyMd" tone={isLimitReached ? "caution" : "subdued"}>
-                      {usageInfo.limit === Infinity ? "Unlimited" : Math.max(0, usageInfo.limit - groups.length)} groups
-                    </Text>
-                    <div style={{ color: '#8c9196' }}>•</div>
-                    <Button variant="plain" tone={isLimitReached ? "caution" : "info"} size="micro" url="/app/pricing">Upgrade</Button>
-                  </InlineStack>
-                </BlockStack>
-              </Box>
-              <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
-              <Box flex="1">
-                <BlockStack gap="100">
-                  <Text variant="bodySm" fontWeight="bold" tone="subdued">Total products</Text>
-                  <Text variant="bodyMd">{totalProducts} products</Text>
-                </BlockStack>
-              </Box>
+          <BlockStack gap="400">
+            <InlineStack align="space-between" blockAlign="start">
+              <BlockStack gap="100">
+                <Text variant="headingXl" as="h1">Product groups</Text>
+                <Text variant="bodyMd" tone="subdued">Product groups combine multiple product listings into variant options.</Text>
+              </BlockStack>
+                <InlineStack gap="200">
+                  <ButtonGroup>
+                    <Button icon={ExportIcon} onClick={handleExport}>Export</Button>
+                    <Button icon={ImportIcon} onClick={() => setShowImportModal(true)}>Import</Button>
+                    <Button icon={RefreshIcon} disabled>Bulk update options</Button>
+                  </ButtonGroup>
+                  {isLimitReached ? (
+                    <Tooltip content="You have reached the product group limit for your current plan. Please upgrade to create more.">
+                      <Button variant="primary" icon={PlusIcon} disabled>Create group</Button>
+                    </Tooltip>
+                  ) : (
+                    <Button variant="primary" icon={PlusIcon} url="/app/groups/new">Create group</Button>
+                  )}
+                </InlineStack>
             </InlineStack>
-          </Box>
+
+            {!isAppEmbedEnabled && (
+              <Banner 
+                title="App embed is disabled" 
+                tone="warning"
+                action={{ 
+                  content: 'Enable in Theme', 
+                  onAction: () => {
+                    const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
+                    window.open(url, '_blank');
+                  }
+                }}
+              >
+                <p>Please enable the app embed to show product swatches on your storefront.</p>
+              </Banner>
+            )}
+
+            {/* Stats Row */}
+            <Box background={isLimitReached ? "bg-surface-caution" : "bg-surface"} padding="400" borderRadius="300" borderColor={isLimitReached ? "border-caution" : "border"} borderWidth="025">
+              <InlineStack align="space-between" blockAlign="center">
+                <Box flex="1">
+                  <BlockStack gap="100">
+                    <Text variant="bodySm" fontWeight="bold" tone="subdued">Created product groups</Text>
+                    <Text variant="bodyMd" tone={isLimitReached ? "caution" : "default"}>{groups.length} groups</Text>
+                  </BlockStack>
+                </Box>
+                <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
+                <Box flex="1">
+                  <BlockStack gap="100">
+                    <Text variant="bodySm" fontWeight="bold" tone="subdued">Remaining product groups</Text>
+                    <InlineStack gap="100" blockAlign="center">
+                      <Text variant="bodyMd" tone={isLimitReached ? "caution" : "subdued"}>
+                        {usageInfo.limit === Infinity ? "Unlimited" : Math.max(0, usageInfo.limit - groups.length)} groups
+                      </Text>
+                      <div style={{ color: '#8c9196' }}>•</div>
+                      <Button variant="plain" tone={isLimitReached ? "caution" : "info"} size="micro" url="/app/pricing">Upgrade</Button>
+                    </InlineStack>
+                  </BlockStack>
+                </Box>
+                <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--p-color-border-subdued)', margin: '0 20px' }} />
+                <Box flex="1">
+                  <BlockStack gap="100">
+                    <Text variant="bodySm" fontWeight="bold" tone="subdued">Total products</Text>
+                    <Text variant="bodyMd">{totalProducts} products</Text>
+                  </BlockStack>
+                </Box>
+              </InlineStack>
+            </Box>
+          </BlockStack>
         </BlockStack>
       </Box>
 
@@ -834,12 +845,20 @@ export default function GroupsPage() {
                   <Text variant="bodyMd">{group.optionName}</Text>
                 </IndexTable.Cell>
                 <IndexTable.Cell>
-                  <Badge tone={group.status === "active" ? "success" : "attention"}>
-                    <InlineStack gap="100" blockAlign="center">
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: group.status === "active" ? '#008060' : '#8c9196' }} />
-                      {group.status === "active" ? "Active" : "Draft"}
-                    </InlineStack>
-                  </Badge>
+                  <InlineStack gap="200" blockAlign="center">
+                    {group.status === "active" ? (
+                        <Badge tone={group.isPlanDisabled ? "attention" : "success"}>
+                          {group.isPlanDisabled ? "Paused by Plan" : "Active"}
+                        </Badge>
+                    ) : (
+                        <Badge tone="subdued">Draft</Badge>
+                    )}
+                    {group.isPlanDisabled && (
+                      <Tooltip content="This group is disabled because it exceeds your plan limit.">
+                         <Icon source={QuestionCircleIcon} tone="caution" />
+                      </Tooltip>
+                    )}
+                  </InlineStack>
                 </IndexTable.Cell>
                 <IndexTable.Cell>
                   <Text tone="subdued" variant="bodyMd">{new Date(group.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>

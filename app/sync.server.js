@@ -1,3 +1,5 @@
+import { getGroupsWithinLimit } from "./billing.server";
+
 export async function syncGroupMetafields(admin, prisma, gId) {
     const group = await prisma.productGroup.findUnique({
         where: { id: gId },
@@ -8,11 +10,9 @@ export async function syncGroupMetafields(admin, prisma, gId) {
         return { success: false, error: "Group not found" };
     }
 
-    // If draft, we should probably delete metafields or set them to empty to hide from store?
-    // Based on the requirement, "Set as draft" should likely stop it from showing.
-    // However, the current logic in $id.jsx always syncs.
-    // Let's check status. If draft, we might want to clear or just set a flag.
-    // For now, let's stick to the $id.jsx logic which pushes based on database state.
+    // Check plan restriction - only first N groups are allowed to be active
+    const allowedIds = await getGroupsWithinLimit(group.shop);
+    const isPlanDisabled = allowedIds !== null && !allowedIds.includes(gId);
 
     const metafieldValue = group.products.map(p => ({
         handle: p.productHandle,
@@ -46,7 +46,7 @@ export async function syncGroupMetafields(admin, prisma, gId) {
             if (cStyle.includes("button") || cStyle.includes("block")) cStyle = "button_card";
         }
         metafields.push({ ...base, key: "card_selector_style", value: cStyle, type: "single_line_text_field" });
-        metafields.push({ ...base, key: "status", value: group.status || "active", type: "single_line_text_field" });
+        metafields.push({ ...base, key: "status", value: isPlanDisabled ? "plan_disabled" : (group.status || "active"), type: "single_line_text_field" });
     }
 
     console.log(`[Sync] Group ${gId}: Syncing ${metafields.length} metafields...`);

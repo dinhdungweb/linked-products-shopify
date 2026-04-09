@@ -69,6 +69,27 @@ export async function getRemainingLinks(shopDomain) {
 }
 
 /**
+ * Get IDs of groups that are within the current plan's limit (oldest first)
+ */
+export async function getGroupsWithinLimit(shopDomain) {
+    const shop = await getOrCreateShop(shopDomain);
+    const plan = PLANS[shop.plan] || PLANS.free;
+    
+    if (plan.groupLimit === Infinity) {
+        return null; // All allowed
+    }
+
+    const groups = await prisma.productGroup.findMany({
+        where: { shop: shopDomain },
+        orderBy: { createdAt: "asc" }, // Oldest first
+        take: plan.groupLimit,
+        select: { id: true }
+    });
+
+    return groups.map(g => g.id);
+}
+
+/**
  * Get usage info for display (Updated for Group limits)
  */
 export async function getUsageInfo(shopDomain) {
@@ -83,6 +104,7 @@ export async function getUsageInfo(shopDomain) {
         limit: plan.groupLimit,
         remaining: plan.groupLimit === Infinity ? Infinity : plan.groupLimit - currentCount,
         percentage: plan.groupLimit === Infinity ? 0 : Math.round((currentCount / plan.groupLimit) * 100),
+        isOverLimit: plan.groupLimit !== Infinity && currentCount > plan.groupLimit,
     };
 }
 
