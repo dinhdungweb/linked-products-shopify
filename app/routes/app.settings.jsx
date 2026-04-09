@@ -255,34 +255,29 @@ export default function SettingsPage() {
             {selectedTab === 0 && (
               <BlockStack gap="600">
                 <Card>
-                  <BlockStack gap="400">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <BlockStack gap="100">
-                        <Text variant="headingMd" as="h3">App Connectivity</Text>
-                        <Text variant="bodyMd" tone="subdued">Enable or disable the linked products functionality globally.</Text>
-                      </BlockStack>
-                      <Box 
-                        padding="100" 
-                        background={settings.appEnabled ? "bg-surface-success" : "bg-surface-critical"} 
-                        borderRadius="500"
-                        paddingInline="300"
+                  <InlineStack align="space-between" blockAlign="center">
+                    <BlockStack gap="100">
+                      <Text variant="headingMd" as="h3">App Visibility</Text>
+                      <Text variant="bodyMd" tone="subdued">Control if the linked products are visible on your storefront.</Text>
+                    </BlockStack>
+                    <InlineStack gap="300" blockAlign="center">
+                      <Badge tone={settings.appEnabled ? "success" : "critical"} progress={settings.appEnabled ? "complete" : "incomplete"}>
+                        <InlineStack gap="100" blockAlign="center">
+                          <Icon source={settings.appEnabled ? CheckCircleIcon : XIcon} tone={settings.appEnabled ? "success" : "critical"} />
+                          <Text variant="bodySm" fontWeight="bold">
+                            {settings.appEnabled ? "ACTIVE" : "DISABLED"}
+                          </Text>
+                        </InlineStack>
+                      </Badge>
+                      <Button 
+                        variant="secondary" 
+                        onClick={() => handleSettingChange("appEnabled", !settings.appEnabled)}
+                        tone={settings.appEnabled ? "critical" : undefined}
                       >
-                         <InlineStack gap="100" blockAlign="center">
-                            <Icon source={settings.appEnabled ? CheckIcon : XIcon} tone={settings.appEnabled ? "success" : "critical"} />
-                            <Text fontWeight="bold" tone={settings.appEnabled ? "success" : "critical"}>
-                              {settings.appEnabled ? "ACTIVE" : "DISABLED"}
-                            </Text>
-                            <Divider vertical />
-                            <Button 
-                              variant="plain" 
-                              onClick={() => handleSettingChange("appEnabled", !settings.appEnabled)}
-                            >
-                              {settings.appEnabled ? "Deactivate" : "Activate"}
-                            </Button>
-                         </InlineStack>
-                      </Box>
+                        {settings.appEnabled ? "Disable App" : "Activate App"}
+                      </Button>
                     </InlineStack>
-                  </BlockStack>
+                  </InlineStack>
                 </Card>
 
                 <InlineGrid columns={{ xs: 1, md: "2fr 1fr" }} gap="400">
@@ -314,8 +309,10 @@ export default function SettingsPage() {
 
                     <Card>
                        <BlockStack gap="400">
-                          <InlineStack gap="200" blockAlign="center">
-                            <Icon source={EmailIcon} />
+                          <InlineStack gap="200" align="start" blockAlign="center">
+                            <Box background="bg-fill-info-secondary" padding="100" borderRadius="100">
+                                <Icon source={EmailIcon} tone="info" />
+                            </Box>
                             <Text variant="headingMd" as="h3">Communication</Text>
                           </InlineStack>
                           <TextField 
