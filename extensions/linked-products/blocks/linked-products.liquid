@@ -12,10 +12,7 @@
   {%- assign app_settings = shop.metafields.linked_products.settings.value -%}
   {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
   
-  {%- if app_settings.appEnabled == false -%}
-    {%- comment -%}App is disabled in settings{%- endcomment -%}
-    {%- return -%}
-  {%- endif -%}
+  {%- if app_settings.appEnabled != false -%}
   
   {%- comment -%}Dynamic settings: prefer per-style customizations, fallback to hardcoded defaults (matches App BASE_SETTINGS){%- endcomment -%}
   {%- assign meta_selector_style = product.metafields.linked_products.selector_style.value -%}
@@ -406,6 +403,7 @@
     </div>
   </div>
 
+{%- endif -%}
 {%- endif -%}
 
 {% schema %}
