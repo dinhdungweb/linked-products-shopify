@@ -521,26 +521,34 @@ export default function Index() {
   const isLimitReached = usageInfo?.used >= usageInfo?.limit;
 
   const StatsCard = ({ title, value, icon, color, progress, subtitle }) => (
-    <Card padding="400">
-      <BlockStack gap="300">
-        <InlineStack align="space-between" blockAlign="center">
-          <BlockStack gap="100">
-            <Text variant="bodySm" fontWeight="bold" tone="subdued">{title}</Text>
-            <Text variant="headingLg" as="h2">{value}</Text>
+    <div style={{ height: '100%' }}>
+      <Card padding="400" style={{ height: '100%' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <BlockStack gap="300">
+            <InlineStack align="space-between" blockAlign="center">
+              <BlockStack gap="100">
+                <Text variant="bodySm" fontWeight="bold" tone="subdued">{title}</Text>
+                <Text variant="headingLg" as="h2">{value}</Text>
+              </BlockStack>
+              <div style={{ backgroundColor: '#F1F1F1', padding: '12px', borderRadius: '12px', color: '#5C5F62', display: 'flex' }}>
+                <Icon source={icon} tone="inherit" />
+              </div>
+            </InlineStack>
           </BlockStack>
-          <div style={{ backgroundColor: '#F1F1F1', padding: '12px', borderRadius: '12px', color: '#5C5F62' }}>
-            <Icon source={icon} tone="inherit" />
-          </div>
-        </InlineStack>
-        {progress !== undefined && (
-          <BlockStack gap="100">
-            <ProgressBar progress={progress} tone={progress > 90 ? "critical" : "primary"} size="small" />
-            <Text variant="bodyXs" tone="subdued">{subtitle}</Text>
-          </BlockStack>
-        )}
-        {!progress && subtitle && <Text variant="bodySm" tone="subdued">{subtitle}</Text>}
-      </BlockStack>
-    </Card>
+          
+          <Box paddingBlockStart="300">
+            {progress !== undefined ? (
+              <BlockStack gap="100">
+                <ProgressBar progress={progress} tone={progress > 90 ? "critical" : "primary"} size="small" />
+                <Text variant="bodyXs" tone="subdued">{subtitle}</Text>
+              </BlockStack>
+            ) : (
+              subtitle && <Text variant="bodySm" tone="subdued">{subtitle}</Text>
+            )}
+          </Box>
+        </div>
+      </Card>
+    </div>
   );
 
   const FAQSection = () => {
