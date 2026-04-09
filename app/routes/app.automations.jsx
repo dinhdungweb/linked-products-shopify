@@ -372,38 +372,46 @@ export default function AutomationsPage() {
                   </InlineStack>
                 </Box>
                 <Divider />
-                      key={type.value}
-                      style={{
-                        border: '1px solid #e5e5e5',
-                        borderRadius: '8px',
-                        padding: '16px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <BlockStack gap="200">
-                        <InlineStack gap="200" blockAlign="center">
-                          <Text variant="headingSm">{type.label}</Text>
-                          <Badge tone={type.badge === "Single Option" ? "info" : "attention"}>{type.badge}</Badge>
-                        </InlineStack>
-                        <Text tone="subdued" variant="bodySm">{type.description}</Text>
-                      </BlockStack>
-                      <div style={{ marginTop: '12px' }}>
-                        <Button
-                          fullWidth
-                          size="slim"
-                          onClick={() => {
-                            setFormState(prev => ({ ...prev, type: type.value }));
-                            setShowCreateModal(true);
-                          }}
-                        >
-                          Configure
-                        </Button>
+                <Box padding="200">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                    {AUTOMATION_TYPES.filter(type => {
+                      if (selectedCreationTab === 0) return type.badge === "Single Option";
+                      return type.badge.includes("Multi");
+                    }).map((type) => (
+                      <div
+                        key={type.value}
+                        style={{
+                          border: '1px solid #e5e5e5',
+                          borderRadius: '8px',
+                          padding: '16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <BlockStack gap="200">
+                          <InlineStack gap="200" blockAlign="center">
+                            <Text variant="headingSm">{type.label}</Text>
+                            <Badge tone={type.badge === "Single Option" ? "info" : "attention"}>{type.badge}</Badge>
+                          </InlineStack>
+                          <Text tone="subdued" variant="bodySm">{type.description}</Text>
+                        </BlockStack>
+                        <div style={{ marginTop: '12px' }}>
+                          <Button
+                            fullWidth
+                            size="slim"
+                            onClick={() => {
+                              setFormState(prev => ({ ...prev, type: type.value }));
+                              setShowCreateModal(true);
+                            }}
+                          >
+                            Configure
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </Box>
               </BlockStack>
             </Card>
 
