@@ -462,43 +462,15 @@ export async function action({ request }) {
           });
         }
 
-        // Sync metafields
-        const metafields = [];
-        const metafieldValue = products.map(p => ({ handle: p.handle, title: p.title, image: "", color: "" }));
-
-        for (const product of products) {
-          metafields.push(
-            { ownerId: product.id, namespace: "linked_products", key: "linked_list", value: JSON.stringify(metafieldValue), type: "json" },
-            { ownerId: product.id, namespace: "linked_products", key: "option_value", value: product.title || "", type: "single_line_text_field" },
-            { ownerId: product.id, namespace: "linked_products", key: "inventory_behavior", value: "show", type: "single_line_text_field" },
-            { ownerId: product.id, namespace: "linked_products", key: "option_name", value: "Color", type: "single_line_text_field" },
-            { ownerId: product.id, namespace: "linked_products", key: "selector_style", value: "block", type: "single_line_text_field" },
-          );
+        // AUTO-SYNC to Shopify using centralized logic
+        try {
+          await syncGroupMetafields(admin, prisma, newGroup.id);
+          groupsCreated++;
+        } catch (e) {
+          console.warn(`Group "${groupName}" created but sync failed:`, e.message);
+          // Still count as created but log warning
+          groupsCreated++;
         }
-
-        const BATCH_SIZE = 25;
-        for (let i = 0; i < metafields.length; i += BATCH_SIZE) {
-          const batch = metafields.slice(i, i + BATCH_SIZE);
-          const mutation = await admin.graphql(`
-            mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
-              metafieldsSet(metafields: $metafields) {
-                metafields { id }
-                userErrors { field message }
-              }
-            }
-          `, { variables: { metafields: batch } });
-          const mfResult = await mutation.json();
-          if (mfResult.data?.metafieldsSet?.userErrors?.length > 0) {
-            console.warn("CSV import sync warning:", mfResult.data.metafieldsSet.userErrors);
-          }
-        }
-
-        await prisma.productGroup.update({
-          where: { id: newGroup.id },
-          data: { syncStatus: "synced" },
-        });
-
-        groupsCreated++;
       }
 
       const message = `Import completed: ${groupsCreated} groups created.` +
