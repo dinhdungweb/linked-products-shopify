@@ -465,6 +465,29 @@ export default function GroupsPage() {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
 
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [isFilterActive, setIsFilterActive] = useState(false);
+  const toggleFilterActive = useCallback(() => setIsFilterActive((a) => !a), []);
+
+  const filteredGroups = groups.filter((group) => {
+    // Tab filter
+    if (selectedTab === 2) return false;
+    if (selectedTab === 3) return false;
+
+    // Status filter
+    if (filterStatus !== "all" && group.status !== filterStatus) return false;
+
+    // Search filter
+    if (searchValue !== "") {
+      const searchLower = searchValue.toLowerCase();
+      const matchName = group.name && group.name.toLowerCase().includes(searchLower);
+      const matchOption = group.optionName && group.optionName.toLowerCase().includes(searchLower);
+      if (!matchName && !matchOption) return false;
+    }
+
+    return true;
+  });
+
   const {
     selectedResources,
     allResourcesSelected,
@@ -706,28 +729,6 @@ export default function GroupsPage() {
     );
   };
 
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [isFilterActive, setIsFilterActive] = useState(false);
-  const toggleFilterActive = useCallback(() => setIsFilterActive((a) => !a), []);
-
-  const filteredGroups = groups.filter((group) => {
-    // Tab filter
-    if (selectedTab === 2) return false;
-    if (selectedTab === 3) return false;
-
-    // Status filter
-    if (filterStatus !== "all" && group.status !== filterStatus) return false;
-
-    // Search filter
-    if (searchValue !== "") {
-      const searchLower = searchValue.toLowerCase();
-      const matchName = group.name && group.name.toLowerCase().includes(searchLower);
-      const matchOption = group.optionName && group.optionName.toLowerCase().includes(searchLower);
-      if (!matchName && !matchOption) return false;
-    }
-
-    return true;
-  });
 
   return (
     <Page fullWidth>
