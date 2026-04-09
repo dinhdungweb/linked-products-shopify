@@ -472,15 +472,17 @@ export default function GroupsPage() {
   const [csvData, setCsvData] = useState("");
   const [file, setFile] = useState(null);
   const [activeBulkAction, setActiveBulkAction] = useState(null);
+  const [syncingId, setSyncingId] = useState(null);
 
   const isLoading = navigation.state !== "idle";
-  const isBulkLoading = isLoading && (navigation.formData?.get("action") === "bulkAction" || activeBulkAction !== null);
+  const isBulkLoading = activeBulkAction !== null || (isLoading && navigation.formData?.get("action") === "bulkAction");
   const isImporting = isLoading && navigation.formData?.get("action") === "importCSV";
   const isLimitReached = usageInfo.limit !== Infinity && usageInfo.used >= usageInfo.limit;
 
   useEffect(() => {
     if (navigation.state === "idle") {
       setActiveBulkAction(null);
+      setSyncingId(null);
     }
   }, [navigation.state]);
 
@@ -564,6 +566,7 @@ export default function GroupsPage() {
   }, [actionData, showImportModal]);
 
   const handleSyncGroup = useCallback(async (groupId) => {
+    setSyncingId(groupId);
     const formData = new FormData();
     formData.append("action", "sync");
     formData.append("groupId", groupId);
@@ -953,7 +956,7 @@ export default function GroupsPage() {
                           e.stopPropagation();
                           handleSyncGroup(group.id);
                         }}
-                        loading={isLoading && navigation.formData?.get("groupId") === group.id && navigation.formData?.get("action") === "sync"}
+                        loading={syncingId === group.id || (isLoading && navigation.formData?.get("groupId") === group.id && navigation.formData?.get("action") === "sync")}
                       />
                       <ActionMenu groupId={group.id} />
                     </InlineStack>
