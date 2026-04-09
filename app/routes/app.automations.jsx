@@ -465,8 +465,25 @@ export default function AutomationsPage() {
       <Modal
         open={showCreateModal}
         onClose={() => {
+          setShowCreateModal(false);
+          setEditingRuleId(null);
           setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "image_swatch" });
-        } }]}
+        }}
+        title={editingRuleId ? "Edit Automation Rule" : "Create Automation Rule"}
+        primaryAction={{
+          content: editingRuleId ? "Save Changes" : "Create Rule",
+          onAction: handleCreateRule,
+          disabled: !formState.name || !formState.pattern,
+          loading: isLoading && (navigation.formData?.get("action") === "createRule" || navigation.formData?.get("action") === "updateRule"),
+        }}
+        secondaryActions={[{
+          content: "Cancel",
+          onAction: () => {
+            setShowCreateModal(false);
+            setEditingRuleId(null);
+            setFormState({ name: "", type: "title_pattern", pattern: "", optionName: "Color", selectorStyle: "image_swatch" });
+          }
+        }]}
       >
         <Modal.Section>
           <FormLayout>

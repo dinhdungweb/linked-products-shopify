@@ -504,12 +504,6 @@ export async function action({ request }) {
           groupsCreated++;
         }
       }
-          groupsCreated++;
-        } catch (e) {
-          console.warn(`Group "${groupName}" created but sync failed:`, e.message);
-          groupsCreated++;
-        }
-      }
 
       const message = `Import completed: ${groupsCreated} groups created.` +
         (errors.length > 0 ? `\n${errors.join("\n")}` : "");
