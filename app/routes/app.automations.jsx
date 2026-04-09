@@ -353,29 +353,25 @@ export default function AutomationsPage() {
             </Banner>
 
             {/* Automation Type Cards */}
-            <Card>
-              <BlockStack gap="400">
-                <InlineStack align="space-between" blockAlign="center">
-                  <Text variant="headingMd">Available Automation Types</Text>
-                  <div style={{ marginRight: '-8px' }}>
-                    <Tabs
-                      tabs={[
-                        { id: 'single', content: 'Single Option' },
-                        { id: 'multi', content: 'Multi/Batch Option' },
-                      ]}
-                      selected={selectedCreationTab}
-                      onSelect={setSelectedCreationTab}
-                      fitted
-                    />
-                  </div>
-                </InlineStack>
+            <Card padding="200">
+              <BlockStack gap="200">
+                <Box paddingInline="200">
+                  <InlineStack align="space-between" blockAlign="center">
+                    <Text variant="headingMd">Available Automation Types</Text>
+                    <div style={{ marginRight: '-8px' }}>
+                      <Tabs
+                        tabs={[
+                          { id: 'single', content: 'Single Option' },
+                          { id: 'multi', content: 'Multi/Batch Option' },
+                        ]}
+                        selected={selectedCreationTab}
+                        onSelect={setSelectedCreationTab}
+                        fitted
+                      />
+                    </div>
+                  </InlineStack>
+                </Box>
                 <Divider />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
-                  {AUTOMATION_TYPES.filter(type => {
-                    if (selectedCreationTab === 0) return type.badge === "Single Option";
-                    return type.badge.includes("Multi");
-                  }).map((type) => (
-                    <div
                       key={type.value}
                       style={{
                         border: '1px solid #e5e5e5',
