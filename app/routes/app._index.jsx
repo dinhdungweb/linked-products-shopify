@@ -407,16 +407,18 @@ export async function action({ request }) {
         let groupName = "";
         let optionName = settings?.selectOptionLabel?.replace("{option}", "Color") || "Color";
         let selectorStyle = settings?.defaultProductPageStyle || "block";
+        let cardStyle = "same";
         let status = "active";
         let handles = [];
 
         if (hasHeader) {
-          // Format: Name, Option, Style, Status, Handles...
+          // Format: Name, Option, Style, Card Style, Status, Handles...
           groupName = parts[0] || "Untitled Group";
           optionName = parts[1] || optionName;
           selectorStyle = parts[2] || selectorStyle;
-          status = parts[3] || status;
-          handles = parts.slice(4);
+          cardStyle = parts[3] || "same";
+          status = parts[4] || status;
+          handles = parts.slice(5);
         } else {
           // Legacy format: Name, Handle1, Handle2...
           if (parts.length < 3) {
@@ -474,6 +476,7 @@ export async function action({ request }) {
             name: groupName, 
             optionName: optionName, 
             selectorStyle: selectorStyle,
+            cardSelectorStyle: cardStyle,
             status: status === "active" ? "active" : "draft"
           },
         });
@@ -495,6 +498,12 @@ export async function action({ request }) {
         // AUTO-SYNC to Shopify using centralized logic
         try {
           await syncGroupMetafields(admin, prisma, newGroup.id);
+          groupsCreated++;
+        } catch (e) {
+          console.warn(`Group "${groupName}" created but sync failed:`, e.message);
+          groupsCreated++;
+        }
+      }
           groupsCreated++;
         } catch (e) {
           console.warn(`Group "${groupName}" created but sync failed:`, e.message);
