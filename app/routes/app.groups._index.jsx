@@ -830,56 +830,56 @@ export default function GroupsPage() {
         </BlockStack>
       </Box>
 
-        <Box paddingInline="300" paddingBlock="300">
+      <LegacyCard>
+        <Box paddingBlock="0">
           <InlineStack align="space-between" blockAlign="center">
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-               {!isSearchVisible ? (
-                  <Text variant="bodyMd" tone="subdued">Showing all product groups</Text>
-               ) : (
-                  <div style={{ flex: 1, marginRight: '16px' }}>
-                    <TextField
-                      prefix={<Icon source={SearchIcon} tone="subdued" />}
-                      suffix={<Button icon={XIcon} variant="tertiary" onClick={() => { setIsSearchVisible(false); setSearchValue(""); }} />}
-                      value={searchValue}
-                      onChange={setSearchValue}
-                      placeholder="Search product groups..."
-                      autoComplete="off"
-                      label="Search"
-                      labelHidden
-                    />
-                  </div>
-               )}
+            <div style={{ flex: 1 }}>
+              <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} suppressContent={true} />
             </div>
-            <InlineStack gap="100">
-               <Button 
-                icon={SearchIcon} 
-                variant={isSearchVisible ? "secondary" : "tertiary"} 
-                onClick={() => setIsSearchVisible(!isSearchVisible)}
-               />
-               <Popover
-                  active={isFilterActive}
-                  activator={
-                    <Button icon={FilterIcon} variant={filterStatus !== "all" ? "secondary" : "tertiary"} onClick={toggleFilterActive}>
-                      Filter {filterStatus !== "all" ? `(${filterStatus})` : ""}
-                    </Button>
-                  }
-                  onClose={toggleFilterActive}
-               >
-                  <ActionList
-                    actionRole="menuitem"
-                    items={[
-                      { content: 'All statuses', onAction: () => { setFilterStatus("all"); toggleFilterActive(); } },
-                      { content: 'Active', onAction: () => { setFilterStatus("active"); toggleFilterActive(); } },
-                      { content: 'Draft', onAction: () => { setFilterStatus("draft"); toggleFilterActive(); } },
-                    ]}
-                  />
-               </Popover>
-            </InlineStack>
+            <Box paddingInlineEnd="300">
+              <InlineStack gap="100" blockAlign="center">
+                 {!isSearchVisible ? null : (
+                    <div style={{ width: '200px', marginRight: '8px' }}>
+                      <TextField
+                        prefix={<Icon source={SearchIcon} tone="subdued" />}
+                        suffix={<Button icon={XIcon} variant="tertiary" onClick={() => { setIsSearchVisible(false); setSearchValue(""); }} />}
+                        value={searchValue}
+                        onChange={setSearchValue}
+                        placeholder="Search..."
+                        autoComplete="off"
+                        label="Search"
+                        labelHidden
+                        size="slim"
+                      />
+                    </div>
+                 )}
+                 <Button 
+                  icon={SearchIcon} 
+                  variant={isSearchVisible ? "secondary" : "tertiary"} 
+                  onClick={() => setIsSearchVisible(!isSearchVisible)}
+                 />
+                 <Popover
+                    active={isFilterActive}
+                    activator={
+                      <Button icon={FilterIcon} variant={filterStatus !== "all" ? "secondary" : "tertiary"} onClick={toggleFilterActive}>
+                        Filter {filterStatus !== "all" ? `(${filterStatus})` : ""}
+                      </Button>
+                    }
+                    onClose={toggleFilterActive}
+                 >
+                    <ActionList
+                      actionRole="menuitem"
+                      items={[
+                        { content: 'All statuses', onAction: () => { setFilterStatus("all"); toggleFilterActive(); } },
+                        { content: 'Active', onAction: () => { setFilterStatus("active"); toggleFilterActive(); } },
+                        { content: 'Draft', onAction: () => { setFilterStatus("draft"); toggleFilterActive(); } },
+                      ]}
+                    />
+                 </Popover>
+              </InlineStack>
+            </Box>
           </InlineStack>
         </Box>
-
-      <LegacyCard>
-        <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} suppressContent={true} />
 
         {filteredGroups.length === 0 ? (
           <EmptyState
