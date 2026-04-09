@@ -821,8 +821,11 @@ export default function GroupsPage() {
       </Box>
 
       {/* Main Content Area - Native Shopify Look */}
+      <Box paddingBlockEnd="400">
+        <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
+      </Box>
+
       <LegacyCard>
-        <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange}>
           <Box paddingInline="300" paddingBlock="300">
             <InlineStack align="space-between" blockAlign="center">
               <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
@@ -888,7 +891,7 @@ export default function GroupsPage() {
             )}
           </EmptyState>
         ) : (
-              <Box padding="0" overflowX="auto">
+              <Box padding="0">
                 <IndexTable
                   resourceName={{ singular: "group", plural: "groups" }}
                   itemCount={filteredGroups.length}
@@ -905,7 +908,7 @@ export default function GroupsPage() {
                   selectable={true}
                   selectedResources={selectedResources}
                   onSelectionChange={handleSelectionChange}
-                  promotedBulkActions={[
+                  bulkActions={[
                     {
                       content: 'Set as active',
                       onAction: () => handleBulkAction('active'),
@@ -914,8 +917,6 @@ export default function GroupsPage() {
                       content: 'Set as draft',
                       onAction: () => handleBulkAction('draft'),
                     },
-                  ]}
-                  bulkActions={[
                     {
                       content: 'Delete',
                       destructive: true,
@@ -990,7 +991,6 @@ export default function GroupsPage() {
                 </IndexTable>
               </Box>
             )}
-          </Tabs>
         </LegacyCard>
 
       {/* Footer Footer */}
