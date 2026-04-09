@@ -473,6 +473,9 @@ export default function GroupsPage() {
   const [file, setFile] = useState(null);
   const [activeBulkAction, setActiveBulkAction] = useState(null);
   const [syncingId, setSyncingId] = useState(null);
+  const [statusLoadingId, setStatusLoadingId] = useState(null);
+
+  const prevNavigationState = navigation.state;
 
   const isLoading = navigation.state !== "idle";
   const isBulkLoading = activeBulkAction !== null || (isLoading && navigation.formData?.get("action") === "bulkAction");
@@ -480,9 +483,11 @@ export default function GroupsPage() {
   const isLimitReached = usageInfo.limit !== Infinity && usageInfo.used >= usageInfo.limit;
 
   useEffect(() => {
+    // Only reset loading states when transitioning BACK to idle from a working state
     if (navigation.state === "idle") {
       setActiveBulkAction(null);
       setSyncingId(null);
+      setStatusLoadingId(null);
     }
   }, [navigation.state]);
 
@@ -496,6 +501,7 @@ export default function GroupsPage() {
 
   const handleDeleteGroup = useCallback(async (groupId) => {
     if (confirm("Are you sure you want to delete this group?")) {
+      setStatusLoadingId(groupId);
       const formData = new FormData();
       formData.append("action", "delete");
       formData.append("groupId", groupId);
@@ -512,6 +518,7 @@ export default function GroupsPage() {
   }, [submit]);
 
   const handleToggleStatus = useCallback(async (groupId, currentStatus) => {
+    setStatusLoadingId(groupId);
     const formData = new FormData();
     formData.append("action", "toggleStatus");
     formData.append("groupId", groupId);
@@ -639,14 +646,17 @@ export default function GroupsPage() {
     const group = groups.find(g => g.id === groupId);
     const status = group?.status || "active";
 
+    const isRowLoading = statusLoadingId === groupId || (isLoading && navigation.formData?.get("groupId") === groupId);
+
     return (
       <Popover
         active={active}
         activator={
           <Button
             onClick={(e) => { e.stopPropagation(); toggleActive(); }}
-            icon={MenuHorizontalIcon}
+            icon={isRowLoading ? undefined : MenuHorizontalIcon}
             variant="tertiary"
+            loading={isRowLoading}
           />
         }
         onClose={toggleActive}
@@ -654,13 +664,14 @@ export default function GroupsPage() {
         <ActionList
           actionRole="menuitem"
           items={[
-            { content: 'Edit group', icon: ViewIcon, url: `/app/groups/${groupId}` },
+            { content: 'Edit group', icon: ViewIcon, url: `/app/groups/${groupId}`, disabled: isRowLoading },
             {
               content: status === "active" ? 'Set as draft' : 'Set as active',
               icon: status === "active" ? XIcon : CheckIcon,
-              onAction: () => { handleToggleStatus(groupId, status); toggleActive(); }
+              onAction: () => { handleToggleStatus(groupId, status); toggleActive(); },
+              disabled: isRowLoading
             },
-            { content: 'Delete', icon: DeleteIcon, destructive: true, onAction: () => { handleDeleteGroup(groupId); toggleActive(); } },
+            { content: 'Delete', icon: DeleteIcon, destructive: true, onAction: () => { handleDeleteGroup(groupId); toggleActive(); }, disabled: isRowLoading },
           ]}
         />
       </Popover>
@@ -929,12 +940,18 @@ export default function GroupsPage() {
                   </IndexTable.Cell>
                   <IndexTable.Cell>
                     <InlineStack gap="200" blockAlign="center">
-                      {group.status === "active" ? (
-                        <Badge tone={group.isPlanDisabled ? "attention" : "success"}>
-                          {group.isPlanDisabled ? "Paused by Plan" : "Active"}
-                        </Badge>
+                      {(statusLoadingId === group.id && navigation.formData?.get("action") === "toggleStatus") ? (
+                        <Spinner size="small" />
                       ) : (
-                        <Badge tone="subdued">Draft</Badge>
+                        <>
+                          {group.status === "active" ? (
+                            <Badge tone={group.isPlanDisabled ? "attention" : "success"}>
+                              {group.isPlanDisabled ? "Paused by Plan" : "Active"}
+                            </Badge>
+                          ) : (
+                            <Badge tone="subdued">Draft</Badge>
+                          )}
+                        </>
                       )}
                       {group.isPlanDisabled && (
                         <Tooltip content="This group is disabled because it exceeds your plan limit.">
