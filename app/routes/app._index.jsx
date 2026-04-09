@@ -371,7 +371,6 @@ export async function action({ request }) {
       console.warn("Warning: Could not clean up metafields:", error.message);
       // Không throw error - vẫn cho phép xóa nhóm trong DB
     }
-
     await prisma.productGroup.delete({
       where: { id: groupId },
     });
@@ -379,27 +378,54 @@ export async function action({ request }) {
     return json({ success: true, message: "Group and metafields deleted successfully" });
   }
 
-  // Import CSV
   if (actionType === "importCSV") {
     const csvData = formData.get("csvData");
-    if (!csvData) {
-      return json({ error: "No CSV data provided" }, { status: 400 });
-    }
+    if (!csvData) return json({ error: "No CSV data provided" }, { status: 400 });
+
+    const { canAddLinks, getUsageInfo } = await import("../billing.server");
+    const usageInfo = await getUsageInfo(session.shop);
+
+    // Fetch global settings for fallback
+    const settings = await prisma.appSetting.findUnique({
+      where: { shop: session.shop },
+    });
 
     try {
-      const lines = csvData.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+      const allLines = csvData.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+      if (allLines.length === 0) return json({ success: true, message: "No data to import" });
+
+      // Check for header
+      const hasHeader = allLines[0].toLowerCase().includes("group name") || allLines[0].toLowerCase().includes("option name");
+      const dataLines = hasHeader ? allLines.slice(1) : allLines;
+
       let groupsCreated = 0;
       let errors = [];
 
-      for (const line of lines) {
+      for (const line of dataLines) {
         const parts = line.split(",").map(s => s.trim()).filter(s => s.length > 0);
-        if (parts.length < 3) {
-          errors.push(`Skipped line: "${line}" (need at least group name + 2 product handles)`);
-          continue;
-        }
+        
+        let groupName = "";
+        let optionName = settings?.selectOptionLabel?.replace("{option}", "Color") || "Color";
+        let selectorStyle = settings?.defaultProductPageStyle || "block";
+        let status = "active";
+        let handles = [];
 
-        const groupName = parts[0];
-        const handles = parts.slice(1);
+        if (hasHeader) {
+          // Format: Name, Option, Style, Status, Handles...
+          groupName = parts[0] || "Untitled Group";
+          optionName = parts[1] || optionName;
+          selectorStyle = parts[2] || selectorStyle;
+          status = parts[3] || status;
+          handles = parts.slice(4);
+        } else {
+          // Legacy format: Name, Handle1, Handle2...
+          if (parts.length < 3) {
+            errors.push(`Skipped line: "${line}" (need at least group name + 2 product handles)`);
+            continue;
+          }
+          groupName = parts[0];
+          handles = parts.slice(1);
+        }
 
         // Lookup product IDs from handles
         const products = [];
@@ -407,20 +433,13 @@ export async function action({ request }) {
           try {
             const response = await admin.graphql(`
               query GetProductByHandle($handle: String!) {
-                productByHandle(handle: $handle) {
-                  id
-                  title
-                  handle
-                }
+                productByHandle(handle: $handle) { id title handle }
               }
             `, { variables: { handle } });
             const result = await response.json();
             const product = result.data?.productByHandle;
-            if (product) {
-              products.push(product);
-            } else {
-              errors.push(`Product not found: "${handle}"`);
-            }
+            if (product) products.push(product);
+            else errors.push(`Product not found: "${handle}"`);
           } catch (e) {
             errors.push(`Error looking up product: "${handle}"`);
           }
@@ -448,9 +467,15 @@ export async function action({ request }) {
           continue;
         }
 
-        // Create group
+        // Create group with metadata
         const newGroup = await prisma.productGroup.create({
-          data: { shop: session.shop, name: groupName, optionName: "Color", selectorStyle: "block" },
+          data: { 
+            shop: session.shop, 
+            name: groupName, 
+            optionName: optionName, 
+            selectorStyle: selectorStyle,
+            status: status === "active" ? "active" : "draft"
+          },
         });
 
         for (let i = 0; i < products.length; i++) {
@@ -461,6 +486,8 @@ export async function action({ request }) {
               productHandle: products[i].handle,
               optionValue: products[i].title,
               position: i + 1,
+              style: "one",
+              customColor: "#FFFFFF"
             },
           });
         }
@@ -471,7 +498,6 @@ export async function action({ request }) {
           groupsCreated++;
         } catch (e) {
           console.warn(`Group "${groupName}" created but sync failed:`, e.message);
-          // Still count as created but log warning
           groupsCreated++;
         }
       }
@@ -485,8 +511,6 @@ export async function action({ request }) {
   }
 
   return json({ error: "Invalid action" }, { status: 400 });
-}
-
 export default function Index() {
   const { groups, usageInfo, totalProducts, isAppEmbedEnabled, shop } = useLoaderData();
   const actionData = useActionData();

@@ -240,20 +240,47 @@ export async function action({ request }) {
     const { canAddLinks, getUsageInfo } = await import("../billing.server");
     const usageInfo = await getUsageInfo(session.shop);
 
+    // Fetch global settings for fallback
+    const settings = await prisma.appSetting.findUnique({
+      where: { shop: session.shop },
+    });
+
     try {
-      const lines = csvData.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+      const allLines = csvData.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+      if (allLines.length === 0) return json({ success: true, message: "No data to import" });
+
+      // Check for header
+      const hasHeader = allLines[0].toLowerCase().includes("group name") || allLines[0].toLowerCase().includes("option name");
+      const dataLines = hasHeader ? allLines.slice(1) : allLines;
+
       let groupsCreated = 0;
       let errors = [];
 
-      for (const line of lines) {
+      for (const line of dataLines) {
         const parts = line.split(",").map(s => s.trim()).filter(s => s.length > 0);
-        if (parts.length < 3) {
-          errors.push(`Skipped line: "${line}" (need at least group name + 2 product handles)`);
-          continue;
-        }
+        
+        let groupName = "";
+        let optionName = settings?.selectOptionLabel?.replace("{option}", "Color") || "Color";
+        let selectorStyle = settings?.defaultProductPageStyle || "block";
+        let status = "active";
+        let handles = [];
 
-        const groupName = parts[0];
-        const handles = parts.slice(1);
+        if (hasHeader) {
+          // Format: Name, Option, Style, Status, Handles...
+          groupName = parts[0] || "Untitled Group";
+          optionName = parts[1] || optionName;
+          selectorStyle = parts[2] || selectorStyle;
+          status = parts[3] || status;
+          handles = parts.slice(4);
+        } else {
+          // Legacy format: Name, Handle1, Handle2...
+          if (parts.length < 3) {
+            errors.push(`Skipped line: "${line}" (need at least group name + 2 product handles)`);
+            continue;
+          }
+          groupName = parts[0];
+          handles = parts.slice(1);
+        }
 
         // Lookup product IDs from handles
         const products = [];
@@ -295,9 +322,15 @@ export async function action({ request }) {
           continue;
         }
 
-        // Create group
+        // Create group with metadata
         const newGroup = await prisma.productGroup.create({
-          data: { shop: session.shop, name: groupName, optionName: "Color", selectorStyle: "block" },
+          data: { 
+            shop: session.shop, 
+            name: groupName, 
+            optionName: optionName, 
+            selectorStyle: selectorStyle,
+            status: status === "active" ? "active" : "draft"
+          },
         });
 
         // Add products to group
@@ -462,13 +495,22 @@ export default function GroupsPage() {
   }, [submit]);
 
   const handleExport = useCallback(() => {
-    // Generate CSV content: Name, product-handle-1, product-handle-2, ...
+    // Header
+    const header = "Group Name,Option Name,Selector Style,Status,Product Handles\n";
+    
+    // Rows
     const csvRows = groups.map(group => {
       const handles = group.products
         .map(p => p.productHandle)
         .filter(Boolean);
       
-      const row = [group.name || "Untitled Group", ...handles];
+      const row = [
+        group.name || "Untitled Group",
+        group.optionName || "Color",
+        group.selectorStyle || "block",
+        group.status || "active",
+        ...handles
+      ];
       return row.join(",");
     });
 
@@ -478,7 +520,7 @@ export default function GroupsPage() {
     }
 
     shopify.toast.show("Exporting groups...");
-    const blob = new Blob([csvRows.join("\n")], { type: 'text/csv' });
+    const blob = new Blob([header + csvRows.join("\n")], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.setAttribute('hidden', '');
