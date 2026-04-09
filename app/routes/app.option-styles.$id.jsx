@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation, useParams, Link, useActionData } from "@remix-run/react";
+import { useLoaderData, useSubmit, useNavigation, Link, useActionData } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -27,7 +27,6 @@ import {
   MagicIcon,
   ViewIcon,
   DeleteIcon,
-  ArrowLeftIcon,
   InfoIcon,
   TextAlignLeftIcon,
   TextAlignCenterIcon,

@@ -26,10 +26,7 @@ import {
   CheckCircleIcon,
   ExternalIcon,
   LanguageIcon,
-  AlertCircleIcon,
   InfoIcon,
-  ViewIcon,
-  MagicIcon,
   PaintBrushFlatIcon,
   EmailIcon,
   CheckIcon,
@@ -222,15 +219,15 @@ export default function SettingsPage() {
           shadow="sm"
         >
           <InlineStack align="space-between" blockAlign="center">
-            <BlockStack gap="200">
-              <InlineStack gap="300" blockAlign="center">
-                <Box padding="200" background="bg-fill-brand-selected" borderRadius="200">
-                  <Icon source={SettingsIcon} tone="brand" />
-                </Box>
+            <InlineStack gap="300" blockAlign="center">
+              <Box padding="200" background="bg-fill-brand-selected" borderRadius="200">
+                <Icon source={SettingsIcon} tone="brand" />
+              </Box>
+              <BlockStack gap="0">
                 <Text variant="headingXl" as="h1">Configurations</Text>
-              </InlineStack>
-              <Text variant="bodyMd" tone="subdued">Manage your preferences, display logic, and theme integration.</Text>
-            </BlockStack>
+                <Text variant="bodyMd" tone="subdued">Manage your preferences, display logic, and theme integration.</Text>
+              </BlockStack>
+            </InlineStack>
             <InlineStack gap="300">
               <Button 
                 variant="primary" 
