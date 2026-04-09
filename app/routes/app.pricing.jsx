@@ -339,9 +339,9 @@ export default function PricingPage() {
                                         <Divider />
                                         <BlockStack gap="200">
                                             <Text>✓ 500 product groups</Text>
-                                            <Text>✓ Multi-option groups</Text>
-                                            <Text>✓ Subcategory groups</Text>
-                                            <Text>✓ Featured product support</Text>
+                                            <Text>✓ Custom swatch styles</Text>
+                                            <Text>✓ Bulk group management</Text>
+                                            <Text>✓ Priority auto-sync</Text>
                                             <Text>✓ All automation features</Text>
                                             <Text>✓ Import / export / sync</Text>
                                         </BlockStack>
@@ -364,9 +364,9 @@ export default function PricingPage() {
                                     <BlockStack gap="200">
                                         <Text fontWeight="bold">✓ Unlimited product groups</Text>
                                         <Text>✓ Seamless product switching</Text>
-                                        <Text>✓ Scheduled automation</Text>
-                                        <Text>✓ Conditional swatch image</Text>
-                                        <Text>✓ Manage groups via API</Text>
+                                        <Text>✓ Custom CSS support</Text>
+                                        <Text>✓ Advanced Layout options</Text>
+                                        <Text>✓ Priority Support</Text>
                                         <Text>✓ All Advanced features</Text>
                                     </BlockStack>
                                     <Button fullWidth variant="primary" onClick={() => handleSubscribe("premium")} loading={isSubmitting} disabled={usageInfo.plan === "premium"}>
