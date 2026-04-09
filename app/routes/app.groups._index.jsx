@@ -27,6 +27,7 @@ import {
   Thumbnail,
   DropZone,
   Spinner,
+  useIndexResourceState,
 } from "@shopify/polaris";
 import { 
   XIcon, 
@@ -374,6 +375,78 @@ export async function action({ request }) {
     }
   }
 
+  if (actionType === "bulkAction") {
+    const selectedIdsStr = formData.get("selectedIds") || "[]";
+    const bulkType = formData.get("bulkType"); // active, draft, delete
+    const selectedIds = JSON.parse(selectedIdsStr);
+
+    if (selectedIds.length === 0) return json({ error: "No items selected" }, { status: 400 });
+
+    try {
+      if (bulkType === "delete") {
+        for (const groupId of selectedIds) {
+          const group = await prisma.productGroup.findUnique({
+            where: { id: groupId },
+            include: { products: true },
+          });
+
+          if (group) {
+            // Clean up metafields
+            for (const product of group.products) {
+              const metafieldQuery = await admin.graphql(`
+                query GetProductMetafields($productId: ID!) {
+                  product(id: $productId) {
+                    metafields(first: 10, namespace: "linked_products") {
+                      nodes { id key }
+                    }
+                  }
+                }
+              `, { variables: { productId: product.productId } });
+
+              const metafieldResult = await metafieldQuery.json();
+              const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
+
+              if (metafieldNodes.length > 0) {
+                const metafieldsToDelete = metafieldNodes.map(m => ({
+                  namespace: "linked_products",
+                  key: m.key,
+                  ownerId: product.productId
+                }));
+
+                await admin.graphql(`
+                  mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
+                    metafieldsDelete(metafields: $metafields) {
+                      deletedMetafields { ownerId }
+                    }
+                  }
+                `, { variables: { metafields: metafieldsToDelete } });
+              }
+            }
+            await prisma.productGroup.delete({ where: { id: groupId } });
+          }
+        }
+        return json({ success: true, message: `Successfully deleted ${selectedIds.length} groups` });
+      }
+
+      if (bulkType === "active" || bulkType === "draft") {
+        const newStatus = bulkType;
+        for (const groupId of selectedIds) {
+          await prisma.productGroup.update({
+            where: { id: groupId },
+            data: { status: newStatus }
+          });
+          // Sync with Shopify
+          await syncGroupMetafields(admin, prisma, groupId);
+        }
+        return json({ success: true, message: `Successfully set ${selectedIds.length} groups to ${newStatus}` });
+      }
+
+    } catch (error) {
+      console.error("Bulk action failed:", error);
+      return json({ error: `Bulk action failed: ${error.message}` }, { status: 500 });
+    }
+  }
+
   return json({ error: "Invalid action" }, { status: 400 });
 }
 
@@ -390,6 +463,12 @@ export default function GroupsPage() {
   const [searchValue, setSearchValue] = useState("");
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
+
+  const {
+    selectedResources,
+    allResourcesSelected,
+    handleSelectionChange,
+  } = useIndexResourceState(groups);
 
   // Import/Export states
   const [showImportModal, setShowImportModal] = useState(false);
@@ -501,6 +580,23 @@ export default function GroupsPage() {
 
     submit(formData, { method: "POST", headers });
   }, [submit]);
+
+  const handleBulkAction = useCallback(async (bulkType) => {
+    const formData = new FormData();
+    formData.append("action", "bulkAction");
+    formData.append("bulkType", bulkType);
+    formData.append("selectedIds", JSON.stringify(selectedResources));
+
+    let headers = {};
+    try {
+      if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
+        const idToken = await window.shopify.idToken();
+        headers = { Authorization: `Bearer ${idToken}` };
+      }
+    } catch (e) {}
+
+    submit(formData, { method: "POST", headers });
+  }, [selectedResources, submit]);
 
   const handleExport = useCallback(() => {
     // Header
@@ -660,7 +756,6 @@ export default function GroupsPage() {
                   <ButtonGroup>
                     <Button icon={ExportIcon} onClick={handleExport}>Export</Button>
                     <Button icon={ImportIcon} onClick={() => setShowImportModal(true)}>Import</Button>
-                    <Button icon={RefreshIcon} disabled>Bulk update options</Button>
                   </ButtonGroup>
                   {isLimitReached ? (
                     <Tooltip content="You have reached the product group limit for your current plan. Please upgrade to create more.">
@@ -819,7 +914,28 @@ export default function GroupsPage() {
               { title: "Created" },
               { title: "", alignment: 'end' },
             ]}
-            selectable={false}
+            selectable={true}
+            selectedResources={selectedResources}
+            onSelectionChange={handleSelectionChange}
+            promotedBulkActions={[
+              {
+                content: 'Set as active',
+                onAction: () => handleBulkAction('active'),
+              },
+              {
+                content: 'Set as draft',
+                onAction: () => handleBulkAction('draft'),
+              },
+              {
+                content: 'Delete',
+                destructive: true,
+                onAction: () => {
+                   if (confirm(`Are you sure you want to delete ${selectedResources.length} groups?`)) {
+                      handleBulkAction('delete');
+                   }
+                },
+              },
+            ]}
           >
             {filteredGroups.map((group, index) => (
               <IndexTable.Row id={group.id} key={group.id} position={index}>
