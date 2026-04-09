@@ -43,7 +43,6 @@ import {
   AutomationIcon,
   InfoIcon,
   PlusIcon,
-  MinusIcon,
   CheckIcon,
   RefreshIcon,
   MenuHorizontalIcon,

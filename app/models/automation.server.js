@@ -26,14 +26,43 @@ export async function runAutomationRule(admin, prisma, ruleId, shop, canAddLinks
         products[baseKey].push(p);
       }
     }
+  } else if (rule.type === "auto_title") {
+    const allProducts = await fetchAllProducts(admin);
+    const filterKeyword = rule.pattern ? rule.pattern.toLowerCase() : "";
+
+    for (const p of allProducts) {
+      // Nếu có filter keyword, chỉ xử lý những sp có chứa keyword đó
+      if (filterKeyword && !p.title.toLowerCase().includes(filterKeyword)) continue;
+
+      // Tìm tên gốc bằng cách tách theo các ký tự - / |
+      let baseTitle = p.title;
+      const separators = [" - ", " / ", " | ", " -", "- ", " /", "/ ", " |", "| "];
+      
+      for (const sep of separators) {
+        if (p.title.includes(sep)) {
+          baseTitle = p.title.split(sep)[0].trim();
+          break;
+        }
+      }
+
+      if (baseTitle && baseTitle !== p.title) {
+        if (!products[baseTitle]) products[baseTitle] = [];
+        products[baseTitle].push(p);
+      }
+    }
   } else if (rule.type === "tag") {
     const allProducts = await fetchAllProducts(admin);
-    const tagName = rule.pattern.toLowerCase();
-    const taggedProducts = allProducts.filter(p =>
-      p.tags && p.tags.some(t => t.toLowerCase() === tagName)
-    );
-    if (taggedProducts.length >= 2) {
-      products = { [rule.pattern]: taggedProducts };
+    const tagNames = rule.pattern.split(',').map(t => t.trim());
+    
+    for (const rawTag of tagNames) {
+      if (!rawTag) continue;
+      const tagName = rawTag.toLowerCase();
+      const taggedProducts = allProducts.filter(p =>
+        p.tags && p.tags.some(t => t.toLowerCase() === tagName)
+      );
+      if (taggedProducts.length >= 2) {
+        products[rawTag] = taggedProducts;
+      }
     }
   } else if (rule.type === "sku_pattern") {
     const regex = new RegExp(rule.pattern, "i");

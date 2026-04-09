@@ -16,7 +16,7 @@ import {
   Popover,
   ActionList,
 } from "@shopify/polaris";
-import { LinkIcon, QuestionCircleIcon, PlusIcon, StoreIcon, MenuHorizontalIcon, StarIcon, DuplicateIcon, DeleteIcon, InfoIcon } from "@shopify/polaris-icons";
+import { LinkIcon, QuestionCircleIcon, PlusIcon, MenuHorizontalIcon, StarIcon, DuplicateIcon, DeleteIcon, InfoIcon } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit as useRemixSubmit } from "@remix-run/react";

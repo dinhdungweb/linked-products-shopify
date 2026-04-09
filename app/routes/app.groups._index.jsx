@@ -39,7 +39,6 @@ import {
   FilterIcon,
   QuestionCircleIcon,
   ChevronDownIcon,
-  ExternalSmallIcon,
   DuplicateIcon,
   MenuHorizontalIcon,
   RefreshIcon,
