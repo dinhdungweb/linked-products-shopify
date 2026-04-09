@@ -30,49 +30,71 @@
         window.lpInjected = true;
         console.log('Linked Products: Injector active.');
 
-        const SELECTORS = {
-            cards: '.card-wrapper, .card, .product-card, .grid-view-item, .product-item, .product-grid-item',
-            content: '.card__content, .product-card__info, .product-item-meta, .product-info, .card-information',
-            price: '.price, .product-item__price, .card__price, .product-card__price, .price--on-sale'
-        };
+        const COMMON_CARD_SELECTORS = '.card-wrapper, .card, .product-card, .grid-view-item, .product-item, .product-grid-item, .product-block, .product-card-wrapper';
+        const PRICE_SELECTORS = '.price, .product-item__price, .card__price, .product-card__price, .price--on-sale, [class*="price"], [class*="Price"]';
+
+        function getHandleFromUrl(urlStr) {
+            try {
+                const url = new URL(urlStr, window.location.origin);
+                const pathParts = url.pathname.split('/products/');
+                if (pathParts.length < 2) return null;
+                return pathParts[1].split('?')[0].split('/')[0];
+            } catch(e) { return null; }
+        }
 
         function injectCardSwatches() {
-            const cards = document.querySelectorAll(SELECTORS.cards);
             const storage = document.getElementById('lp-swatch-storage');
             if (!storage) return;
 
-            cards.forEach(card => {
-                if (card.querySelector('.linked-product-swatches')) return;
+            // 1. Find all potential product links
+            const productLinks = document.querySelectorAll('a[href*="/products/"]');
+            const processedLinks = new Set();
+
+            productLinks.forEach(link => {
+                const handle = getHandleFromUrl(link.href);
+                if (!handle || processedLinks.has(handle)) return;
+
+                // 2. Find the closest card container
+                let card = link.closest(COMMON_CARD_SELECTORS);
                 
-                const productLink = card.querySelector('a[href*="/products/"]');
-                if (!productLink) return;
-                
-                const url = new URL(productLink.href, window.location.origin);
-                const pathParts = url.pathname.split('/products/');
-                if (pathParts.length < 2) return;
-                const handle = pathParts[1].split('?')[0].split('/')[0];
-                if (!handle) return;
+                // Fallback: If no common class, go up 3 levels to find a reasonable container
+                if (!card) {
+                    let parent = link.parentElement;
+                    for (let i = 0; i < 3 && parent; i++) {
+                        if (parent.querySelectorAll('a[href*="/products/"]').length === 1 || parent.className.includes('item') || parent.className.includes('column')) {
+                            card = parent;
+                        }
+                        parent = parent.parentElement;
+                    }
+                }
+
+                if (!card || card.querySelector(`.linked-product-swatches[data-lp-handle="${handle}"]`)) return;
 
                 // Find pre-rendered content
                 const source = storage.querySelector(`[data-handle="${handle}"]`);
                 if (!source || !source.innerHTML.trim()) return;
 
                 const container = document.createElement('div');
-                container.className = 'lp-injected-container';
+                container.className = 'lp-injected-container linked-product-swatches';
                 container.style.width = '100%';
                 container.setAttribute('data-lp-handle', handle);
                 container.innerHTML = source.innerHTML;
-                
-                const priceElement = card.querySelector(SELECTORS.price);
-                const contentElement = card.querySelector(SELECTORS.content);
-                
+
+                // 3. Smart Insertion Point
+                // Priority 1: After Price
+                const priceElement = card.querySelector(PRICE_SELECTORS);
                 if (priceElement) {
-                    // Try to insert after price container to avoid breaking layout
                     priceElement.parentNode.insertBefore(container, priceElement.nextSibling);
-                } else if (contentElement) {
-                    contentElement.appendChild(container);
+                } else {
+                    // Priority 2: At the end of card content or card itself
+                    card.appendChild(container);
                 }
+                
+                // Mark this link/product as processed for this pass to avoid duplicate injection in same card
+                processedLinks.add(handle); 
             });
+            
+            // Clear the processed set for next run if needed, but current pass is fine
         }
 
         // Run on load
