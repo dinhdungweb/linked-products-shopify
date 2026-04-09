@@ -745,7 +745,6 @@ export default function GroupsPage() {
   return (
     <Frame>
       <Page fullWidth>
-      {isLoading && <Loading />}
       {/* Header Section */}
       <Box paddingBlockEnd="400">
         <BlockStack gap="500">
