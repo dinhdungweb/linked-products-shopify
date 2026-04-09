@@ -703,8 +703,6 @@ export default function Index() {
       </div>
     </div>
   );
-    </div>
-  );
 
   const SupportSideList = () => (
     <BlockStack gap="300">
