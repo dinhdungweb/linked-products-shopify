@@ -910,7 +910,7 @@ export default function GroupsPage() {
               { title: "", alignment: 'end' },
             ]}
             selectable={true}
-            selectedResources={selectedResources}
+            selectedItemsCount={allResourcesSelected ? 'All' : selectedResources.length}
             onSelectionChange={handleSelectionChange}
             promotedBulkActions={[
               {
