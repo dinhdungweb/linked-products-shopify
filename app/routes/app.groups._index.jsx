@@ -4,6 +4,7 @@ import { useLoaderData, useSubmit, useNavigation, useActionData, Link } from "@r
 import {
   Page,
   Card,
+  LegacyCard,
   Button,
   BlockStack,
   Text,
@@ -468,7 +469,7 @@ export default function GroupsPage() {
     selectedResources,
     allResourcesSelected,
     handleSelectionChange,
-  } = useIndexResourceState(groups);
+  } = useIndexResourceState(filteredGroups);
 
   // Import/Export states
   const [showImportModal, setShowImportModal] = useState(false);
@@ -818,72 +819,57 @@ export default function GroupsPage() {
         </BlockStack>
       </Box>
 
-      {/* Main Content Card */}
-      <Card padding="0">
-        <style>
-          {`
-            .Polaris-Tabs__Outer .Polaris-Box {
-              padding: 0 !important;
-              padding-block-start: 0 !important;
-              padding-block-end: 0 !important;
-              --pc-box-padding-block-start-xs: 0 !important;
-              --pc-box-padding-block-end-xs: 0 !important;
-              --pc-box-padding-block-start-md: 0 !important;
-              --pc-box-padding-block-end-md: 0 !important;
-            }
-            .Polaris-Tabs__Tab {
-              min-height: unset !important;
-            }
-          `}
-        </style>
-        <Box paddingInline="300" paddingBlock="300">
-          <InlineStack align="space-between" blockAlign="center">
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-               {!isSearchVisible ? (
-                  <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
-               ) : (
-                  <div style={{ flex: 1, marginRight: '16px' }}>
-                    <TextField
-                      prefix={<Icon source={SearchIcon} tone="subdued" />}
-                      suffix={<Button icon={XIcon} variant="tertiary" onClick={() => { setIsSearchVisible(false); setSearchValue(""); }} />}
-                      value={searchValue}
-                      onChange={setSearchValue}
-                      placeholder="Search product groups..."
-                      autoComplete="off"
-                      label="Search"
-                      labelHidden
+      {/* Main Content Area - Native Shopify Look */}
+      <LegacyCard>
+        <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange}>
+          <Box paddingInline="300" paddingBlock="300">
+            <InlineStack align="space-between" blockAlign="center">
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                 {!isSearchVisible ? (
+                    <Text variant="bodyMd" tone="subdued">Showing all product groups</Text>
+                 ) : (
+                    <div style={{ flex: 1, marginRight: '16px' }}>
+                      <TextField
+                        prefix={<Icon source={SearchIcon} tone="subdued" />}
+                        suffix={<Button icon={XIcon} variant="tertiary" onClick={() => { setIsSearchVisible(false); setSearchValue(""); }} />}
+                        value={searchValue}
+                        onChange={setSearchValue}
+                        placeholder="Search product groups..."
+                        autoComplete="off"
+                        label="Search"
+                        labelHidden
+                      />
+                    </div>
+                 )}
+              </div>
+              <InlineStack gap="100">
+                 <Button 
+                  icon={SearchIcon} 
+                  variant={isSearchVisible ? "secondary" : "tertiary"} 
+                  onClick={() => setIsSearchVisible(!isSearchVisible)}
+                 />
+                 <Popover
+                    active={isFilterActive}
+                    activator={
+                      <Button icon={FilterIcon} variant={filterStatus !== "all" ? "secondary" : "tertiary"} onClick={toggleFilterActive}>
+                        Filter {filterStatus !== "all" ? `(${filterStatus})` : ""}
+                      </Button>
+                    }
+                    onClose={toggleFilterActive}
+                 >
+                    <ActionList
+                      actionRole="menuitem"
+                      items={[
+                        { content: 'All statuses', onAction: () => { setFilterStatus("all"); toggleFilterActive(); } },
+                        { content: 'Active', onAction: () => { setFilterStatus("active"); toggleFilterActive(); } },
+                        { content: 'Draft', onAction: () => { setFilterStatus("draft"); toggleFilterActive(); } },
+                      ]}
                     />
-                  </div>
-               )}
-            </div>
-            <InlineStack gap="100">
-               <Button 
-                icon={SearchIcon} 
-                variant={isSearchVisible ? "secondary" : "tertiary"} 
-                onClick={() => setIsSearchVisible(!isSearchVisible)}
-               />
-               <Popover
-                  active={isFilterActive}
-                  activator={
-                    <Button icon={FilterIcon} variant={filterStatus !== "all" ? "secondary" : "tertiary"} onClick={toggleFilterActive}>
-                      Filter {filterStatus !== "all" ? `(${filterStatus})` : ""}
-                    </Button>
-                  }
-                  onClose={toggleFilterActive}
-               >
-                  <ActionList
-                    actionRole="menuitem"
-                    items={[
-                      { content: 'All statuses', onAction: () => { setFilterStatus("all"); toggleFilterActive(); } },
-                      { content: 'Active', onAction: () => { setFilterStatus("active"); toggleFilterActive(); } },
-                      { content: 'Draft', onAction: () => { setFilterStatus("draft"); toggleFilterActive(); } },
-                    ]}
-                  />
-               </Popover>
+                 </Popover>
+              </InlineStack>
             </InlineStack>
-          </InlineStack>
-        </Box>
-        <Divider />
+          </Box>
+          <Divider />
 
         {filteredGroups.length === 0 ? (
           <EmptyState
@@ -901,42 +887,45 @@ export default function GroupsPage() {
             )}
           </EmptyState>
         ) : (
-          <IndexTable
-            resourceName={{ singular: "group", plural: "groups" }}
-            itemCount={filteredGroups.length}
-            headings={[
-              { title: "Product group" },
-              { title: "Products" },
-              { title: "Total products" },
-              { title: "Type" },
-              { title: "Option name" },
-              { title: "Status" },
-              { title: "Created" },
-              { title: "", alignment: 'end' },
-            ]}
-            selectable={true}
-            selectedResources={selectedResources}
-            onSelectionChange={handleSelectionChange}
-            bulkActions={[
-              {
-                content: 'Set as active',
-                onAction: () => handleBulkAction('active'),
-              },
-              {
-                content: 'Set as draft',
-                onAction: () => handleBulkAction('draft'),
-              },
-              {
-                content: 'Delete',
-                destructive: true,
-                onAction: () => {
-                   if (confirm(`Are you sure you want to delete ${selectedResources.length} groups?`)) {
-                      handleBulkAction('delete');
-                   }
-                },
-              },
-            ]}
-          >
+              <Box padding="0" overflowX="auto">
+                <IndexTable
+                  resourceName={{ singular: "group", plural: "groups" }}
+                  itemCount={filteredGroups.length}
+                  headings={[
+                    { title: "Product group" },
+                    { title: "Products" },
+                    { title: "Total products" },
+                    { title: "Type" },
+                    { title: "Option name" },
+                    { title: "Status" },
+                    { title: "Created" },
+                    { title: "", alignment: 'end' },
+                  ]}
+                  selectable={true}
+                  selectedResources={selectedResources}
+                  onSelectionChange={handleSelectionChange}
+                  promotedBulkActions={[
+                    {
+                      content: 'Set as active',
+                      onAction: () => handleBulkAction('active'),
+                    },
+                    {
+                      content: 'Set as draft',
+                      onAction: () => handleBulkAction('draft'),
+                    },
+                  ]}
+                  bulkActions={[
+                    {
+                      content: 'Delete',
+                      destructive: true,
+                      onAction: () => {
+                         if (confirm(`Are you sure you want to delete ${selectedResources.length} groups?`)) {
+                            handleBulkAction('delete');
+                         }
+                      },
+                    },
+                  ]}
+                >
             {filteredGroups.map((group, index) => (
               <IndexTable.Row 
                 id={group.id} 
@@ -997,9 +986,11 @@ export default function GroupsPage() {
                 </IndexTable.Cell>
               </IndexTable.Row>
             ))}
-          </IndexTable>
-        )}
-      </Card>
+                </IndexTable>
+              </Box>
+            )}
+          </Tabs>
+        </LegacyCard>
 
       {/* Footer Footer */}
       <Box paddingBlock="800">
