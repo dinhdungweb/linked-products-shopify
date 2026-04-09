@@ -644,6 +644,34 @@ export default function GroupsPage() {
     { id: 'subcategory', content: 'Subcategory', panelID: 'subcategory' },
   ];
 
+  const promotedBulkActions = useMemo(() => [
+    {
+      content: 'Set as active',
+      onAction: () => handleBulkAction('active'),
+      loading: activeBulkAction === 'active' || (navigation.state !== "idle" && navigation.formData?.get("bulkType") === 'active'),
+      disabled: activeBulkAction !== null || navigation.state !== "idle",
+    },
+    {
+      content: 'Set as draft',
+      onAction: () => handleBulkAction('draft'),
+      loading: activeBulkAction === 'draft' || (navigation.state !== "idle" && navigation.formData?.get("bulkType") === 'draft'),
+      disabled: activeBulkAction !== null || navigation.state !== "idle",
+    },
+  ], [handleBulkAction, activeBulkAction, navigation.state, navigation.formData]);
+
+  const bulkActions = useMemo(() => [
+    {
+      content: 'Delete',
+      onAction: () => {
+        if (confirm(`Are you sure you want to delete ${selectedResources.length} groups?`)) {
+          handleBulkAction('delete');
+        }
+      },
+      loading: activeBulkAction === 'delete' || (navigation.state !== "idle" && navigation.formData?.get("bulkType") === 'delete'),
+      disabled: activeBulkAction !== null || navigation.state !== "idle",
+    },
+  ], [handleBulkAction, activeBulkAction, navigation.state, navigation.formData, selectedResources]);
+
   const ActionMenu = ({ groupId }) => {
     const [active, setActive] = useState(false);
     const toggleActive = useCallback(() => setActive((a) => !a), []);
@@ -887,29 +915,8 @@ export default function GroupsPage() {
               selectable={true}
               selectedItemsCount={allResourcesSelected ? 'All' : selectedResources.length}
               onSelectionChange={handleSelectionChange}
-              promotedBulkActions={[
-                {
-                  content: 'Set as active',
-                  onAction: () => handleBulkAction('active'),
-                  loading: isBulkLoading && (activeBulkAction === 'active' || navigation.formData?.get("bulkType") === 'active'),
-                },
-                {
-                  content: 'Set as draft',
-                  onAction: () => handleBulkAction('draft'),
-                  loading: isBulkLoading && (activeBulkAction === 'draft' || navigation.formData?.get("bulkType") === 'draft'),
-                },
-              ]}
-              bulkActions={[
-                {
-                  content: 'Delete',
-                  onAction: () => {
-                    if (confirm(`Are you sure you want to delete ${selectedResources.length} groups?`)) {
-                      handleBulkAction('delete');
-                    }
-                  },
-                  loading: isBulkLoading && (activeBulkAction === 'delete' || navigation.formData?.get("bulkType") === 'delete'),
-                },
-              ]}
+              promotedBulkActions={promotedBulkActions}
+              bulkActions={bulkActions}
             >
               {filteredGroups.map((group, index) => (
                 <IndexTable.Row
