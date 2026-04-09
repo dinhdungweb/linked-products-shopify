@@ -30,8 +30,8 @@ import {
   InfoIcon,
   ViewIcon,
   MagicIcon,
-  PaintBrushIcon,
-  MailIcon,
+  PaintBrushFlatIcon,
+  EmailIcon,
   CheckIcon,
   XIcon
 } from "@shopify/polaris-icons";
@@ -179,7 +179,7 @@ export default function SettingsPage() {
       id: "appearance",
       content: (
         <InlineStack gap="200" align="start" blockAlign="center">
-          <Icon source={PaintBrushIcon} />
+          <Icon source={PaintBrushFlatIcon} />
           <span>Storefront</span>
         </InlineStack>
       ),
@@ -318,7 +318,7 @@ export default function SettingsPage() {
                     <Card>
                        <BlockStack gap="400">
                           <InlineStack gap="200" blockAlign="center">
-                            <Icon source={MailIcon} />
+                            <Icon source={EmailIcon} />
                             <Text variant="headingMd" as="h3">Communication</Text>
                           </InlineStack>
                           <TextField 
