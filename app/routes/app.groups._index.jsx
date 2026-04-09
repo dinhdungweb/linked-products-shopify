@@ -917,7 +917,7 @@ export default function GroupsPage() {
             selectable={true}
             selectedResources={selectedResources}
             onSelectionChange={handleSelectionChange}
-            promotedBulkActions={[
+            bulkActions={[
               {
                 content: 'Set as active',
                 onAction: () => handleBulkAction('active'),
