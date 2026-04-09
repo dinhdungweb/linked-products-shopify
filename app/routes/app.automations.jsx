@@ -164,44 +164,68 @@ export async function action({ request }) {
 // Helper data for automation types
 const AUTOMATION_TYPES = [
   {
-    value: "title_pattern",
+    value: "title_pattern_single",
     label: "Title Pattern",
-    description: "Group products by matching patterns in their titles. Can create multiple groups at once.",
+    description: "Group products matching a pattern into ONE group.",
+    placeholder: "e.g. T-Shirt",
+    helpText: "All products matching this pattern will be added to a single group.",
+    badge: "Single Option",
+  },
+  {
+    value: "sku_pattern_single",
+    label: "SKU Pattern",
+    description: "Group products matching SKU into ONE group.",
+    placeholder: "e.g. SKU-TSHIRT",
+    helpText: "All products with matching SKUs will form one group.",
+    badge: "Single Option",
+  },
+  {
+    value: "tag_single",
+    label: "Product Tag",
+    description: "Group products with specific tags into ONE group.",
+    placeholder: "e.g. summer-collection",
+    helpText: "Products containing any of these tags will be grouped together.",
+    badge: "Single Option",
+  },
+  {
+    value: "collection",
+    label: "Collection",
+    description: "Group all products within a collection.",
+    placeholder: "e.g. summer-tshirts",
+    helpText: "All products in this collection will be grouped together.",
+    badge: "Single Option",
+  },
+  {
+    value: "title_pattern",
+    label: "Title Pattern (Batch)",
+    description: "Auto-detect and create MULTIPLE groups by title pattern.",
     placeholder: "e.g. (.+?)\\s*-\\s*\\w+",
-    helpText: "Capture the base title in parentheses. Products with matching base titles will be separated into unique groups.",
+    helpText: "Capture the base title. Products with matching bases form unique groups.",
     badge: "Multi Option",
   },
   {
     value: "auto_title",
     label: "Auto-Split Title",
-    description: "Smart grouping by splitting titles automatically (e.g. by ' - ' or ' / ')",
-    placeholder: "No pattern needed (Optional keywords to filter)",
-    helpText: "Automatically groups products sharing the same name before separators like ' - ' or ' / '.",
+    description: "Smartly detect common names and create MULTIPLE groups.",
+    placeholder: "No pattern needed",
+    helpText: "Splits by ' - ' or ' / ' and groups products sharing the same prefix.",
     badge: "Smart Multi",
   },
   {
     value: "sku_pattern",
-    label: "SKU Pattern",
-    description: "Group products by matching SKU patterns. Can create multiple groups at once.",
+    label: "SKU Pattern (Batch)",
+    description: "Auto-detect and create MULTIPLE groups by SKU pattern.",
     placeholder: "e.g. (SKU-\\d+)-\\w+",
-    helpText: "Capture the base SKU. Products with matching parts will be grouped together into distinct groups.",
+    helpText: "Matches SKU parts and creates distinct groups for each match.",
     badge: "Multi Option",
   },
   {
     value: "tag",
-    label: "Product Tag",
-    description: "Group products based on a list of tags. Creates one group per tag.",
-    placeholder: "e.g. tag1, tag2, tag3",
-    helpText: "Enter a comma-separated list of tags. Each tag will form its own linked product group.",
+    label: "Product Tag (Batch)",
+    description: "Create ONE group FOR EACH tag in the list.",
+    placeholder: "e.g. tag1, tag2",
+    helpText: "Each tag in the list will automatically form its own separate group.",
     badge: "Multi Option",
-  },
-  {
-    value: "collection",
-    label: "Collection",
-    description: "Group all products within a collection",
-    placeholder: "e.g. summer-tshirts (collection handle)",
-    helpText: "All products in this collection will be grouped together.",
-    badge: "Single Option",
   },
 ];
 
@@ -241,7 +265,7 @@ export default function AutomationsPage() {
 
   const filteredRules = selectedTab === 0
     ? rules
-    : rules.filter(r => r.type === tabs[selectedTab].id);
+    : rules.filter(r => r.type.includes(tabs[selectedTab].id));
 
   const handleCreateRule = useCallback(() => {
     const fd = new FormData();

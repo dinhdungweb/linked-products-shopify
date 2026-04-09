@@ -26,15 +26,19 @@ export async function runAutomationRule(admin, prisma, ruleId, shop, canAddLinks
         products[baseKey].push(p);
       }
     }
+  } else if (rule.type === "title_pattern_single") {
+    const regex = new RegExp(rule.pattern, "i");
+    const allProducts = await fetchAllProducts(admin);
+    const matched = allProducts.filter(p => p.title.match(regex));
+    if (matched.length >= 2) products = { [rule.name]: matched };
+
   } else if (rule.type === "auto_title") {
     const allProducts = await fetchAllProducts(admin);
     const filterKeyword = rule.pattern ? rule.pattern.toLowerCase() : "";
 
     for (const p of allProducts) {
-      // Nếu có filter keyword, chỉ xử lý những sp có chứa keyword đó
       if (filterKeyword && !p.title.toLowerCase().includes(filterKeyword)) continue;
 
-      // Tìm tên gốc bằng cách tách theo các ký tự - / |
       let baseTitle = p.title;
       const separators = [" - ", " / ", " | ", " -", "- ", " /", "/ ", " |", "| "];
       
@@ -64,6 +68,14 @@ export async function runAutomationRule(admin, prisma, ruleId, shop, canAddLinks
         products[rawTag] = taggedProducts;
       }
     }
+  } else if (rule.type === "tag_single") {
+    const allProducts = await fetchAllProducts(admin);
+    const tagNames = rule.pattern.split(',').map(t => t.toLowerCase().trim());
+    const matched = allProducts.filter(p => 
+      p.tags && p.tags.some(t => tagNames.includes(t.toLowerCase()))
+    );
+    if (matched.length >= 2) products = { [rule.name]: matched };
+
   } else if (rule.type === "sku_pattern") {
     const regex = new RegExp(rule.pattern, "i");
     const allProducts = await fetchAllProducts(admin);
@@ -77,10 +89,16 @@ export async function runAutomationRule(admin, prisma, ruleId, shop, canAddLinks
         products[baseKey].push(p);
       }
     }
+  } else if (rule.type === "sku_pattern_single") {
+    const regex = new RegExp(rule.pattern, "i");
+    const allProducts = await fetchAllProducts(admin);
+    const matched = allProducts.filter(p => (p.sku || "").match(regex));
+    if (matched.length >= 2) products = { [rule.name]: matched };
+
   } else if (rule.type === "collection") {
     const collectionProducts = await fetchCollectionProducts(admin, rule.pattern);
     if (collectionProducts.length >= 2) {
-      products = { [rule.pattern]: collectionProducts };
+      products = { [rule.name]: collectionProducts };
     }
   }
 

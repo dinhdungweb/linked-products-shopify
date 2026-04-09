@@ -553,6 +553,41 @@ export async function action({ request, params }) {
 
     if (actionType === "removeProduct") {
         const productId = formData.get("productId");
+        
+        try {
+            // Clean up Shopify metafields for this specific product
+            const metafieldQuery = await admin.graphql(`
+                query GetProductMetafields($productId: ID!) {
+                    product(id: $productId) {
+                        metafields(first: 10, namespace: "linked_products") {
+                            nodes { id key }
+                        }
+                    }
+                }
+            `, { variables: { productId } });
+
+            const metafieldResult = await metafieldQuery.json();
+            const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
+
+            if (metafieldNodes.length > 0) {
+                const metafieldsToDelete = metafieldNodes.map(m => ({
+                    namespace: "linked_products",
+                    key: m.key,
+                    ownerId: productId
+                }));
+
+                await admin.graphql(`
+                    mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
+                        metafieldsDelete(metafields: $metafields) {
+                            deletedMetafields { ownerId }
+                        }
+                    }
+                `, { variables: { metafields: metafieldsToDelete } });
+            }
+        } catch (error) {
+            console.warn("Cleanup metafields failed during product removal:", error.message);
+        }
+
         await prisma.productGroupItem.delete({ where: { groupId_productId: { groupId, productId } } });
         await syncGroupMetafields(admin, prisma, groupId);
         return json({ success: true, message: "Product removed!" });
@@ -580,6 +615,50 @@ export async function action({ request, params }) {
     }
 
     if (actionType === "deleteGroup") {
+        const group = await prisma.productGroup.findUnique({
+            where: { id: groupId },
+            include: { products: true }
+        });
+
+        if (group && group.products.length > 0) {
+            try {
+                for (const product of group.products) {
+                    // Fetch existing metafields to get their IDs
+                    const metafieldQuery = await admin.graphql(`
+                        query GetProductMetafields($productId: ID!) {
+                            product(id: $productId) {
+                                metafields(first: 10, namespace: "linked_products") {
+                                    nodes { id key }
+                                }
+                            }
+                        }
+                    `, { variables: { productId: product.productId } });
+
+                    const metafieldResult = await metafieldQuery.json();
+                    const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
+
+                    if (metafieldNodes.length > 0) {
+                        const metafieldsToDelete = metafieldNodes.map(m => ({
+                            namespace: "linked_products",
+                            key: m.key,
+                            ownerId: product.productId
+                        }));
+
+                        await admin.graphql(`
+                            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
+                                metafieldsDelete(metafields: $metafields) {
+                                    deletedMetafields { ownerId }
+                                    userErrors { field message }
+                                }
+                            }
+                        `, { variables: { metafields: metafieldsToDelete } });
+                    }
+                }
+            } catch (error) {
+                console.warn("Cleanup metafields failed during group deletion:", error.message);
+            }
+        }
+
         await prisma.productGroup.delete({ where: { id: groupId } });
         const { redirect } = await import("@remix-run/node");
         return redirect("/app/groups");
