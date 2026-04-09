@@ -500,6 +500,7 @@ export default function GroupsPage() {
   const [file, setFile] = useState(null);
 
   const isLoading = navigation.state !== "idle";
+  const isBulkLoading = isLoading && navigation.formData?.get("action") === "bulkAction";
   const isImporting = isLoading && navigation.formData?.get("action") === "importCSV";
   const isLimitReached = usageInfo.limit !== Infinity && usageInfo.used >= usageInfo.limit;
 
@@ -916,10 +917,12 @@ export default function GroupsPage() {
               {
                 content: 'Set as active',
                 onAction: () => handleBulkAction('active'),
+                loading: isBulkLoading && navigation.formData?.get("bulkType") === 'active',
               },
               {
                 content: 'Set as draft',
                 onAction: () => handleBulkAction('draft'),
+                loading: isBulkLoading && navigation.formData?.get("bulkType") === 'draft',
               },
             ]}
             bulkActions={[
@@ -931,6 +934,7 @@ export default function GroupsPage() {
                       handleBulkAction('delete');
                    }
                 },
+                loading: isBulkLoading && navigation.formData?.get("bulkType") === 'delete',
               },
             ]}
           >
