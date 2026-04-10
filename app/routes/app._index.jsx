@@ -572,7 +572,11 @@ export default function Index() {
       },
       { 
         question: "Can I show options on collection pages?", 
-        answer: "Yes! Enable the 'App Embed' in our app settings and Theme Editor to automatically show swatches on product cards across your store." 
+        answer: (
+          <Text variant="bodyMd" tone="subdued">
+            Yes. Go to <Link url="/app/settings">Settings</Link>, enable <b>Show options on product card</b>, then save. If it still doesn't work, <Link url="mailto:support@example.com">contact us</Link>
+          </Text>
+        )
       },
       { 
         question: "Can a product be in two product groups?", 
@@ -584,7 +588,11 @@ export default function Index() {
       },
       { 
         question: "Can I make the option style match my theme's variant style?", 
-        answer: "Absolutely! You can use our Settings > Storefront tab to customize colors and borders, or use the Custom CSS field for advanced styling." 
+        answer: (
+          <Text variant="bodyMd" tone="subdued">
+            Absolutely! You can use our <Link url="/app/settings">Settings &gt; Storefront</Link> tab to customize colors and borders, or use the Custom CSS field for advanced styling.
+          </Text>
+        )
       },
       { 
         question: "Can you help hide Shopify variants?", 
@@ -616,7 +624,15 @@ export default function Index() {
                       <Icon source={openIndex === index ? XIcon : PlusIcon} size="extrasmall" />
                     </div>
                   </div>
-                  {openIndex === index && <Box paddingBlockStart="200"><Text variant="bodyMd" tone="subdued">{faq.answer}</Text></Box>}
+                  {openIndex === index && (
+                    <Box paddingBlockStart="200">
+                      {typeof faq.answer === 'string' ? (
+                        <Text variant="bodyMd" tone="subdued">{faq.answer}</Text>
+                      ) : (
+                        faq.answer
+                      )}
+                    </Box>
+                  )}
                 </BlockStack>
               </Box>
             ))}
