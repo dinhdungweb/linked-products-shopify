@@ -83,8 +83,8 @@ export const action = async ({ request }) => {
     if (actionValue === "subscribe") {
         if (plan === "free") {
             try {
-                const { createSubscription } = await import("../billing.server");
-                await createSubscription(admin, "free", shop);
+                const { cancelSubscription } = await import("../billing.server");
+                await cancelSubscription(admin, shop);
                 return json({ success: true, message: "Changed to Free plan successfully." });
             } catch (error) {
                 return json({ error: error.message }, { status: 400 });
@@ -266,7 +266,7 @@ export default function PricingPage() {
                                         )}
                                     </Text>
                                     <Badge tone={usageInfo.plan === "premium" ? "success" : "info"}>
-                                        {usageInfo.planName} Plan
+                                        {usageInfo.planName.includes("Plan") ? usageInfo.planName : `${usageInfo.planName} Plan`}
                                     </Badge>
                                 </InlineStack>
                                 {usageInfo.limit !== Infinity && (
@@ -278,7 +278,7 @@ export default function PricingPage() {
                             </BlockStack>
                         </Card>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', alignItems: 'stretch' }}>
                             {/* Free */}
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <Card height="100%">
