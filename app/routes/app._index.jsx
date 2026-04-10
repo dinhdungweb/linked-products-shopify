@@ -562,9 +562,38 @@ export default function Index() {
   const FAQSection = () => {
     const [openIndex, setOpenIndex] = useState(null);
     const faqs = [
-      { question: "Can I change the position of the options?", answer: "Yes! You can use the Theme Editor to drag the 'Linked Product Variants' block to any position." },
-      { question: "How do I show options on collection pages?", answer: "Enable the 'Linked Product Variants' block in your Theme App Embeds settings." },
-      { question: "Can a product belong to multiple groups?", answer: "Each product can only belong to one active group to avoid conflicts." }
+      { 
+        question: "Can I change the position of the options?", 
+        answer: "Yes! You can use the Theme Editor to drag the 'Linked Product Variants' block to any position on your product page." 
+      },
+      { 
+        question: "I use PageFly/GemPages/EComposer and the options appear in the wrong place", 
+        answer: "Most page builders use custom layouts. You need to drag our App Block directly into your page builder's editor at the specific location you want it to appear." 
+      },
+      { 
+        question: "Can I show options on collection pages?", 
+        answer: "Yes! Enable the 'App Embed' in our app settings and Theme Editor to automatically show swatches on product cards across your store." 
+      },
+      { 
+        question: "Can a product be in two product groups?", 
+        answer: "To avoid SEO conflicts and broken links, each product can only belong to one active group at a time." 
+      },
+      { 
+        question: "I changed the option style/product group—why don't the options update?", 
+        answer: "Changes are usually instant, but Shopify's CDN might cache the previous state. Try refreshing after 1-2 minutes or check if you've saved the group." 
+      },
+      { 
+        question: "Can I make the option style match my theme's variant style?", 
+        answer: "Absolutely! You can use our Settings > Storefront tab to customize colors and borders, or use the Custom CSS field for advanced styling." 
+      },
+      { 
+        question: "Can you help hide Shopify variants?", 
+        answer: "Our app links different products together. If you need to hide actual variants of a single product, you might need theme-specific code or a dedicated variant-hiding app." 
+      },
+      { 
+        question: "Can I link to a specific variant (like color) while keeping size?", 
+        answer: "Yes! Our engine preserves the URL parameters so that linking between products feels seamless to the customer." 
+      }
     ];
     return (
       <Card padding="500">
