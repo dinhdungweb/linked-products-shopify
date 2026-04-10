@@ -243,7 +243,7 @@ export default function PricingPage() {
 
 
     return (
-        <Page fullWidth>
+        <Page>
             <TitleBar title="Pricing Plans" />
 
             <Layout>
