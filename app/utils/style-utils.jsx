@@ -28,7 +28,7 @@ export const BASE_SETTINGS = {
   border: { radius: 4, width: 1, color: "#dbdfe2", activeColor: "#000000", hoverColor: "#000000", outerWidth: 0, outerRadius: 4, outerPadding: 4, outerColor: "#dbdfe2", outerActiveColor: "#000000", outerHoverColor: "#000000" },
   label: { show: true, layout: "inline", gap: 8, fontSize: 14, fontWeight: "normal", lineHeight: 18, showSelectedVariant: true, selectedVariantFontWeight: "normal" },
   variantName: { show: true, fontSize: 12, fontWeight: "semibold", maxLines: 1 },
-  price: { show: true, fontSize: 10, fontWeight: "normal", color: "#6d7175" },
+  price: { show: false, fontSize: 10, fontWeight: "normal", color: "#6d7175" },
   text: { position: "right", gap: 8, width: 50 },
   layout: { marginTop: 0, marginBottom: 10, align: "left", type: "stack", maxSwatches: 100 },
   unavailable: { style: "cross_mark", allowRedirect: false, hideUnmatched: false },
@@ -55,30 +55,26 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
   button_card: {
     ...BASE_SETTINGS,
     basic: { ...BASE_SETTINGS.basic, swatchSize: 0, padding: 8, limitDesktop: 5 },
-    label: { ...BASE_SETTINGS.label, show: false, fontSize: 12, border: true },
-    price: { ...BASE_SETTINGS.price, show: false }
+    label: { ...BASE_SETTINGS.label, show: false, fontSize: 12, border: true }
   },
   dropdown_card: {
     ...BASE_SETTINGS,
     basic: { ...BASE_SETTINGS.basic, padding: 8, limitDesktop: 5 },
-    label: { ...BASE_SETTINGS.label, show: false, fontSize: 13, border: true },
-    price: { ...BASE_SETTINGS.price, show: false }
+    label: { ...BASE_SETTINGS.label, show: false, fontSize: 13, border: true }
   },
   image_swatch_card: { 
     ...BASE_SETTINGS, 
     basic: { ...BASE_SETTINGS.basic, swatchSize: 26, gap: 8, padding: 0, limitDesktop: 5 }, 
     border: { ...BASE_SETTINGS.border, radius: 12 }, 
     variantName: { ...BASE_SETTINGS.variantName, show: false },
-    label: { ...BASE_SETTINGS.label, show: false },
-    price: { ...BASE_SETTINGS.price, show: false }
+    label: { ...BASE_SETTINGS.label, show: false }
   },
   color_swatch_card: { 
     ...BASE_SETTINGS, 
     basic: { ...BASE_SETTINGS.basic, swatchSize: 26, gap: 8, padding: 0, limitDesktop: 5 }, 
     border: { ...BASE_SETTINGS.border, radius: 12 }, 
     variantName: { ...BASE_SETTINGS.variantName, show: false },
-    label: { ...BASE_SETTINGS.label, show: false },
-    price: { ...BASE_SETTINGS.price, show: false }
+    label: { ...BASE_SETTINGS.label, show: false }
   },
 };
 
