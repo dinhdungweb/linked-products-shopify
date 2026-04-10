@@ -115,7 +115,7 @@ model AppSetting {
   autoScroll            Boolean   @default(false)
   enableAutosuggestion  Boolean   @default(true)
   notificationEmail     String?
-  selectOptionLabel     String    @default("Select {option}")
+  selectOptionLabel     String    @default("{option}")
   soldOutLabel          String    @default("Sold out")
   unavailableLabel      String    @default("Unavailable")
   swatchSize            Int       @default(50)
