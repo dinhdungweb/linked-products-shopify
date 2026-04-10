@@ -574,7 +574,7 @@ export default function Index() {
         question: "Can I show options on collection pages?", 
         answer: (
           <Text variant="bodyMd" tone="subdued">
-            Yes. Go to <Link url="/app/settings">Settings</Link>, enable <b>Show options on product card</b>, then save. If it still doesn't work, <Link url="mailto:support@example.com">contact us</Link>
+            Yes. Go to <Link to="/app/settings">Settings</Link>, enable <b>Show options on product card</b>, then save. If it still doesn't work, <Link to="mailto:support@example.com">contact us</Link>
           </Text>
         )
       },
@@ -590,7 +590,7 @@ export default function Index() {
         question: "Can I make the option style match my theme's variant style?", 
         answer: (
           <Text variant="bodyMd" tone="subdued">
-            Absolutely! You can use our <Link url="/app/settings">Settings &gt; Storefront</Link> tab to customize colors and borders, or use the Custom CSS field for advanced styling.
+            Absolutely! You can use our <Link to="/app/settings">Settings &gt; Storefront</Link> tab to customize colors and borders, or use the Custom CSS field for advanced styling.
           </Text>
         )
       },
