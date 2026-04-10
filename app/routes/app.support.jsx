@@ -69,11 +69,11 @@ export default function SupportPage() {
                                         <FAQItem id="faq-2" title="Why are my linked products not showing on my store?">
                                             The most common reason is that the <b>Linked Products App Block</b> hasn't been added to your theme. Please follow the steps in our <a href="/app/help">Setup Guide</a>.
                                         </FAQItem>
-                                        <FAQItem id="faq-3" title="What is the difference between plans?">
-                                            The <b>Free</b> plan allows up to 100 links. The <b>Basic</b> plan ($3.99) increases this to 500 links, and the <b>Pro</b> plan ($6.99) gives you unlimited links and priority support.
+                                        <FAQItem id="faq-3" title="What are the differences between plans?">
+                                            The <b>Free</b> plan allows 1 product group. The <b>Basic</b> plan ($6.99) increases this to 100 groups, the <b>Advanced</b> plan ($14.99) supports up to 500 groups, and the <b>Premium</b> plan ($34.99) gives you unlimited groups with priority support.
                                         </FAQItem>
-                                        <FAQItem id="faq-4" title="Can I customize the look of the variant picker?">
-                                            Yes! You can choose between Swatches (circular images) and Blocks (text rectangles) in your product group settings. More customization options like colors and sizes are coming soon.
+                                        <FAQItem id="faq-4" title="Can I use all swatch styles on a free plan?">
+                                            Yes! All plans, including the Free version, have full access to all visual styles (Circle, Square, Polaroid, Button, etc.) and layout options (Grid, List, Carousel). We believe design flexibility should be available to everyone.
                                         </FAQItem>
                                     </BlockStack>
                                 </Box>
@@ -103,9 +103,9 @@ export default function SupportPage() {
                                         <InlineStack gap="200" blockAlign="center">
                                             <Icon source={ChatIcon} tone="base" />
                                             <BlockStack>
-                                                <Text variant="headingMd">Live Chat</Text>
-                                                <Text tone="subdued">Available on Pro Plan</Text>
-                                                <Text variant="bodySm">9 AM - 6 PM (EST)</Text>
+                                                <Text variant="headingMd">Dashboard Chat</Text>
+                                                <Text tone="subdued">Available on Premium Plan</Text>
+                                                <Text variant="bodySm">Real-time Priority Response</Text>
                                             </BlockStack>
                                         </InlineStack>
                                     </Box>
