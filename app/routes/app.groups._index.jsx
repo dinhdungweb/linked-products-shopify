@@ -928,53 +928,67 @@ export default function GroupsPage() {
                   position={index}
                 >
                   <IndexTable.Cell>
-                    <Link
-                      to={`/app/groups/${group.id}`}
-                      style={{ textDecoration: 'none', color: 'inherit' }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Text variant="bodyMd" fontWeight="semibold">{group.name || "Untitled Group"}</Text>
-                    </Link>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Link
+                        to={`/app/groups/${group.id}`}
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Text variant="bodyMd" fontWeight="semibold">{group.name || "Untitled Group"}</Text>
+                      </Link>
+                    </div>
                   </IndexTable.Cell>
                   <IndexTable.Cell>
-                    <ProductThumbnailGroup
-                      productIds={group.products}
-                      totalCount={group._count.products}
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ProductThumbnailGroup
+                        productIds={group.products}
+                        totalCount={group._count.products}
+                      />
+                    </div>
                   </IndexTable.Cell>
                   <IndexTable.Cell>
-                    <Text tone="subdued" variant="bodyMd">{group._count.products} products</Text>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Text tone="subdued" variant="bodyMd">{group._count.products} products</Text>
+                    </div>
                   </IndexTable.Cell>
                   <IndexTable.Cell>
-                    <Text tone="subdued" variant="bodyMd">Single option</Text>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Text tone="subdued" variant="bodyMd">Single option</Text>
+                    </div>
                   </IndexTable.Cell>
                   <IndexTable.Cell>
-                    <Text variant="bodyMd">{group.optionName}</Text>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Text variant="bodyMd">{group.optionName}</Text>
+                    </div>
                   </IndexTable.Cell>
                   <IndexTable.Cell>
-                    <InlineStack gap="200" blockAlign="center">
-                      {(statusLoadingId === group.id && navigation.formData?.get("action") === "toggleStatus") ? (
-                        <Spinner size="small" />
-                      ) : (
-                        <>
-                          {group.status === "active" ? (
-                            <Badge tone={group.isPlanDisabled ? "attention" : "success"}>
-                              {group.isPlanDisabled ? "Paused by Plan" : "Active"}
-                            </Badge>
-                          ) : (
-                            <Badge tone="subdued">Draft</Badge>
-                          )}
-                        </>
-                      )}
-                      {group.isPlanDisabled && (
-                        <Tooltip content="This group is disabled because it exceeds your plan limit.">
-                          <Icon source={QuestionCircleIcon} tone="caution" />
-                        </Tooltip>
-                      )}
-                    </InlineStack>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <InlineStack gap="200" blockAlign="center">
+                        {(statusLoadingId === group.id && navigation.formData?.get("action") === "toggleStatus") ? (
+                          <Spinner size="small" />
+                        ) : (
+                          <>
+                            {group.status === "active" ? (
+                              <Badge tone={group.isPlanDisabled ? "attention" : "success"}>
+                                {group.isPlanDisabled ? "Paused by Plan" : "Active"}
+                              </Badge>
+                            ) : (
+                              <Badge tone="subdued">Draft</Badge>
+                            )}
+                          </>
+                        )}
+                        {group.isPlanDisabled && (
+                          <Tooltip content="This group is disabled because it exceeds your plan limit.">
+                            <Icon source={QuestionCircleIcon} tone="caution" />
+                          </Tooltip>
+                        )}
+                      </InlineStack>
+                    </div>
                   </IndexTable.Cell>
                   <IndexTable.Cell>
-                    <Text tone="subdued" variant="bodyMd">{new Date(group.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Text tone="subdued" variant="bodyMd">{new Date(group.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
+                    </div>
                   </IndexTable.Cell>
                   <IndexTable.Cell>
                     <InlineStack align="end" gap="100" onClick={(e) => e.stopPropagation()}>
