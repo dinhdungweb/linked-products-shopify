@@ -47,7 +47,7 @@
             if (!storage) return;
 
             // 1. Find all potential product links
-            const productLinks = document.querySelectorAll('a[href*="/products/"]');
+            const productLinks = document.querySelectorAll('a[href*="/products/"]:not(.linked-option)');
             const processedLinks = new Set();
 
             productLinks.forEach(link => {
@@ -68,8 +68,8 @@
                     }
                 }
 
-                // ABSOLUTE PROTECTION: If card already has swatches for THIS handle, skip.
-                if (!card || card.querySelector(`[data-lp-handle="${handle}"]`)) {
+                // ABSOLUTE PROTECTION: If card already has swatches, skip.
+                if (!card || card.querySelector('.linked-product-swatches')) {
                     processedLinks.add(handle);
                     return;
                 }
