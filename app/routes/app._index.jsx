@@ -743,7 +743,7 @@ export default function Index() {
           </BlockStack>
 
           <InlineStack gap="300">
-            <Button variant="primary" icon={PlayCircleIcon} onClick={() => window.open('https://youtube.com', '_blank')}>Watch video</Button>
+            <Button variant="primary" icon={PlayCircleIcon} onClick={() => window.open('https://www.youtube.com/watch?v=jO2yBhXzruE', '_blank')}>Watch video</Button>
             <Button variant="secondary" icon={ExternalIcon} url="/app/help">Learn more</Button>
           </InlineStack>
         </BlockStack>
