@@ -13,10 +13,7 @@ import {
     ProgressBar,
     Button,
     InlineStack,
-    Icon,
-    Box,
 } from "@shopify/polaris";
-import { CheckIcon, InfoIcon } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
 
@@ -245,85 +242,8 @@ export default function PricingPage() {
 
 
 
-    const FeatureItem = ({ text, secondary = false, isDark = false }) => (
-        <InlineStack gap="200" align="start" blockAlign="start">
-            <div style={{
-                marginTop: '2px',
-                padding: '2px',
-                borderRadius: '50%',
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(92, 106, 196, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
-                <Icon source={CheckIcon} tone={isDark ? "info" : "primary"} size="small" />
-            </div>
-            <div style={{ flex: 1 }}>
-                <Text variant="bodyMd" tone={isDark ? "base" : (secondary ? "subdued" : "base")}>
-                    {text}
-                </Text>
-            </div>
-        </InlineStack>
-    );
-
     return (
         <Page fullWidth>
-            <style>{`
-                .pricing-card {
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    border-radius: 20px;
-                    border: 1px solid #e1e3e5;
-                    background: white;
-                    padding: 32px;
-                    cursor: default;
-                }
-                .pricing-card:hover {
-                    transform: translateY(-8px);
-                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-                }
-                .pricing-card.featured {
-                    border: 2px solid #5c6ac4;
-                    position: relative;
-                }
-                .pricing-card.premium {
-                    background: linear-gradient(145deg, #1a1c23 0%, #2d313e 100%);
-                    color: white;
-                    border: none;
-                }
-                .pricing-card.premium p, .pricing-card.premium span, .pricing-card.premium h2 {
-                    color: white !important;
-                }
-                .premium-glow {
-                    position: relative;
-                }
-                .premium-glow::before {
-                    content: '';
-                    position: absolute;
-                    top: -2px; left: -2px; right: -2px; bottom: -2px;
-                    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-                    z-index: -1;
-                    border-radius: 22px;
-                    opacity: 0.6;
-                }
-                .feature-list {
-                    margin-top: 24px;
-                    margin-bottom: 32px;
-                    flex: 1;
-                }
-                .price-text {
-                    font-size: 40px;
-                    font-weight: 800;
-                    letter-spacing: -0.02em;
-                }
-                .plan-header {
-                    text-align: center;
-                    margin-bottom: 48px;
-                    padding-top: 24px;
-                }
-            `}</style>
             <TitleBar title="Pricing Plans" />
 
             <Layout>
@@ -359,131 +279,124 @@ export default function PricingPage() {
                             </BlockStack>
                         </Card>
 
-                        <div className="plan-header">
-                            <BlockStack gap="200">
-                                <Text variant="heading3xl" as="h1">Choose the perfect plan for your business</Text>
-                                <Text variant="bodyLg" tone="subdued">Scale your variant linking and automation as your store grows.</Text>
-                            </BlockStack>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', alignItems: 'stretch', padding: '0 10px 40px 10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', alignItems: 'stretch' }}>
                             {/* Free */}
-                            <div className="pricing-card">
-                                <BlockStack gap="400" flex="1">
-                                    <BlockStack gap="100">
-                                        <Text variant="headingLg">Free</Text>
-                                        <div className="price-text">$0</div>
-                                        <Text tone="subdued">Forever free</Text>
-                                    </BlockStack>
-                                    <Divider />
-                                    <div className="feature-list">
-                                        <BlockStack gap="300">
-                                            <FeatureItem text="1 product group limit" />
-                                            <FeatureItem text="Single-option grouping" />
-                                            <div style={{ paddingLeft: '32px' }}>
-                                                <FeatureItem text="All Swatch Styles included" secondary />
-                                                <FeatureItem text="All Display Layouts included" secondary />
-                                            </div>
-                                            <FeatureItem text="Product card swatches" />
-                                            <FeatureItem text="Localized labels" />
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <Card height="100%">
+                                    <BlockStack gap="400" flex="1">
+                                        <BlockStack gap="100">
+                                            <Text variant="headingLg">Free</Text>
+                                            <Text variant="heading2xl">$0</Text>
+                                            <Text tone="subdued">Forever free</Text>
                                         </BlockStack>
-                                    </div>
-                                    <Button fullWidth onClick={() => handleSubscribe("free")} loading={isSubmitting} disabled={usageInfo.plan === "free"}>
-                                        {usageInfo.plan === "free" ? "Active" : "Downgrade"}
-                                    </Button>
-                                </BlockStack>
+                                        <Divider />
+                                        <BlockStack gap="200" flex="1">
+                                            <Text>✓ 1 product group limit</Text>
+                                            <Text>✓ Single-option grouping</Text>
+                                            <div style={{ paddingLeft: '12px' }}>
+                                                <Text variant="bodySm" tone="subdued">• All Styles (Swatch, image, etc.)</Text>
+                                                <Text variant="bodySm" tone="subdued">• All Layouts (Grid, List, etc.)</Text>
+                                            </div>
+                                            <Text>✓ Product card display</Text>
+                                            <Text>✓ Custom storefront labels</Text>
+                                        </BlockStack>
+                                        <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                                            <Button fullWidth disabled={usageInfo.plan === "free"} onClick={() => handleSubscribe("free")} loading={isSubmitting}>
+                                                {usageInfo.plan === "free" ? "Current Plan" : "Downgrade"}
+                                            </Button>
+                                        </div>
+                                    </BlockStack>
+                                </Card>
                             </div>
 
                             {/* Basic */}
-                            <div className="pricing-card featured">
-                                <BlockStack gap="400" flex="1">
-                                    <BlockStack gap="100">
-                                        <Text variant="headingLg">Basic</Text>
-                                        <div className="price-text">$6.99</div>
-                                        <Text tone="subdued">per month</Text>
-                                    </BlockStack>
-                                    <Divider />
-                                    <div className="feature-list">
-                                        <BlockStack gap="300">
-                                            <FeatureItem text="100 product groups limit" />
-                                            <FeatureItem text="CSV Import & Export" />
-                                            <FeatureItem text="Automatic Metafield Sync" />
-                                            <FeatureItem text="Basic Automation rules" />
-                                            <div style={{ marginTop: '8px' }}>
-                                                <Text fontWeight="semibold" tone="info" variant="bodySm">Includes all Free features</Text>
-                                            </div>
-                                        </BlockStack>
-                                    </div>
-                                    <Button fullWidth variant="primary" onClick={() => handleSubscribe("basic")} loading={isSubmitting} disabled={usageInfo.plan === "basic"}>
-                                        {usageInfo.plan === "basic" ? "Active" : "Select Basic"}
-                                    </Button>
-                                </BlockStack>
-                            </div>
-
-                            {/* Advanced */}
-                            <div className="pricing-card" style={{ border: '2px solid #9c6ade' }}>
-                                <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)' }}>
-                                    <Badge tone="success">Most Popular</Badge>
-                                </div>
-                                <BlockStack gap="400" flex="1">
-                                    <BlockStack gap="100">
-                                        <Text variant="headingLg">Advanced</Text>
-                                        <div className="price-text" style={{ color: '#9c6ade' }}>$14.99</div>
-                                        <Text tone="subdued">per month</Text>
-                                    </BlockStack>
-                                    <Divider />
-                                    <div className="feature-list">
-                                        <BlockStack gap="300">
-                                            <FeatureItem text="500 product groups limit" />
-                                            <FeatureItem text="Regex Batch Automation" />
-                                            <FeatureItem text="Priority Metafield Sync" />
-                                            <FeatureItem text="Priority Developer Support" />
-                                            <div style={{ marginTop: '8px' }}>
-                                                <Text fontWeight="semibold" tone="info" variant="bodySm">Includes all Basic features</Text>
-                                            </div>
-                                        </BlockStack>
-                                    </div>
-                                    <Button fullWidth variant="primary" onClick={() => handleSubscribe("advanced")} loading={isSubmitting} disabled={usageInfo.plan === "advanced"}>
-                                        {usageInfo.plan === "advanced" ? "Active" : "Go Advanced"}
-                                    </Button>
-                                </BlockStack>
-                            </div>
-
-                            {/* Premium */}
-                            <div className="premium-glow">
-                                <div className="pricing-card premium">
-                                    <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
-                                        <Badge tone="attention">Ultimate</Badge>
-                                    </div>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <Card height="100%">
                                     <BlockStack gap="400" flex="1">
                                         <BlockStack gap="100">
-                                            <Text variant="headingLg">Premium</Text>
-                                            <div className="price-text" style={{ color: '#ffc96b' }}>$34.99</div>
+                                            <Text variant="headingLg">Basic</Text>
+                                            <Text variant="heading2xl">$6.99</Text>
                                             <Text tone="subdued">per month</Text>
                                         </BlockStack>
                                         <Divider />
-                                        <div className="feature-list">
-                                            <BlockStack gap="300">
-                                                <FeatureItem text="Unlimited product groups" isDark />
-                                                <FeatureItem text="Hot-swap Variant Switching" isDark />
-                                                <FeatureItem text="Custom CSS (Global & Page)" isDark />
-                                                <FeatureItem text="Premium Support Chat" isDark />
-                                                <div style={{ marginTop: '8px' }}>
-                                                    <Text fontWeight="semibold" tone="success" variant="bodySm">Ultimate Power & Scale</Text>
-                                                </div>
-                                            </BlockStack>
+                                        <BlockStack gap="200" flex="1">
+                                            <Text>✓ 100 product groups limit</Text>
+                                            <Text>✓ CSV Import & Export</Text>
+                                            <Text>✓ Basic Automation (Title/SKU)</Text>
+                                            <Text>✓ Automatic Metafield Sync</Text>
+                                            <Text fontWeight="bold" tone="info">✓ Includes all Free features</Text>
+                                        </BlockStack>
+                                        <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                                            <Button fullWidth variant="primary" onClick={() => handleSubscribe("basic")} loading={isSubmitting} disabled={usageInfo.plan === "basic"}>
+                                                {usageInfo.plan === "basic" ? "Current Plan" : "Select Plan"}
+                                            </Button>
                                         </div>
-                                        <Button 
-                                            fullWidth 
-                                            size="large"
-                                            onClick={() => handleSubscribe("premium")} 
-                                            loading={isSubmitting} 
-                                            disabled={usageInfo.plan === "premium"}
-                                        >
-                                            {usageInfo.plan === "premium" ? "Active" : "Select Premium"}
-                                        </Button>
                                     </BlockStack>
-                                </div>
+                                </Card>
+                            </div>
+
+                            {/* Advanced */}
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <Card height="100%">
+                                    <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                        <div style={{ position: 'absolute', top: '-15px', right: '0' }}>
+                                            <Badge tone="success">Most Popular</Badge>
+                                        </div>
+                                        <BlockStack gap="400" flex="1">
+                                            <BlockStack gap="100">
+                                                <Text variant="headingLg">Advanced</Text>
+                                                <Text variant="heading2xl">$14.99</Text>
+                                                <Text tone="subdued">per month</Text>
+                                            </BlockStack>
+                                            <Divider />
+                                            <BlockStack gap="200" flex="1">
+                                                <Text>✓ 500 product groups limit</Text>
+                                                <Text>✓ Batch Automation (Regex/Detect)</Text>
+                                                <Text>✓ Priority data synchronization</Text>
+                                                <Text>✓ Priority developer support</Text>
+                                                <Text fontWeight="bold" tone="info">✓ Includes all Basic features</Text>
+                                            </BlockStack>
+                                            <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                                                <Button fullWidth variant="primary" onClick={() => handleSubscribe("advanced")} loading={isSubmitting} disabled={usageInfo.plan === "advanced"}>
+                                                    {usageInfo.plan === "advanced" ? "Current Plan" : "Select Plan"}
+                                                </Button>
+                                            </div>
+                                        </BlockStack>
+                                    </div>
+                                </Card>
+                            </div>
+
+                            {/* Premium */}
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <Card height="100%">
+                                    <BlockStack gap="400" flex="1">
+                                        <BlockStack gap="100">
+                                            <Text variant="headingLg">Premium</Text>
+                                            <Text variant="heading2xl">$34.99</Text>
+                                            <Text tone="subdued">per month</Text>
+                                        </BlockStack>
+                                        <Divider />
+                                        <BlockStack gap="200" flex="1">
+                                            <Text fontWeight="bold">✓ Unlimited product groups</Text>
+                                            <Text>✓ Hot-swap product switching</Text>
+                                            <Text>✓ Custom CSS support (SEO Friendly)</Text>
+                                            <Text>✓ Live chat support dashboard</Text>
+                                            <Text fontWeight="bold" tone="success">✓ Includes all Advanced features</Text>
+                                        </BlockStack>
+                                        <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                                            <Button 
+                                                fullWidth 
+                                                variant="primary" 
+                                                size="large"
+                                                onClick={() => handleSubscribe("premium")} 
+                                                loading={isSubmitting} 
+                                                disabled={usageInfo.plan === "premium"}
+                                            >
+                                                {usageInfo.plan === "premium" ? "Current Plan" : "Select Premium"}
+                                            </Button>
+                                        </div>
+                                    </BlockStack>
+                                </Card>
                             </div>
                         </div>
 
