@@ -723,7 +723,7 @@ export default function Index() {
           <div style={{ display: 'flex' }}>
             <Icon source={PlayCircleIcon} tone="inherit" />
           </div>
-          7:31
+          5:18
         </div>
       </div>
 
