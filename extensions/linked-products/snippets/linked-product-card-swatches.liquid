@@ -39,7 +39,7 @@
 
   {%- comment -%}2. Setup Dynamic Settings (No Hardcoding!){%- endcomment -%}
   {%- assign def_radius = 4 -%}
-  {%- if card_style contains 'swatch' -%}{%- assign def_radius = 50 -%}{%- endif -%}
+  {%- if card_style contains 'swatch' -%}{%- assign def_radius = 12 -%}{%- endif -%}
   
   {%- comment -%}Safely handle '0' and 'false' for default overrides{%- endcomment -%}
   {%- assign lp_border_radius = active_style_settings.border.radius -%}
@@ -54,7 +54,7 @@
 
   {%- assign lp_swatch_size = active_style_settings.basic.swatchSize -%}
   {%- if lp_swatch_size == nil -%}
-    {%- assign lp_swatch_size = app_settings.swatchSize | default: 32 -%}
+    {%- assign lp_swatch_size = app_settings.swatchSize | default: 24 -%}
   {%- endif -%}
 
   {%- assign lp_items_gap = active_style_settings.basic.gap -%}
@@ -96,7 +96,7 @@
 
   <div id="lp-card-{{ product.id }}" class="linked-product-swatches linked-products-picker" data-lp-handle="{{ product.handle }}" 
        style="
-         --lp-border-radius: {{ lp_border_radius }}{% if card_style contains 'swatch' %}%{% else %}px{% endif %};
+         --lp-border-radius: {{ lp_border_radius }}px;
          --lp-swatch-size: {{ lp_swatch_size }}px;
          --lp-swatch-gap: {{ lp_items_gap }}px;
          --lp-aspect-ratio: {{ active_style_settings.basic.aspectRatio | default: '1:1' | replace: ':', '/' }};
