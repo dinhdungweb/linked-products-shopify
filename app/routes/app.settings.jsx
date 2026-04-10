@@ -38,17 +38,65 @@ import { TitleBar } from "@shopify/app-bridge-react";
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
 
   let settings = await prisma.appSetting.findUnique({
     where: { shop },
   });
 
-  if (!settings) {
+  const isFirstInstall = !settings;
+
+  if (isFirstInstall) {
     settings = await prisma.appSetting.create({
       data: { shop },
     });
+  }
+
+  // Auto-sync metafield on first install hoặc khi metafield chưa tồn tại
+  if (isFirstInstall) {
+    try {
+      const shopData = await admin.graphql(`{ shop { id } }`);
+      const shopJson = await shopData.json();
+      const shopId = shopJson.data.shop.id;
+
+      // Kiểm tra xem metafield đã tồn tại chưa
+      const checkMetafield = await admin.graphql(`
+        query {
+          shop {
+            metafield(namespace: "linked_products", key: "settings") {
+              value
+            }
+          }
+        }
+      `);
+      const checkResult = await checkMetafield.json();
+      const existingMetafield = checkResult.data.shop.metafield;
+
+      // Chỉ ghi nếu chưa có metafield
+      if (!existingMetafield) {
+        await admin.graphql(`
+          mutation setSettings($metafields: [MetafieldsSetInput!]!) {
+            metafieldsSet(metafields: $metafields) {
+              userErrors { field message }
+            }
+          }
+        `, {
+          variables: {
+            metafields: [{
+              namespace: "linked_products",
+              key: "settings",
+              type: "json",
+              ownerId: shopId,
+              value: JSON.stringify(settings)
+            }]
+          }
+        });
+      }
+    } catch (e) {
+      // Không block loader nếu sync thất bại
+      console.error("[AutoSync] Failed to initialize metafield:", e);
+    }
   }
 
   return json({ settings, shop });
