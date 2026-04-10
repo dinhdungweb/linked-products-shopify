@@ -24,9 +24,9 @@ export const PREVIEW_PRODUCTS = [
 ];
 
 export const BASE_SETTINGS = {
-  basic: { swatchSize: 32, gap: 10, hideActiveSwatch: false, activeSwatchFirst: false, padding: 0, twoColorStyle: "LT_RB", hoverEffect: "none", aspectRatio: "1:1", imagePosition: "center" },
+  basic: { swatchSize: 26, gap: 10, hideActiveSwatch: false, activeSwatchFirst: false, padding: 0, twoColorStyle: "LT_RB", hoverEffect: "none", aspectRatio: "1:1", imagePosition: "center" },
   border: { radius: 4, width: 1, color: "#dbdfe2", activeColor: "#000000", hoverColor: "#000000", outerWidth: 0, outerRadius: 4, outerPadding: 4, outerColor: "#dbdfe2", outerActiveColor: "#000000", outerHoverColor: "#000000" },
-  label: { show: true, layout: "inline", gap: 8, fontSize: 14, fontWeight: "normal", lineHeight: 18, showSelectedVariant: true, selectedVariantFontWeight: "normal" },
+  label: { show: false, layout: "inline", gap: 8, fontSize: 14, fontWeight: "normal", lineHeight: 18, showSelectedVariant: true, selectedVariantFontWeight: "normal" },
   variantName: { show: true, fontSize: 12, fontWeight: "semibold", maxLines: 1 },
   price: { show: false, fontSize: 10, fontWeight: "normal", color: "#6d7175" },
   text: { position: "right", gap: 8, width: 50 },
@@ -239,7 +239,8 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   const activeOptionName = label || (isCard ? 'Options' : (appSettings?.optionName || 'Color'));
 
   const renderLabel = () => {
-    if (hideLabel || !settings.label?.show) return null;
+    const isLabelEnabled = isCard ? (appSettings?.cardShowLabel && settings.label?.show) : settings.label?.show;
+    if (hideLabel || !isLabelEnabled) return null;
     return (
       <div style={{ 
           marginBottom: `${settings.label?.gap || 8}px`,
