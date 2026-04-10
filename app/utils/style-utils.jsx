@@ -61,8 +61,8 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
     basic: { ...BASE_SETTINGS.basic, padding: 8, limitDesktop: 5 },
     label: { ...BASE_SETTINGS.label, show: true, fontSize: 13, border: true }
   },
-  image_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0, limitDesktop: 5 }, border: { ...BASE_SETTINGS.border, radius: 12 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
-  color_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 24, gap: 8, padding: 0, limitDesktop: 5 }, border: { ...BASE_SETTINGS.border, radius: 12 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
+  image_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 26, gap: 8, padding: 0, limitDesktop: 5 }, border: { ...BASE_SETTINGS.border, radius: 12 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
+  color_swatch_card: { ...BASE_SETTINGS, basic: { ...BASE_SETTINGS.basic, swatchSize: 26, gap: 8, padding: 0, limitDesktop: 5 }, border: { ...BASE_SETTINGS.border, radius: 12 }, variantName: { ...BASE_SETTINGS.variantName, show: false } },
 };
 
 export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
