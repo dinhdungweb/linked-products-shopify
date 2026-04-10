@@ -17,7 +17,7 @@ export const COLORS = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#
 
 export const PREVIEW_PRODUCTS = [
   { name: 'Pink', color: IMAGES[4], colorHex: '#d85a7e', style: 'one', price: '$12.88' },
-  { name: 'Bright Navy Blue', color: IMAGES[1], colorHex: '#add8e6', style: 'one', price: '$15.99', isUnavailable: true },
+  { name: 'Bright Navy Blue', color: IMAGES[1], colorHex: '#add8e6', style: 'one', price: '$14.99', isUnavailable: true },
   { name: 'Orange', color: IMAGES[2], colorHex: '#d2691e', style: 'one', price: '$19.99' },
   { name: 'Slate Blue', color: IMAGES[5], colorHex: '#483d8b', style: 'one', price: '$24.99' },
   { name: 'Teal Blue', color: IMAGES[3], colorHex: '#008080', style: 'one', price: '$18.50' }

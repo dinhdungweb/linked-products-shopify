@@ -305,7 +305,7 @@ export default function PricingPage() {
                                 <BlockStack gap="400">
                                     <BlockStack gap="100">
                                         <Text variant="headingLg">Basic</Text>
-                                        <Text variant="heading2xl">$7.99</Text>
+                                        <Text variant="heading2xl">$6.99</Text>
                                         <Text tone="subdued">per month</Text>
                                     </BlockStack>
                                     <Divider />
@@ -333,7 +333,7 @@ export default function PricingPage() {
                                     <BlockStack gap="400">
                                         <BlockStack gap="100">
                                             <Text variant="headingLg">Advanced</Text>
-                                            <Text variant="heading2xl">$15.99</Text>
+                                            <Text variant="heading2xl">$14.99</Text>
                                             <Text tone="subdued">per month</Text>
                                         </BlockStack>
                                         <Divider />
@@ -357,7 +357,7 @@ export default function PricingPage() {
                                 <BlockStack gap="400">
                                     <BlockStack gap="100">
                                         <Text variant="headingLg">Premium</Text>
-                                        <Text variant="heading2xl">$35.99</Text>
+                                        <Text variant="heading2xl">$34.99</Text>
                                         <Text tone="subdued">per month</Text>
                                     </BlockStack>
                                     <Divider />
