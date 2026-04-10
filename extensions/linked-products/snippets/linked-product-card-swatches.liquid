@@ -66,7 +66,7 @@
   {%- if lp_limit == 0 -%}
     {%- assign lp_limit = app_settings.cardLimit | default: 5 | plus: 0 -%}
   {%- endif -%}
-  {%- if lp_limit == 0 or lp_limit > 10 -%}{%- assign lp_limit = 5 -%}{%- endif -%}
+  {%- if lp_limit == 0 -%}{%- assign lp_limit = 5 -%}{%- endif -%}
 
   {%- assign lp_align = active_style_settings.layout.align -%}
   {%- if lp_align == nil -%}{%- assign lp_align = app_settings.cardAlign | default: 'left' -%}{%- endif -%}
