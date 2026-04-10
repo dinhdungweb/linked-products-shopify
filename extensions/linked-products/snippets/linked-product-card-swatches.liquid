@@ -71,11 +71,10 @@
   {%- assign lp_align = active_style_settings.layout.align -%}
   {%- if lp_align == nil -%}{%- assign lp_align = app_settings.cardAlign | default: 'left' -%}{%- endif -%}
   
-  {%- assign show_label = active_style_settings.label.show -%}
+  {%- assign show_label = app_settings.cardShowLabel -%}
   {%- if show_label == nil -%}
-    {%- assign show_label = app_settings.cardShowLabel -%}
+    {%- assign show_label = active_style_settings.label.show | default: false -%}
   {%- endif -%}
-  {%- if show_label == nil -%}{%- assign show_label = false -%}{%- endif -%}
 
   {%- assign two_color_style_val = active_style_settings.basic.twoColorStyle | default: 'LT_RB' -%}
 
