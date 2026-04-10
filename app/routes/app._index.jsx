@@ -48,7 +48,8 @@ import {
   MenuHorizontalIcon,
   MenuVerticalIcon,
   ExternalIcon,
-  NoteIcon
+  NoteIcon,
+  CheckCircleIcon
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
@@ -897,85 +898,112 @@ export default function Index() {
 
                 {/* Premium Setup Guide */}
                 <Card padding="500">
-                  <BlockStack gap="400">
+                  <BlockStack gap="500">
                     <InlineStack align="space-between" blockAlign="center">
                       <BlockStack gap="100">
-                        <Text variant="headingMd" as="h2">Setup guide</Text>
-                        <Text variant="bodySm" tone="subdued">Follow these steps to finish your setup.</Text>
+                        <Text variant="headingMd" as="h2">Onboarding & Setup Guide</Text>
+                        <Text variant="bodySm" tone="subdued">Complete these steps to activate the app on your storefront.</Text>
                       </BlockStack>
                       <Badge tone={groups.length > 0 && isAppEmbedEnabled ? "success" : "attention"}>
-                        {groups.length > 0 && isAppEmbedEnabled ? "2/2 completed" : groups.length > 0 || isAppEmbedEnabled ? "1/2 completed" : "0/2 completed"}
+                        {groups.length > 0 && isAppEmbedEnabled ? "Ready to launch" : "Action required"}
                       </Badge>
                     </InlineStack>
 
-                    <ProgressBar
-                      progress={(groups.length > 0 ? 50 : 0) + (isAppEmbedEnabled ? 50 : 0)}
-                      size="small"
-                      tone="primary"
-                    />
+                    <div style={{ padding: '4px', backgroundColor: '#f4f6f8', borderRadius: '8px' }}>
+                      <ProgressBar
+                        progress={(groups.length > 0 ? 50 : 0) + (isAppEmbedEnabled ? 50 : 0)}
+                        size="small"
+                        tone="primary"
+                      />
+                    </div>
 
-                    <BlockStack gap="300">
+                    <BlockStack gap="400">
                       {/* Step 1: Create Group */}
-                      <div style={{ border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
-                        <Box padding="300" background="bg-surface-secondary">
-                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                      <div style={{ 
+                        border: '1px solid #e1e3e5', 
+                        borderRadius: '12px', 
+                        overflow: 'hidden',
+                        transition: 'all 0.2s ease',
+                        backgroundColor: groups.length > 0 ? '#f0fdf4' : '#ffffff'
+                      }}>
+                        <Box padding="400">
+                          <InlineGrid columns="1fr auto" gap="400" alignItems="center">
+                            <InlineStack gap="400" blockAlign="center">
                               <div style={{
-                                backgroundColor: '#FFFFFF',
-                                padding: '10px',
+                                backgroundColor: groups.length > 0 ? '#008060' : '#f1f1f1',
+                                padding: '12px',
                                 borderRadius: '12px',
-                                color: groups.length > 0 ? '#008060' : '#8c9196',
+                                color: groups.length > 0 ? '#ffffff' : '#8c9196',
                                 display: 'flex',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                               }}>
-                                <Icon source={groups.length > 0 ? CheckIcon : ClipboardChecklistIcon} tone="inherit" />
+                                <Icon source={groups.length > 0 ? CheckCircleIcon : ClipboardChecklistIcon} />
                               </div>
                               <BlockStack gap="050">
-                                <Text variant="bodyMd" fontWeight="bold">Create a product group</Text>
-                                <Text variant="bodySm" tone="subdued">Link products together to show them as options.</Text>
+                                <Text variant="bodyMd" fontWeight="bold">Step 1: Create your first product group</Text>
+                                <Text variant="bodySm" tone="subdued">Connect two or more products to link them as SEO-friendly variants.</Text>
                               </BlockStack>
-                            </div>
+                            </InlineStack>
                             <Button 
-                              variant={groups.length > 0 ? "tertiary" : "primary"} 
+                              variant={groups.length > 0 ? "secondary" : "primary"} 
                               url={groups.length > 0 ? "/app/groups" : (isLimitReached ? undefined : "/app/groups/new")}
                               disabled={groups.length === 0 && isLimitReached}
+                              icon={groups.length > 0 ? CheckIcon : PlusIcon}
                             >
-                              {groups.length > 0 ? "View Groups" : (isLimitReached ? "Limit reached" : "Create Group")}
+                              {groups.length > 0 ? "Manage Groups" : "Create Group"}
                             </Button>
-                          </div>
+                          </InlineGrid>
                         </Box>
                       </div>
 
-                      {/* Step 2: Enable App Embed */}
-                      <div style={{ border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
-                        <Box padding="300" background="bg-surface-secondary">
-                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
+                      {/* Step 2: Enable App Embed - CRITICAL FOR SHOPIFY REVIEW */}
+                      <div style={{ 
+                        border: '1px solid #e1e3e5', 
+                        borderRadius: '12px', 
+                        overflow: 'hidden',
+                        backgroundColor: isAppEmbedEnabled ? '#f0fdf4' : '#fffbeb',
+                        boxShadow: !isAppEmbedEnabled ? '0 0 0 2px #fbbf24' : 'none'
+                      }}>
+                        <Box padding="400">
+                          <InlineGrid columns="1fr auto" gap="400" alignItems="center">
+                            <InlineStack gap="400" blockAlign="center">
                               <div style={{
-                                backgroundColor: '#FFFFFF',
-                                padding: '10px',
+                                backgroundColor: isAppEmbedEnabled ? '#008060' : '#fbbf24',
+                                padding: '12px',
                                 borderRadius: '12px',
-                                color: isAppEmbedEnabled ? '#008060' : '#8c9196',
+                                color: '#ffffff',
                                 display: 'flex',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                               }}>
-                                <Icon source={isAppEmbedEnabled ? CheckIcon : AutomationIcon} tone="inherit" />
+                                <Icon source={isAppEmbedEnabled ? CheckCircleIcon : AutomationIcon} />
                               </div>
                               <BlockStack gap="050">
-                                <Text variant="bodyMd" fontWeight="bold">Enable app embed</Text>
-                                <Text variant="bodySm" tone="subdued">Activate the widget in your theme editor.</Text>
+                                <Text variant="bodyMd" fontWeight="bold">Step 2: Activate Extension (Required)</Text>
+                                <Text variant="bodySm" tone="subdued">You MUST enable the "App Embed" in your Theme Editor for swatches to appear.</Text>
                               </BlockStack>
-                            </div>
-                            <Button variant={isAppEmbedEnabled ? "tertiary" : "primary"} onClick={() => {
-                              const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
-                              window.open(url, '_blank');
-                            }}>
-                              {isAppEmbedEnabled ? "Review Theme" : "Enable App Embed"}
+                            </InlineStack>
+                            <Button 
+                              variant={isAppEmbedEnabled ? "secondary" : "primary"} 
+                              icon={ExternalIcon}
+                              onClick={() => {
+                                const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
+                                window.open(url, '_blank');
+                              }}
+                            >
+                              {isAppEmbedEnabled ? "Theme Active" : "Enable in Theme Editor"}
                             </Button>
-                          </div>
+                          </InlineGrid>
                         </Box>
                       </div>
                     </BlockStack>
+
+                    {!isAppEmbedEnabled && (
+                      <Banner tone="info">
+                        <Text variant="bodyMd">
+                          <b>How to verify:</b> Click the button above, enable the "Linked Product Variants" toggle in the sidebar of your Theme Editor, and click <b>Save</b>.
+                        </Text>
+                      </Banner>
+                    )}
                   </BlockStack>
                 </Card>
 
