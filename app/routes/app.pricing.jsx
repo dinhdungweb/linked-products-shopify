@@ -250,7 +250,7 @@ export default function PricingPage() {
                     <BlockStack gap="400">
                         {actionData?.error && <Banner tone="critical"><p>{actionData.error}</p></Banner>}
                         {(actionData?.message || justUpgraded) && (
-                            <Banner tone="success"><p>{actionData?.message || "🎉 Your plan has been activated successfully!"}</p></Banner>
+                            <Banner tone="success"><p>{actionData?.message || "Your plan has been activated successfully!"}</p></Banner>
                         )}
 
                         <Card>
@@ -372,7 +372,7 @@ export default function PricingPage() {
                                 <Card>
                                     <div style={{ position: 'relative' }}>
                                         <div style={{ position: 'absolute', top: '-15px', right: '0' }}>
-                                            <Badge tone="attention">👑 Best Value</Badge>
+                                            <Badge tone="attention">Best Value</Badge>
                                         </div>
                                         <BlockStack gap="400">
                                             <BlockStack gap="100">
