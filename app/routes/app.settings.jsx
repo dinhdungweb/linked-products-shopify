@@ -117,7 +117,6 @@ export const action = async ({ request }) => {
     applyToCollection: data.applyToCollection === "true",
     applyToSearch: data.applyToSearch === "true",
     applyToHome: data.applyToHome === "true",
-    hideMultiOptionOnCards: data.hideMultiOptionOnCards === "true",
     hideInaccessible: data.hideInaccessible === "true",
     removeArchived: data.removeArchived === "true",
     seamlessSwitching: data.seamlessSwitching === "true",
@@ -419,12 +418,7 @@ export default function SettingsPage() {
                       </Box>
                     )}
 
-                    <Checkbox 
-                      label="Hide multi-option groups on product cards" 
-                      checked={settings.hideMultiOptionOnCards} 
-                      onChange={(v) => handleSettingChange("hideMultiOptionOnCards", v)} 
-                      helpText="If a product belongs to multiple groups, only show the primary one on cards."
-                    />
+                    {/* Hidden legacy multi-option setting */}
                   </BlockStack>
                 </Card>
 
