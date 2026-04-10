@@ -282,6 +282,14 @@ export async function loader({ request, params }) {
     const shop = session.shop;
     const { id: groupId } = params;
 
+    if (groupId === "new") {
+        const { canAddLinks } = await import("../billing.server");
+        const canAdd = await canAddLinks(shop, 1);
+        if (!canAdd) {
+            return redirect("/app?limit_reached=true");
+        }
+    }
+
     const styleSettings = await prisma.optionStyleSetting.findMany({
         where: { shop },
     });

@@ -832,8 +832,13 @@ export default function Index() {
                   Link and manage products as SEO-friendly variants with unique URLs, titles, and descriptions.
                 </Text>
               </BlockStack>
-              <Button variant="primary" icon={PlusCircleIcon} url="/app/groups/new">
-                Create new group
+              <Button 
+                variant="primary" 
+                icon={PlusCircleIcon} 
+                url="/app/groups/new"
+                disabled={isLimitReached}
+              >
+                {isLimitReached ? "Limit reached" : "Create new group"}
               </Button>
             </InlineStack>
           </Box>
@@ -930,8 +935,12 @@ export default function Index() {
                                 <Text variant="bodySm" tone="subdued">Link products together to show them as options.</Text>
                               </BlockStack>
                             </div>
-                            <Button variant={groups.length > 0 ? "tertiary" : "primary"} url={groups.length > 0 ? "/app/groups" : "/app/groups/new"}>
-                              {groups.length > 0 ? "View Groups" : "Create Group"}
+                            <Button 
+                              variant={groups.length > 0 ? "tertiary" : "primary"} 
+                              url={groups.length > 0 ? "/app/groups" : (isLimitReached ? undefined : "/app/groups/new")}
+                              disabled={groups.length === 0 && isLimitReached}
+                            >
+                              {groups.length > 0 ? "View Groups" : (isLimitReached ? "Limit reached" : "Create Group")}
                             </Button>
                           </div>
                         </Box>
@@ -1010,7 +1019,15 @@ export default function Index() {
                     <Text variant="headingMd">Quick Actions</Text>
                     <Grid>
                       <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 11, lg: 6, xl: 6 }}>
-                        <Button fullWidth textAlign="left" icon={PlusCircleIcon} url="/app/groups/new">Create Group</Button>
+                        <Button 
+                          fullWidth 
+                          textAlign="left" 
+                          icon={PlusCircleIcon} 
+                          url="/app/groups/new"
+                          disabled={isLimitReached}
+                        >
+                          {isLimitReached ? "Create Group (Limit reached)" : "Create Group"}
+                        </Button>
                       </Grid.Cell>
                       <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
                         <Button fullWidth textAlign="left" icon={PlusCircleIcon} url="/app/groups">Manage Groups</Button>
