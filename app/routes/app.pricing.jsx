@@ -172,7 +172,8 @@ export default function PricingPage() {
     const submit = useSubmit();
     const navigation = useNavigation();
     const [searchParams] = useSearchParams();
-    const isSubmitting = navigation.state === "submitting";
+    const isSubmitting = navigation.state !== "idle" && navigation.formData?.get("action") === "subscribe";
+    const justUpgraded = searchParams.get("upgraded") === "true";
  
     useEffect(() => {
         if (actionData?.confirmationUrl) {
@@ -242,8 +243,7 @@ export default function PricingPage() {
         }
     };
 
-    const isSubmitting = navigation.state !== "idle" && navigation.formData?.get("action") === "subscribe";
-    const justUpgraded = searchParams.get("upgraded") === "true";
+
 
     const FeatureItem = ({ text, secondary = false, isDark = false }) => (
         <InlineStack gap="200" align="start" blockAlign="start">
