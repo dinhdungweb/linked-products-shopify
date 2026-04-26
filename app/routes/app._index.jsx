@@ -53,6 +53,13 @@ import {
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
+import { syncGroupMetafields } from "../sync.server";
+import {
+  buildThemeEditorUrl,
+  getAppEmbedActionLabel,
+  getAppEmbedTone,
+  useAppEmbedStatus,
+} from "../utils/app-embed-status";
 
 // Loader - Get product groups list
 export async function loader({ request }) {
@@ -67,7 +74,7 @@ export async function loader({ request }) {
 
   try {
     const billingCheck = await billing.check({
-      isTest: true,
+      isTest: process.env.NODE_ENV !== "production",
       plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
     });
 
@@ -106,44 +113,13 @@ export async function loader({ request }) {
     where: { group: { shop: shop } }
   });
 
-  // Fetch App Embed Status via direct REST fetch (most stable method)
-  let isAppEmbedEnabled = false;
-  try {
-    const themeResponse = await admin.graphql(`
-      query getThemeId {
-        themes(first: 1, roles: [MAIN]) {
-          nodes { id }
-        }
-      }
-    `);
-    const themeData = await themeResponse.json();
-    const themeId = themeData.data?.themes?.nodes?.[0]?.id.split('/').pop();
-
-    if (themeId) {
-      const restUrl = `https://${shop}/admin/api/2024-04/themes/${themeId}/assets.json?asset[key]=config/settings_data.json`;
-      const assetResponse = await fetch(restUrl, {
-        headers: { "X-Shopify-Access-Token": session.accessToken },
-      });
-
-      if (assetResponse.ok) {
-        const assetData = await assetResponse.json();
-        const settingsValue = assetData.asset?.value;
-        if (settingsValue) {
-          const settings = JSON.parse(settingsValue);
-          const blocks = settings.current?.blocks || {};
-          isAppEmbedEnabled = Object.values(blocks).some(block =>
-            (block.type?.includes('linked-products') || block.type?.includes('app-card-injector')) &&
-            block.disabled === false
-          );
-        }
-      }
-    }
-  } catch (e) {
-    console.warn("Skipping app embed check:", e.message);
-    isAppEmbedEnabled = true; // Safety default
-  }
-
-  return json({ groups, shop: shop, usageInfo, totalProducts, isAppEmbedEnabled });
+  return json({
+    groups,
+    shop,
+    usageInfo,
+    totalProducts,
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+  });
 }
 
 // Action - Create group, add products, and sync
@@ -222,72 +198,7 @@ export async function action({ request }) {
 
     // Auto-sync metafields
     try {
-      const metafields = [];
-      const metafieldValue = products.map((p) => ({
-        handle: p.handle,
-        title: p.title || "",
-        image: p.image || "",
-        color: ""
-      }));
-
-      for (const product of products) {
-        // 1. linked_list metafield
-        metafields.push({
-          ownerId: product.id,
-          namespace: "linked_products",
-          key: "linked_list",
-          value: JSON.stringify(metafieldValue),
-          type: "json",
-        });
-        // 2. option_value metafield
-        metafields.push({
-          ownerId: product.id,
-          namespace: "linked_products",
-          key: "option_value",
-          value: product.title || "",
-          type: "single_line_text_field",
-        });
-        // 3. inventory_behavior (default show during creation)
-        metafields.push({
-          ownerId: product.id,
-          namespace: "linked_products",
-          key: "inventory_behavior",
-          value: "show",
-          type: "single_line_text_field",
-        });
-      }
-
-      // Batching: Shopify limits metafieldsSet to 25 items per call
-      const BATCH_SIZE = 25;
-      const batches = [];
-      for (let i = 0; i < metafields.length; i += BATCH_SIZE) {
-        batches.push(metafields.slice(i, i + BATCH_SIZE));
-      }
-
-      // Sequential processing: More stable than Promise.all for metafieldsSet
-      for (const batch of batches) {
-        const metafieldMutation = await admin.graphql(`
-          mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
-            metafieldsSet(metafields: $metafields) {
-              metafields { id }
-              userErrors { field message }
-            }
-          }
-        `, {
-          variables: { metafields: batch },
-        });
-
-        const result = await metafieldMutation.json();
-        if (result.data?.metafieldsSet?.userErrors?.length > 0) {
-          throw new Error(result.data.metafieldsSet.userErrors[0].message);
-        }
-      }
-
-      // Mark as synced
-      await prisma.productGroup.update({
-        where: { id: newGroup.id },
-        data: { syncStatus: "synced" },
-      });
+      await syncGroupMetafields(admin, prisma, newGroup.id);
 
       return json({ success: true, message: `Group "${name}" created with ${products.length} products and synced successfully!` });
     } catch (error) {
@@ -318,14 +229,6 @@ export async function action({ request }) {
 
     // Xóa metafield trên Shopify cho từng sản phẩm
     try {
-      const metafieldKeys = [
-        "linked_products.linked_list",
-        "linked_products.option_value",
-        "linked_products.inventory_behavior",
-        "linked_products.option_name",
-        "linked_products.selector_style",
-      ];
-
       for (const product of group.products) {
         // Lấy metafield IDs của sản phẩm
         const metafieldQuery = await admin.graphql(`
@@ -515,11 +418,14 @@ export async function action({ request }) {
 }
 
 export default function Index() {
-  const { groups, usageInfo, totalProducts, isAppEmbedEnabled, shop } = useLoaderData();
+  const { groups, usageInfo, totalProducts, shop, apiKey } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
   const shopify = useAppBridge();
+  const appEmbedStatus = useAppEmbedStatus(shopify);
+  const isAppEmbedActive = appEmbedStatus.status === "active";
+  const themeEditorUrl = buildThemeEditorUrl(shop, apiKey);
 
   const isLimitReached = usageInfo?.used >= usageInfo?.limit;
 
@@ -899,19 +805,18 @@ export default function Index() {
                 )}
 
                 {/* Dynamic Alerts */}
-                {!isAppEmbedEnabled && (
+                {appEmbedStatus.status !== "active" && (
                   <Banner
                     title="Theme integration required"
-                    tone="warning"
+                    tone={getAppEmbedTone(appEmbedStatus.status)}
                     action={{
-                      content: 'Enable in Theme',
+                      content: getAppEmbedActionLabel(appEmbedStatus.status),
                       onAction: () => {
-                        const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
-                        window.open(url, '_blank');
+                        window.open(themeEditorUrl, '_blank');
                       }
                     }}
                   >
-                    <p>App embed is disabled. Enable it to show swatches on your storefront.</p>
+                    <p>{appEmbedStatus.description}</p>
                   </Banner>
                 )}
 
@@ -934,9 +839,9 @@ export default function Index() {
                   />
                   <StatsCard
                     title="App Status"
-                    value={isAppEmbedEnabled ? "Active" : "Disabled"}
-                    icon={isAppEmbedEnabled ? CheckIcon : XIcon}
-                    color={isAppEmbedEnabled ? "#008060" : "#D82C0D"}
+                    value={appEmbedStatus.label}
+                    icon={isAppEmbedActive ? CheckIcon : XIcon}
+                    color={isAppEmbedActive ? "#008060" : "#D82C0D"}
                     subtitle="Storefront visibility"
                   />
                 </InlineGrid>
@@ -949,13 +854,13 @@ export default function Index() {
                         <Text variant="headingMd" as="h2">Setup guide</Text>
                         <Text variant="bodySm" tone="subdued">Follow these steps to finish your setup.</Text>
                       </BlockStack>
-                      <Badge tone={groups.length > 0 && isAppEmbedEnabled ? "success" : "attention"}>
-                        {groups.length > 0 && isAppEmbedEnabled ? "2/2 completed" : groups.length > 0 || isAppEmbedEnabled ? "1/2 completed" : "0/2 completed"}
+                      <Badge tone={groups.length > 0 && isAppEmbedActive ? "success" : "attention"}>
+                        {groups.length > 0 && isAppEmbedActive ? "2/2 completed" : groups.length > 0 || isAppEmbedActive ? "1/2 completed" : "0/2 completed"}
                       </Badge>
                     </InlineStack>
 
                     <ProgressBar
-                      progress={(groups.length > 0 ? 50 : 0) + (isAppEmbedEnabled ? 50 : 0)}
+                      progress={(groups.length > 0 ? 50 : 0) + (isAppEmbedActive ? 50 : 0)}
                       size="small"
                       tone="primary"
                     />
@@ -1001,22 +906,21 @@ export default function Index() {
                                 backgroundColor: '#FFFFFF',
                                 padding: '10px',
                                 borderRadius: '12px',
-                                color: isAppEmbedEnabled ? '#008060' : '#8c9196',
+                                color: isAppEmbedActive ? '#008060' : '#8c9196',
                                 display: 'flex',
                                 boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                               }}>
-                                <Icon source={isAppEmbedEnabled ? CheckIcon : AutomationIcon} tone="inherit" />
+                                <Icon source={isAppEmbedActive ? CheckIcon : AutomationIcon} tone="inherit" />
                               </div>
                               <BlockStack gap="050">
                                 <Text variant="bodyMd" fontWeight="bold">Enable app embed</Text>
-                                <Text variant="bodySm" tone="subdued">Activate the widget in your theme editor.</Text>
+                                <Text variant="bodySm" tone="subdued">{appEmbedStatus.description}</Text>
                               </BlockStack>
                             </div>
-                            <Button variant={isAppEmbedEnabled ? "tertiary" : "primary"} onClick={() => {
-                              const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
-                              window.open(url, '_blank');
+                            <Button variant={isAppEmbedActive ? "tertiary" : "primary"} onClick={() => {
+                              window.open(themeEditorUrl, '_blank');
                             }}>
-                              {isAppEmbedEnabled ? "Review Theme" : "Enable App Embed"}
+                              {getAppEmbedActionLabel(appEmbedStatus.status)}
                             </Button>
                           </div>
                         </Box>

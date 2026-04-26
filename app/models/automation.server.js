@@ -1,4 +1,4 @@
-import { json } from "@remix-run/node";
+import { syncGroupMetafields } from "../sync.server";
 
 /**
  * Thư viện xử lý Automation logic tập trung
@@ -160,7 +160,6 @@ export async function runAutomationRule(admin, prisma, ruleId, shop, canAddLinks
 
   return groupsCreated;
 }
-
 /**
  * Xử lý Automation cho một sản phẩm cụ thể (Dùng cho Webhook)
  */
@@ -354,34 +353,4 @@ async function fetchCollectionProducts(admin, collectionIdOrHandle) {
     hasNextPage = result.data?.collection?.products?.pageInfo?.hasNextPage || false;
   }
   return products;
-}
-
-export async function syncGroupMetafields(admin, prisma, groupId) {
-  const group = await prisma.productGroup.findUnique({
-    where: { id: groupId },
-    include: { products: { orderBy: { position: "asc" } } },
-  });
-  if (!group || group.products.length < 2) return;
-  const metafieldValue = group.products.map(p => ({
-    handle: p.productHandle,
-    title: p.optionValue || "",
-    image: p.customImageUrl || "",
-    color: p.customColor || ""
-  }));
-  const metafields = [];
-  for (const product of group.products) {
-    metafields.push(
-      { ownerId: product.productId, namespace: "linked_products", key: "linked_list", value: JSON.stringify(metafieldValue), type: "json" },
-      { ownerId: product.productId, namespace: "linked_products", key: "option_value", value: product.optionValue || "", type: "single_line_text_field" },
-      { ownerId: product.productId, namespace: "linked_products", key: "inventory_behavior", value: group.inventoryBehavior || "show", type: "single_line_text_field" },
-      { ownerId: product.productId, namespace: "linked_products", key: "option_name", value: group.optionName || "Color", type: "single_line_text_field" },
-      { ownerId: product.productId, namespace: "linked_products", key: "selector_style", value: group.selectorStyle || "button", type: "single_line_text_field" },
-    );
-  }
-  const BATCH_SIZE = 25;
-  for (let i = 0; i < metafields.length; i += BATCH_SIZE) {
-    const batch = metafields.slice(i, i + BATCH_SIZE);
-    await admin.graphql(`mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) { metafieldsSet(metafields: $metafields) { metafields { id } userErrors { field message } } }`, { variables: { metafields: batch } });
-  }
-  await prisma.productGroup.update({ where: { id: groupId }, data: { syncStatus: "synced" } });
 }

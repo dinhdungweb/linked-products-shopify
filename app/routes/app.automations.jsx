@@ -26,6 +26,7 @@ import {
 import { TitleBar } from "@shopify/app-bridge-react";
 import { DeleteIcon, PlayIcon, PauseCircleIcon, EditIcon } from "@shopify/polaris-icons";
 import { runAutomationRule } from "../models/automation.server";
+import { PLANS } from "../billing.config";
 
 // Loader
 export async function loader({ request }) {
@@ -40,7 +41,7 @@ export async function loader({ request }) {
 
   try {
     const billingCheck = await billing.check({
-      isTest: true,
+      isTest: process.env.NODE_ENV !== "production",
       plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
     });
 

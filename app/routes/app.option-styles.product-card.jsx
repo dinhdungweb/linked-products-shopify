@@ -31,6 +31,7 @@ import {
   DEFAULT_SETTINGS_BY_STYLE, 
   PreviewRenderer
 } from "../utils/style-utils";
+import { syncShopSettingsMetafields } from "../settings-sync.server";
 
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
@@ -84,7 +85,7 @@ export const action = async ({ request }) => {
     const styleSettings = JSON.parse(formData.get("styleSettings"));
 
     // Save AppSetting
-    await prisma.appSetting.update({
+    const updatedAppSettings = await prisma.appSetting.update({
       where: { shop },
       data: {
         cardAlign: appSettings.cardAlign,
@@ -126,7 +127,7 @@ export const action = async ({ request }) => {
     if (styleSettings.button_card) allStyles.pill = styleSettings.button_card;
     if (styleSettings.color_swatch_card) allStyles.color_swatch = styleSettings.color_swatch_card;
 
-    await admin.graphql(`
+    const metafieldsResponse = await admin.graphql(`
       mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
         metafieldsSet(metafields: $metafields) { userErrors { field message } }
       }
@@ -139,23 +140,18 @@ export const action = async ({ request }) => {
             type: "json",
             ownerId: shopId,
             value: JSON.stringify(allStyles)
-          },
-          {
-            namespace: "linked_products",
-            key: "app_settings",
-            type: "json",
-            ownerId: shopId,
-            value: JSON.stringify({
-                cardAlign: appSettings.cardAlign,
-                cardMarginTop: appSettings.cardMarginTop,
-                cardMarginBottom: appSettings.cardMarginBottom,
-                cardDisplayMode: appSettings.cardDisplayMode,
-                cardShowLabel: appSettings.cardShowLabel,
-            })
           }
         ]
       }
     });
+
+    const metafieldsResult = await metafieldsResponse.json();
+    const metafieldsErrors = metafieldsResult.data?.metafieldsSet?.userErrors || [];
+    if (metafieldsErrors.length > 0) {
+      throw new Error(metafieldsErrors.map((error) => error.message).join(", "));
+    }
+
+    await syncShopSettingsMetafields(admin, prisma, shop, updatedAppSettings);
 
     return json({ success: true, message: "Settings saved successfully" });
   } catch (error) {

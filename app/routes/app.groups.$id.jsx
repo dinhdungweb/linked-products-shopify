@@ -57,6 +57,7 @@ import {
     DEFAULT_SETTINGS_BY_STYLE, 
     PreviewRenderer 
 } from "../utils/style-utils";
+import { syncShopSettingsMetafields } from "../settings-sync.server";
 
 const STYLE_OPTIONS = [
     { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch', category: 'Image Swatch' },
@@ -315,10 +316,11 @@ export async function loader({ request, params }) {
         
         if (!isValidCardStyle) {
             currentCardStyle = "image_swatch_card";
-            await prisma.appSetting.update({
+            const updatedSettings = await prisma.appSetting.update({
                 where: { shop: session.shop },
                 data: { defaultProductCardStyle: currentCardStyle }
             });
+            await syncShopSettingsMetafields(admin, prisma, shop, updatedSettings);
         }
 
         // Fetch all products in other active groups to detect conflicts

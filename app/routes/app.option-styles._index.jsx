@@ -27,6 +27,7 @@ import {
 } from "../utils/style-utils";
 import prisma from "../db.server";
 import { authenticate } from "../shopify.server";
+import { syncShopSettingsMetafields } from "../settings-sync.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -55,7 +56,7 @@ export const loader = async ({ request }) => {
 
   // Self-heal default styles if they belong to wrong context
   const validPageStyles = ["image_swatch", "slide_swatch", "polaroid_swatch", "color_swatch", "square_color_swatch", "pill_swatch", "button", "pill_button", "dropdown", "image_dropdown"];
-  const validCardStyles = ["button_on_card", "color_swatch_card", "image_swatch_card", "dropdown_on_card"];
+  const validCardStyles = ["button_card", "color_swatch_card", "image_swatch_card", "dropdown_card"];
 
   let needsUpdate = false;
   const updateData = {};
@@ -90,7 +91,7 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
   const formData = await request.formData();
   const actionType = formData.get("action");
@@ -99,12 +100,20 @@ export const action = async ({ request }) => {
     const styleId = formData.get("styleId");
     const isCard = formData.get("isCard") === "true";
 
-    await prisma.appSetting.update({
+    const updatedSettings = await prisma.appSetting.upsert({
       where: { shop },
-      data: isCard
+      update: isCard
         ? { defaultProductCardStyle: styleId }
-        : { defaultProductPageStyle: styleId }
+        : { defaultProductPageStyle: styleId },
+      create: {
+        shop,
+        ...(isCard
+          ? { defaultProductCardStyle: styleId }
+          : { defaultProductPageStyle: styleId }),
+      },
     });
+
+    await syncShopSettingsMetafields(admin, prisma, shop, updatedSettings);
 
     return json({ success: true });
   }

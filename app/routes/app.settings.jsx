@@ -34,6 +34,8 @@ import {
   XIcon
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
+import { syncShopSettingsMetafields } from "../settings-sync.server";
+import { buildThemeEditorUrl } from "../utils/app-embed-status";
 
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
@@ -53,53 +55,15 @@ export const loader = async ({ request }) => {
     });
   }
 
-  // Auto-sync metafield on first install hoặc khi metafield chưa tồn tại
   if (isFirstInstall) {
     try {
-      const shopData = await admin.graphql(`{ shop { id } }`);
-      const shopJson = await shopData.json();
-      const shopId = shopJson.data.shop.id;
-
-      // Kiểm tra xem metafield đã tồn tại chưa
-      const checkMetafield = await admin.graphql(`
-        query {
-          shop {
-            metafield(namespace: "linked_products", key: "settings") {
-              value
-            }
-          }
-        }
-      `);
-      const checkResult = await checkMetafield.json();
-      const existingMetafield = checkResult.data.shop.metafield;
-
-      // Chỉ ghi nếu chưa có metafield
-      if (!existingMetafield) {
-        await admin.graphql(`
-          mutation setSettings($metafields: [MetafieldsSetInput!]!) {
-            metafieldsSet(metafields: $metafields) {
-              userErrors { field message }
-            }
-          }
-        `, {
-          variables: {
-            metafields: [{
-              namespace: "linked_products",
-              key: "settings",
-              type: "json",
-              ownerId: shopId,
-              value: JSON.stringify(settings)
-            }]
-          }
-        });
-      }
+      await syncShopSettingsMetafields(admin, prisma, shop, settings);
     } catch (e) {
-      // Không block loader nếu sync thất bại
       console.error("[AutoSync] Failed to initialize metafield:", e);
     }
   }
 
-  return json({ settings, shop });
+  return json({ settings, shop, apiKey: process.env.SHOPIFY_API_KEY || "" });
 };
 
 export const action = async ({ request }) => {
@@ -150,34 +114,13 @@ export const action = async ({ request }) => {
     create: { shop, ...settingsData },
   });
 
-  // Get Shop GID for metafields
-  const shopData = await admin.graphql(`{ shop { id } }`);
-  const shopJson = await shopData.json();
-  const shopId = shopJson.data.shop.id;
-
-  await admin.graphql(`
-    mutation setSettings($metafields: [MetafieldsSetInput!]!) {
-      metafieldsSet(metafields: $metafields) {
-        userErrors { field message }
-      }
-    }
-  `, {
-    variables: {
-      metafields: [{
-        namespace: "linked_products",
-        key: "settings",
-        type: "json",
-        ownerId: shopId,
-        value: JSON.stringify(updatedSettings)
-      }]
-    }
-  });
+  await syncShopSettingsMetafields(admin, prisma, shop, updatedSettings);
 
   return json({ success: true, settings: updatedSettings });
 };
 
 export default function SettingsPage() {
-  const { settings: initialSettings, shop } = useLoaderData();
+  const { settings: initialSettings, shop, apiKey } = useLoaderData();
   const submit = useSubmit();
   const navigation = useNavigation();
   const isLoading = navigation.state !== "idle";
@@ -477,7 +420,7 @@ export default function SettingsPage() {
                      heading="Enable App in Theme Editor"
                      action={{
                        content: 'Open Theme Editor',
-                       url: `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`,
+                       url: buildThemeEditorUrl(shop, apiKey),
                        external: true,
                      }}
                      image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"

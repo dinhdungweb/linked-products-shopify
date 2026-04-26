@@ -51,6 +51,12 @@ import {
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { syncGroupMetafields } from "../sync.server";
+import {
+  buildThemeEditorUrl,
+  getAppEmbedActionLabel,
+  getAppEmbedTone,
+  useAppEmbedStatus,
+} from "../utils/app-embed-status";
 
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
@@ -108,53 +114,19 @@ export async function loader({ request }) {
     }
   }
 
-  // Fetch App Embed Status
-  let isAppEmbedEnabled = false;
-  try {
-    const themeResponse = await admin.graphql(`
-      query getThemeId {
-        themes(first: 1, roles: [MAIN]) {
-          nodes {
-            id
-          }
-        }
-      }
-    `);
-    const themeData = await themeResponse.json();
-    const themeId = themeData.data?.themes?.nodes?.[0]?.id.split('/').pop();
-
-    if (themeId) {
-      const restUrl = `https://${shop}/admin/api/2024-04/themes/${themeId}/assets.json?asset[key]=config/settings_data.json`;
-      const assetResponse = await fetch(restUrl, {
-        headers: {
-          "X-Shopify-Access-Token": session.accessToken,
-        },
-      });
-
-      if (assetResponse.ok) {
-        const assetData = await assetResponse.json();
-        const settingsValue = assetData.asset?.value;
-        if (settingsValue) {
-          const settings = JSON.parse(settingsValue);
-          const blocks = settings.current?.blocks || {};
-
-          isAppEmbedEnabled = Object.values(blocks).some(block =>
-            (block.type?.includes('linked-products') || block.type?.includes('app-card-injector')) &&
-            block.disabled === false
-          );
-        }
-      }
-    }
-  } catch (e) {
-    isAppEmbedEnabled = true; // Safety default
-  }
-
   const enrichedGroups = groups.map(group => ({
     ...group,
     isPlanDisabled: allowedIds !== null && !allowedIds.includes(group.id)
   }));
 
-  return json({ groups: enrichedGroups, shop: shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled });
+  return json({
+    groups: enrichedGroups,
+    shop,
+    usageInfo,
+    totalProducts,
+    productImages,
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+  });
 }
 
 export async function action({ request }) {
@@ -432,11 +404,13 @@ export async function action({ request }) {
 }
 
 export default function GroupsPage() {
-  const { groups, shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled } = useLoaderData();
+  const { groups, shop, usageInfo, totalProducts, productImages, apiKey } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
   const shopify = useAppBridge();
+  const appEmbedStatus = useAppEmbedStatus(shopify);
+  const themeEditorUrl = buildThemeEditorUrl(shop, apiKey);
 
   const [selectedTab, setSelectedTab] = useState(0);
   const handleTabChange = useCallback((selectedTabIndex) => setSelectedTab(selectedTabIndex), []);
@@ -784,19 +758,18 @@ export default function GroupsPage() {
                 </InlineStack>
               </InlineStack>
 
-              {!isAppEmbedEnabled && (
+              {appEmbedStatus.status !== "active" && (
                 <Banner
-                  title="App embed is disabled"
-                  tone="warning"
+                  title="Theme integration needs review"
+                  tone={getAppEmbedTone(appEmbedStatus.status)}
                   action={{
-                    content: 'Enable in Theme',
+                    content: getAppEmbedActionLabel(appEmbedStatus.status),
                     onAction: () => {
-                      const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
-                      window.open(url, '_blank');
+                      window.open(themeEditorUrl, '_blank');
                     }
                   }}
                 >
-                  <p>Please enable the app embed to show product swatches on your storefront.</p>
+                  <p>{appEmbedStatus.description}</p>
                 </Banner>
               )}
 

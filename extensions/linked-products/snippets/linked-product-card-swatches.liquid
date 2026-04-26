@@ -15,7 +15,8 @@
   {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
 
   {%- comment -%}1. Resolve Card Style Key{%- endcomment -%}
-  {%- assign card_style = product.metafields.linked_products.card_selector_style.value | default: app_settings.defaultCardStyle | default: 'image_swatch_card' -%}
+  {%- assign default_card_style = app_settings.defaultProductCardStyle | default: app_settings.defaultCardStyle | default: 'image_swatch_card' -%}
+  {%- assign card_style = product.metafields.linked_products.card_selector_style.value | default: default_card_style -%}
   
   {%- comment -%}Auto-migrate style mapping for robust retrieval{%- endcomment -%}
   {%- if card_style == "swatch" or card_style == 'image_swatch_on_card' or card_style == 'image_swatch' -%}
