@@ -34,6 +34,41 @@ function normalizeStatus(status) {
   return "needs_review";
 }
 
+function matchesHandle(value, handle) {
+  if (value === handle) return true;
+  if (typeof value !== "string") return false;
+
+  return value.endsWith(`/${handle}`) || value.endsWith(`.${handle}`) || value.endsWith(`:${handle}`);
+}
+
+function matchesTarget(value, target) {
+  if (value === target) return true;
+  if (typeof value !== "string") return false;
+
+  return value.endsWith(`/${target}`) || value.endsWith(`.${target}`) || value.endsWith(`:${target}`);
+}
+
+function collectExtensionInfos(value, handle, matches = []) {
+  if (!value || typeof value !== "object") return matches;
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectExtensionInfos(item, handle, matches));
+    return matches;
+  }
+
+  if (matchesHandle(value.handle, handle) && Array.isArray(value.activations)) {
+    matches.push(value);
+  }
+
+  Object.values(value).forEach((item) => {
+    if (item && typeof item === "object") {
+      collectExtensionInfos(item, handle, matches);
+    }
+  });
+
+  return matches;
+}
+
 function collectMatchingActivations(value, handle, target, matches = []) {
   if (!value || typeof value !== "object") return matches;
 
@@ -42,7 +77,7 @@ function collectMatchingActivations(value, handle, target, matches = []) {
     return matches;
   }
 
-  if (value.handle === handle && value.target === target) {
+  if (matchesHandle(value.handle, handle) && matchesTarget(value.target, target)) {
     matches.push(value);
   }
 
@@ -60,6 +95,24 @@ export function getAppEmbedStatusFromExtensions(
   handle = APP_EMBED_HANDLE,
   target = APP_EMBED_TARGET,
 ) {
+  const extensionInfo = collectExtensionInfos(extensions, handle)[0];
+  if (extensionInfo) {
+    const activations = extensionInfo.activations || [];
+    const hasTargetActivation = activations.some((activation) => matchesTarget(activation.target, target));
+
+    if (hasTargetActivation || activations.length > 0) {
+      return {
+        status: "active",
+        ...STATUS_META.active,
+      };
+    }
+
+    return {
+      status: "available",
+      ...STATUS_META.available,
+    };
+  }
+
   const matches = collectMatchingActivations(extensions, handle, target);
   const activation = matches.find((item) => item.status === "active") || matches[0];
 
@@ -70,7 +123,7 @@ export function getAppEmbedStatusFromExtensions(
     };
   }
 
-  const status = normalizeStatus(activation.status);
+  const status = activation.status ? normalizeStatus(activation.status) : "active";
   return {
     status,
     ...STATUS_META[status],
