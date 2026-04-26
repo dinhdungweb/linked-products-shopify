@@ -8,31 +8,22 @@ import {
   Button,
   BlockStack,
   Text,
-  IndexTable,
   Badge,
-  EmptyState,
   Modal,
-  FormLayout,
   TextField,
   InlineStack,
   Banner,
   Thumbnail,
   Box,
-  Divider,
-  Tooltip,
   ProgressBar,
   Icon,
-  Tabs,
-  Grid,
   InlineGrid,
   DropZone,
   Spinner,
 } from "@shopify/polaris";
 import {
   XIcon,
-  SearchIcon,
   ViewIcon,
-  DeleteIcon,
   ImportIcon,
   PlayCircleIcon,
   ClipboardChecklistIcon,
@@ -41,17 +32,12 @@ import {
   QuestionCircleIcon,
   PlusCircleIcon,
   AutomationIcon,
-  InfoIcon,
   PlusIcon,
   CheckIcon,
-  RefreshIcon,
-  MenuHorizontalIcon,
-  MenuVerticalIcon,
   ExternalIcon,
   NoteIcon,
-  CheckCircleIcon
 } from "@shopify/polaris-icons";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
 import { syncGroupMetafields, syncShopActiveHandles } from "../sync.server";
 import {
@@ -284,8 +270,7 @@ export async function action({ request }) {
     const csvData = formData.get("csvData");
     if (!csvData) return json({ error: "No CSV data provided" }, { status: 400 });
 
-    const { canAddLinks, getUsageInfo } = await import("../billing.server");
-    const usageInfo = await getUsageInfo(session.shop);
+    const { canAddLinks } = await import("../billing.server");
 
     // Fetch global settings for fallback
     const settings = await prisma.appSetting.findUnique({
@@ -436,40 +421,133 @@ export default function Index() {
   const themeEditorUrl = buildThemeEditorUrl(shop, apiKey);
 
   const isLimitReached = usageInfo?.used >= usageInfo?.limit;
+  const completedSteps = (groups.length > 0 ? 1 : 0) + (isAppEmbedStepComplete ? 1 : 0);
+  const setupProgress = completedSteps * 50;
+  const usageLimitLabel = usageInfo?.limit === Infinity ? "Unlimited" : usageInfo?.limit;
+  const usageProgress = usageInfo?.limit === Infinity
+    ? 0
+    : Math.min(100, ((usageInfo?.used || 0) / usageInfo?.limit) * 100);
 
   const StatsCard = ({ title, value, icon, color, progress, subtitle }) => (
-    <div style={{ 
-      height: '100%', 
-      backgroundColor: '#FFFFFF', 
-      borderRadius: '12px', 
-      padding: '16px', 
-      boxShadow: 'var(--p-shadow-bevel-100)',
+    <div style={{
+      height: '100%',
+      backgroundColor: '#FFFFFF',
+      border: '1px solid #E3E3E3',
+      borderRadius: '12px',
+      padding: '18px',
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
+      gap: '16px',
+      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
     }}>
-      <BlockStack gap="300">
-        <InlineStack align="space-between" blockAlign="center">
-          <BlockStack gap="100">
-            <Text variant="bodySm" fontWeight="bold" tone="subdued">{title}</Text>
-            <Text variant="headingLg" as="h2">{value}</Text>
-          </BlockStack>
-          <div style={{ backgroundColor: '#F1F1F1', padding: '12px', borderRadius: '12px', color: '#5C5F62', display: 'flex' }}>
+      <InlineStack align="space-between" blockAlign="start">
+        <BlockStack gap="100">
+          <Text variant="bodySm" fontWeight="semibold" tone="subdued">{title}</Text>
+          <Text variant="headingLg" as="h2">{value}</Text>
+        </BlockStack>
+        <div style={{
+          width: '42px',
+          height: '42px',
+          borderRadius: '10px',
+          backgroundColor: `${color}14`,
+          color,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{ display: 'flex' }}>
             <Icon source={icon} tone="inherit" />
           </div>
-        </InlineStack>
-      </BlockStack>
+        </div>
+      </InlineStack>
 
-      <Box paddingBlockStart="300">
-        {progress !== undefined ? (
-          <BlockStack gap="100">
-            <ProgressBar progress={progress} tone={progress > 90 ? "critical" : "primary"} size="small" />
-            <Text variant="bodyXs" tone="subdued">{subtitle}</Text>
+      {progress !== undefined ? (
+        <BlockStack gap="150">
+          <ProgressBar progress={progress} tone={progress >= 90 ? "critical" : "primary"} size="small" />
+          <Text variant="bodyXs" tone="subdued">{subtitle}</Text>
+        </BlockStack>
+      ) : (
+        subtitle && <Text variant="bodySm" tone="subdued">{subtitle}</Text>
+      )}
+    </div>
+  );
+
+  const SetupStep = ({ complete, icon, title, description, actionLabel, actionUrl, onAction, disabled }) => (
+    <div style={{
+      border: `1px solid ${complete ? '#B7E4C7' : '#E3E3E3'}`,
+      borderRadius: '12px',
+      backgroundColor: complete ? '#F6FFF9' : '#FFFFFF',
+      padding: '16px'
+    }}>
+      <InlineStack align="space-between" blockAlign="center" gap="400" wrap={false}>
+        <InlineStack gap="300" blockAlign="center" wrap={false}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            backgroundColor: complete ? '#E3FCEF' : '#F6F6F7',
+            color: complete ? '#008060' : '#6D7175',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <div style={{ display: 'flex' }}>
+              <Icon source={complete ? CheckIcon : icon} tone="inherit" />
+            </div>
+          </div>
+          <BlockStack gap="050">
+            <Text variant="bodyMd" fontWeight="semibold">{title}</Text>
+            <Text variant="bodySm" tone="subdued">{description}</Text>
           </BlockStack>
-        ) : (
-          subtitle && <Text variant="bodySm" tone="subdued">{subtitle}</Text>
-        )}
-      </Box>
+        </InlineStack>
+        <Button
+          variant={complete ? "tertiary" : "primary"}
+          url={actionUrl}
+          onClick={onAction}
+          disabled={disabled}
+        >
+          {actionLabel}
+        </Button>
+      </InlineStack>
+    </div>
+  );
+
+  const QuickAction = ({ icon, title, description, actionLabel = "Open", url, onClick, disabled }) => (
+    <div style={{
+      border: '1px solid #E3E3E3',
+      borderRadius: '12px',
+      padding: '14px',
+      backgroundColor: disabled ? '#F6F6F7' : '#FFFFFF',
+      opacity: disabled ? 0.72 : 1
+    }}>
+      <BlockStack gap="300">
+        <InlineStack gap="300" blockAlign="start" wrap={false}>
+          <div style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '9px',
+            backgroundColor: '#F1F4F9',
+            color: '#2C6ECB',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <div style={{ display: 'flex' }}>
+              <Icon source={icon} tone="inherit" />
+            </div>
+          </div>
+          <BlockStack gap="050">
+            <Text variant="bodyMd" fontWeight="semibold">{title}</Text>
+            <Text variant="bodySm" tone="subdued">{description}</Text>
+          </BlockStack>
+        </InlineStack>
+        <Button fullWidth url={url} onClick={onClick} disabled={disabled}>
+          {actionLabel}
+        </Button>
+      </BlockStack>
     </div>
   );
 
@@ -558,129 +636,80 @@ export default function Index() {
 
   const TutorialCard = () => (
     <div style={{
-      display: 'flex',
       backgroundColor: '#FFFFFF',
-      borderRadius: '16px',
+      borderRadius: '12px',
       overflow: 'hidden',
-      border: '1px solid #E1E1E1',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-      minHeight: '170px'
+      border: '1px solid #E3E3E3',
+      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
     }}>
-      {/* Left Banner Section */}
       <div style={{
-        width: '35%',
-        background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
         padding: '20px',
-        color: 'white',
-        overflow: 'hidden'
+        display: 'flex',
+        gap: '18px',
+        alignItems: 'center',
+        justifyContent: 'space-between'
       }}>
-        {/* Background Illustration Overlay */}
-        <img
-          src="file:///C:/Users/DUNG/.gemini/antigravity/brain/c3a366c7-9ba6-4d32-a9f2-7f65b53514d3/tutorial_banner_illustration_1775666504320.png"
-          alt=""
-          style={{
-            position: 'absolute',
-            bottom: '-10%',
-            right: '-10%',
-            width: '120%',
-            opacity: '0.25',
-            pointerEvents: 'none',
-            filter: 'brightness(2)'
-          }}
-        />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <Box paddingBlockEnd="150">
+        <InlineStack gap="400" blockAlign="center" wrap={false}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            borderRadius: '16px',
+            backgroundColor: '#F1F4F9',
+            color: '#2C6ECB',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <div style={{ width: '34px', height: '34px', display: 'flex' }}>
+              <Icon source={PlayCircleIcon} tone="inherit" />
+            </div>
+          </div>
+          <BlockStack gap="200">
+            <InlineStack gap="200" blockAlign="center">
             <div style={{
-              display: 'inline-block',
-              padding: '2px 10px',
+              padding: '2px 8px',
               borderRadius: '100px',
-              background: 'rgba(255, 255, 255, 0.25)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255, 255, 255, 0.4)',
+              backgroundColor: '#EEF4FF',
+              color: '#2C6ECB',
               fontSize: '11px',
               fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              color: 'white'
+              textTransform: 'uppercase'
             }}>
               Tutorial
             </div>
-          </Box>
-          <div style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-            <Text variant="headingMd" as="h2" tone="inherit">
-              Learn how to use our app
-            </Text>
-          </div>
-        </div>
-
-        <div style={{
-          position: 'relative',
-          alignSelf: 'flex-start',
-          padding: '4px 10px',
-          background: 'rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(4px)',
-          borderRadius: '100px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '12px',
-          fontWeight: '600',
-          color: 'white',
-          zIndex: 2,
-          marginTop: 'auto'
-        }}>
-          <div style={{ display: 'flex' }}>
-            <Icon source={PlayCircleIcon} tone="inherit" />
-          </div>
-          7:31
-        </div>
-      </div>
-
-      {/* Right Content Section */}
-      <div style={{ width: '65%', padding: '24px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <BlockStack gap="400">
-          <BlockStack gap="100">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text variant="headingMd" as="h3">How to use the app</Text>
-              <div style={{ display: 'flex', cursor: 'pointer', color: '#8C9196' }}>
-                <Icon source={MenuVerticalIcon} tone="inherit" />
-              </div>
-            </div>
+              <Text variant="bodySm" tone="subdued">7:31</Text>
+            </InlineStack>
+            <Text variant="headingMd" as="h2">How to use the app</Text>
             <Text variant="bodyMd" tone="subdued">
               Watch a quick walkthrough to get set up faster and avoid common mistakes in product linking.
             </Text>
           </BlockStack>
-
-          <InlineStack gap="300">
-            <Button variant="primary" icon={PlayCircleIcon} onClick={() => window.open('https://www.youtube.com/watch?v=jO2yBhXzruE', '_blank')}>Watch video</Button>
-            <Button variant="secondary" icon={ExternalIcon} url="/app/help">Learn more</Button>
-          </InlineStack>
-        </BlockStack>
+        </InlineStack>
+        <InlineStack gap="300" wrap={false}>
+          <Button variant="primary" icon={PlayCircleIcon} onClick={() => window.open('https://www.youtube.com/watch?v=jO2yBhXzruE', '_blank')}>Watch video</Button>
+          <Button variant="secondary" icon={ExternalIcon} url="/app/help">Help center</Button>
+        </InlineStack>
       </div>
     </div>
   );
 
   const SupportSideList = () => (
     <BlockStack gap="300">
-      <Card padding="400">
+      <Card padding="400" background="bg-surface-secondary">
         <BlockStack gap="300">
           <InlineStack gap="200" blockAlign="center">
-            <div style={{ backgroundColor: '#F1F1F1', padding: '8px', borderRadius: '8px', color: '#5C5F62', display: 'flex' }}><Icon source={EmailIcon} tone="inherit" /></div>
+            <div style={{ backgroundColor: '#FFFFFF', padding: '8px', borderRadius: '8px', color: '#5C5F62', display: 'flex' }}><Icon source={EmailIcon} tone="inherit" /></div>
             <Text variant="headingSm" as="h3">Email Support</Text>
           </InlineStack>
           <Text variant="bodySm" tone="subdued">Response time: <Text fontWeight="bold" as="span">Under 24h</Text></Text>
           <Button variant="plain" url="mailto:support@example.com">Contact us</Button>
         </BlockStack>
       </Card>
-      <Card padding="400">
+      <Card padding="400" background="bg-surface-secondary">
         <BlockStack gap="300">
           <InlineStack gap="200" blockAlign="center">
-            <div style={{ backgroundColor: '#F1F1F1', padding: '8px', borderRadius: '8px', color: '#5C5F62', display: 'flex' }}><Icon source={ChatIcon} tone="inherit" /></div>
+            <div style={{ backgroundColor: '#FFFFFF', padding: '8px', borderRadius: '8px', color: '#5C5F62', display: 'flex' }}><Icon source={ChatIcon} tone="inherit" /></div>
             <Text variant="headingSm" as="h3">Live Chat</Text>
           </InlineStack>
           <Text variant="bodySm" tone="subdued">Chat with us for instant help.</Text>
@@ -698,17 +727,12 @@ export default function Index() {
       setActionBannerVisible(true);
     }
   }, [actionData]);
-  const [openFaq, setOpenFaq] = useState(null);
-  const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvData, setCsvData] = useState("");
   const [file, setFile] = useState(null);
 
   const isLoading = navigation.state === "submitting" || navigation.state === "loading";
   const isImporting = isLoading && navigation.formData?.get("action") === "importCSV";
-  const isSyncing = navigation.state !== "idle" && (
-    navigation.formData?.get("action") === "createWithProducts"
-  );
 
   const handleDrop = useCallback(
     (_droppedFiles, acceptedFiles, _rejectedFiles) => {
@@ -756,52 +780,43 @@ export default function Index() {
     return {};
   };
 
-
-
-  const handleDeleteGroup = useCallback(async (groupId) => {
-    if (confirm("Are you sure you want to delete this group?")) {
-      const formData = new FormData();
-      formData.append("action", "delete");
-      formData.append("groupId", groupId);
-      const headers = await fetchIdToken();
-      submit(formData, { method: "POST", headers });
-    }
-  }, [submit]);
-
-  const getSyncStatusBadge = (status) => {
-    switch (status) {
-      case "synced":
-        return <Badge tone="success">Synced</Badge>;
-      case "error":
-        return <Badge tone="critical">Error</Badge>;
-      default:
-        return <Badge>Not synced</Badge>;
-    }
-  };
-
   return (
-    <Page>
-      <div style={{ padding: "10px 0" }}>
+    <Page fullWidth>
+      <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "18px 0 40px" }}>
         <BlockStack gap="500">
-          {/* Welcome Section */}
-          <Box paddingBlock="200">
-            <InlineStack align="space-between" blockAlign="center">
-              <BlockStack gap="100">
-                <Text variant="headingXl">Welcome 🚀</Text>
-                <Text variant="bodyMd" tone="subdued">
-                  Link and manage products as SEO-friendly variants with unique URLs, titles, and descriptions.
-                </Text>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E3E3E3',
+            borderRadius: '14px',
+            padding: '24px',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
+          }}>
+            <InlineStack align="space-between" blockAlign="start" gap="500">
+              <BlockStack gap="300">
+                <InlineStack gap="200" blockAlign="center">
+                  <Badge tone="info">{usageInfo.planName} plan</Badge>
+                  {isLimitReached && <Badge tone="critical">Limit reached</Badge>}
+                </InlineStack>
+                <BlockStack gap="150">
+                  <Text variant="heading2xl" as="h1">Linked product dashboard</Text>
+                  <Text variant="bodyMd" tone="subdued">
+                    Manage linked product groups, storefront visibility, and product-card options from one place.
+                  </Text>
+                </BlockStack>
               </BlockStack>
-              <Button 
-                variant="primary" 
-                icon={PlusCircleIcon} 
-                url="/app/groups/new"
-                disabled={isLimitReached}
-              >
-                {isLimitReached ? "Limit reached" : "Create new group"}
-              </Button>
+              <InlineStack gap="300" wrap={false}>
+                <Button icon={ViewIcon} url="/app/groups">Manage groups</Button>
+                <Button
+                  variant="primary"
+                  icon={PlusCircleIcon}
+                  url={isLimitReached ? undefined : "/app/groups/new"}
+                  disabled={isLimitReached}
+                >
+                  {isLimitReached ? "Limit reached" : "Create group"}
+                </Button>
+              </InlineStack>
             </InlineStack>
-          </Box>
+          </div>
 
           <Layout>
             <Layout.Section>
@@ -829,24 +844,24 @@ export default function Index() {
                 )}
 
                 {/* Stats Cards Row */}
-                <InlineGrid columns={{ xs: 1, md: 3 }} gap="400">
+                <InlineGrid columns={{ xs: 1, sm: 2, md: 3 }} gap="400">
                   <StatsCard
-                    title="Plan Usage"
-                    value={`${usageInfo?.used || 0} / ${usageInfo?.limit === Infinity ? "∞" : usageInfo?.limit}`}
+                    title="Plan usage"
+                    value={`${usageInfo?.used || 0} / ${usageLimitLabel ?? 0}`}
                     icon={CheckIcon}
-                    color="#008060"
-                    progress={usageInfo?.limit === Infinity ? 0 : ((usageInfo?.used || 0) / usageInfo?.limit) * 100}
+                    color={isLimitReached ? "#D82C0D" : "#008060"}
+                    progress={usageProgress}
                     subtitle={isLimitReached ? "Limit reached" : "Group capacity"}
                   />
                   <StatsCard
-                    title="Linked Products"
+                    title="Linked products"
                     value={totalProducts}
                     icon={PlusIcon}
                     color="#2C6ECB"
-                    subtitle="Across all groups"
+                    subtitle={`${groups.length} product ${groups.length === 1 ? "group" : "groups"}`}
                   />
                   <StatsCard
-                    title="App Status"
+                    title="App status"
                     value={displayedAppEmbedStatus.label}
                     icon={appEmbedStepIcon}
                     color={appEmbedStepColor}
@@ -860,103 +875,60 @@ export default function Index() {
                     <InlineStack align="space-between" blockAlign="center">
                       <BlockStack gap="100">
                         <Text variant="headingMd" as="h2">Setup guide</Text>
-                        <Text variant="bodySm" tone="subdued">Follow these steps to finish your setup.</Text>
+                        <Text variant="bodySm" tone="subdued">Complete the essentials for a stable storefront setup.</Text>
                       </BlockStack>
                       <Badge tone={groups.length > 0 && isAppEmbedStepComplete ? "success" : "attention"}>
-                        {groups.length > 0 && isAppEmbedStepComplete ? "2/2 completed" : groups.length > 0 || isAppEmbedStepComplete ? "1/2 completed" : "0/2 completed"}
+                        {completedSteps}/2 completed
                       </Badge>
                     </InlineStack>
 
                     <ProgressBar
-                      progress={(groups.length > 0 ? 50 : 0) + (isAppEmbedStepComplete ? 50 : 0)}
+                      progress={setupProgress}
                       size="small"
                       tone="primary"
                     />
 
                     <BlockStack gap="300">
-                      {/* Step 1: Create Group */}
-                      <div style={{ border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
-                        <Box padding="300" background="bg-surface-secondary">
-                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                              <div style={{
-                                backgroundColor: '#FFFFFF',
-                                padding: '10px',
-                                borderRadius: '12px',
-                                color: groups.length > 0 ? '#008060' : '#8c9196',
-                                display: 'flex',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                              }}>
-                                <Icon source={groups.length > 0 ? CheckIcon : ClipboardChecklistIcon} tone="inherit" />
-                              </div>
-                              <BlockStack gap="050">
-                                <Text variant="bodyMd" fontWeight="bold">Create a product group</Text>
-                                <Text variant="bodySm" tone="subdued">Link products together to show them as options.</Text>
-                              </BlockStack>
-                            </div>
-                            <Button 
-                              variant={groups.length > 0 ? "tertiary" : "primary"} 
-                              url={groups.length > 0 ? "/app/groups" : (isLimitReached ? undefined : "/app/groups/new")}
-                              disabled={groups.length === 0 && isLimitReached}
-                            >
-                              {groups.length > 0 ? "View Groups" : (isLimitReached ? "Limit reached" : "Create Group")}
-                            </Button>
-                          </div>
-                        </Box>
-                      </div>
-
-                      {/* Step 2: Enable App Embed */}
-                      <div style={{ border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
-                        <Box padding="300" background="bg-surface-secondary">
-                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                              <div style={{
-                                backgroundColor: '#FFFFFF',
-                                padding: '10px',
-                                borderRadius: '12px',
-                                color: appEmbedStepColor,
-                                display: 'flex',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                              }}>
-                                <Icon source={appEmbedStepIcon} tone="inherit" />
-                              </div>
-                              <BlockStack gap="050">
-                                <Text variant="bodyMd" fontWeight="bold">Enable app embed</Text>
-                                <Text variant="bodySm" tone="subdued">{displayedAppEmbedStatus.description}</Text>
-                              </BlockStack>
-                            </div>
-                            <Button variant={isAppEmbedStepComplete ? "tertiary" : "primary"} onClick={() => {
-                              window.open(themeEditorUrl, '_blank');
-                            }}>
-                              {appEmbedActionLabel}
-                            </Button>
-                          </div>
-                        </Box>
-                      </div>
+                      <SetupStep
+                        complete={groups.length > 0}
+                        icon={ClipboardChecklistIcon}
+                        title="Create a product group"
+                        description="Link related products so shoppers can switch between them as options."
+                        actionLabel={groups.length > 0 ? "View groups" : (isLimitReached ? "Limit reached" : "Create group")}
+                        actionUrl={groups.length > 0 ? "/app/groups" : (isLimitReached ? undefined : "/app/groups/new")}
+                        disabled={groups.length === 0 && isLimitReached}
+                      />
+                      <SetupStep
+                        complete={isAppEmbedStepComplete}
+                        icon={AutomationIcon}
+                        title="Enable app embed"
+                        description={displayedAppEmbedStatus.description}
+                        actionLabel={appEmbedActionLabel}
+                        onAction={() => window.open(themeEditorUrl, '_blank')}
+                      />
                     </BlockStack>
                   </BlockStack>
                 </Card>
 
-                {/* Tutorial Section moved to Main */}
-                <Box paddingBlockStart="200">
-                  <TutorialCard />
-                </Box>
+                <TutorialCard />
 
                 <FAQSection />
               </BlockStack>
             </Layout.Section>
             <Layout.Section variant="oneThird">
               <BlockStack gap="400">
-                {/* Usage Info Card */}
-                <Card background="bg-surface-secondary">
-                  <BlockStack gap="300">
-                    <Text variant="headingMd">Your Plan</Text>
-                    <BlockStack gap="100">
-                      <Text variant="bodyMd" fontWeight="bold">
-                        {usageInfo.planName} Plan
+                <Card padding="500">
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <Text variant="headingMd" as="h2">Current plan</Text>
+                      <Badge tone={isLimitReached ? "critical" : "success"}>{usageInfo.planName}</Badge>
+                    </InlineStack>
+                    <BlockStack gap="150">
+                      <Text variant="headingLg" as="p">
+                        {usageInfo.used} / {usageLimitLabel} links
                       </Text>
                       <Text variant="bodySm" tone="subdued">
-                        {usageInfo.used} / {usageInfo.limit === Infinity ? "Unlimited" : usageInfo.limit} links used
+                        {isLimitReached ? "Upgrade to create more product groups." : "Usage is within your plan limit."}
                       </Text>
                     </BlockStack>
                     {usageInfo.limit !== Infinity && (
@@ -967,44 +939,55 @@ export default function Index() {
                       />
                     )}
                     <Button url="/app/pricing" variant="primary" fullWidth>
-                      {usageInfo.plan !== "pro" ? "Upgrade Plan" : "Manage Plan"}
+                      {usageInfo.plan === "free" ? "Upgrade plan" : "Manage plan"}
                     </Button>
                   </BlockStack>
                 </Card>
 
-                <Card>
-                  <BlockStack gap="300">
-                    <Text variant="headingMd">Quick Actions</Text>
-                    <Grid>
-                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 11, lg: 6, xl: 6 }}>
-                        <Button 
-                          fullWidth 
-                          textAlign="left" 
-                          icon={PlusCircleIcon} 
-                          url="/app/groups/new"
-                          disabled={isLimitReached}
-                        >
-                          {isLimitReached ? "Create Group (Limit reached)" : "Create Group"}
-                        </Button>
-                      </Grid.Cell>
-                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                        <Button fullWidth textAlign="left" icon={PlusCircleIcon} url="/app/groups">Manage Groups</Button>
-                      </Grid.Cell>
-                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                        <Button fullWidth textAlign="left" icon={AutomationIcon} url="/app/automations">Automations</Button>
-                      </Grid.Cell>
-                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                        <Button fullWidth textAlign="left" icon={ImportIcon} onClick={() => setShowImportModal(true)}>Import CSV</Button>
-                      </Grid.Cell>
-                    </Grid>
+                <Card padding="500">
+                  <BlockStack gap="400">
+                    <BlockStack gap="100">
+                      <Text variant="headingMd" as="h2">Quick actions</Text>
+                      <Text variant="bodySm" tone="subdued">Shortcuts for common admin tasks.</Text>
+                    </BlockStack>
+                    <BlockStack gap="300">
+                      <QuickAction
+                        icon={PlusCircleIcon}
+                        title="Create group"
+                        description="Start a new linked product group."
+                        actionLabel={isLimitReached ? "Limit reached" : "Create group"}
+                        url={isLimitReached ? undefined : "/app/groups/new"}
+                        disabled={isLimitReached}
+                      />
+                      <QuickAction
+                        icon={ViewIcon}
+                        title="Manage groups"
+                        description="Review, edit, and sync existing groups."
+                        actionLabel="Open groups"
+                        url="/app/groups"
+                      />
+                      <QuickAction
+                        icon={AutomationIcon}
+                        title="Automations"
+                        description="Create groups automatically from product rules."
+                        actionLabel="Open automations"
+                        url="/app/automations"
+                      />
+                      <QuickAction
+                        icon={ImportIcon}
+                        title="Import CSV"
+                        description="Bulk create groups from product handles."
+                        actionLabel="Import CSV"
+                        onClick={() => setShowImportModal(true)}
+                      />
+                    </BlockStack>
                   </BlockStack>
                 </Card>
 
-                {/* Support moved below quick actions */}
-                <Box paddingBlockStart="100">
-                  <Text variant="headingSm" as="h3">Customer Support</Text>
-                </Box>
-                <SupportSideList />
+                <BlockStack gap="300">
+                  <Text variant="headingMd" as="h2">Customer support</Text>
+                  <SupportSideList />
+                </BlockStack>
               </BlockStack>
             </Layout.Section>
           </Layout>
