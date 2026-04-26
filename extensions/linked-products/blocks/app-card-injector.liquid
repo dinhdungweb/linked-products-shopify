@@ -42,42 +42,68 @@
             } catch(e) { return null; }
         }
 
+        function escapeSelectorValue(value) {
+            if (window.CSS && typeof window.CSS.escape === 'function') {
+                return window.CSS.escape(value);
+            }
+
+            return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        }
+
+        function isVisible(element) {
+            if (!element) return false;
+            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element);
+
+            return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+        }
+
+        function findProductCard(link) {
+            let card = link.closest(COMMON_CARD_SELECTORS);
+            
+            // Fallback for custom themes
+            if (!card) {
+                let parent = link.parentElement;
+                for (let i = 0; i < 3 && parent; i++) {
+                    if (parent.querySelectorAll('a[href*="/products/"]').length === 1 || parent.className.includes('card') || parent.className.includes('item')) {
+                        card = parent;
+                        break;
+                    }
+                    parent = parent.parentElement;
+                }
+            }
+
+            return card;
+        }
+
+        function getStoredSwatches(storage, handle) {
+            const source = storage.querySelector(`[data-handle="${escapeSelectorValue(handle)}"]`);
+            return source && source.innerHTML.trim() ? source.innerHTML : '';
+        }
+
         function injectCardSwatches() {
             const storage = document.getElementById('lp-swatch-storage');
             if (!storage) return;
 
             // 1. Find all potential product links
             const productLinks = document.querySelectorAll('a[href*="/products/"]:not(.linked-option)');
-            const processedLinks = new Set();
 
             productLinks.forEach(link => {
                 const handle = getHandleFromUrl(link.href);
-                if (!handle || processedLinks.has(handle)) return;
+                if (!handle) return;
 
                 // 2. Find the closest card container
-                let card = link.closest(COMMON_CARD_SELECTORS);
-                
-                // Fallback for custom themes
-                if (!card) {
-                    let parent = link.parentElement;
-                    for (let i = 0; i < 3 && parent; i++) {
-                        if (parent.querySelectorAll('a[href*="/products/"]').length === 1 || parent.className.includes('card') || parent.className.includes('item')) {
-                            card = parent;
-                        }
-                        parent = parent.parentElement;
-                    }
-                }
+                const card = findProductCard(link);
 
-                // ABSOLUTE PROTECTION: If card already has swatches, skip.
-                if (!card || card.querySelector('.linked-product-swatches')) {
-                    processedLinks.add(handle);
+                // Some themes render duplicate links in hidden quick-view/modal DOM.
+                // Only mark the visible card after a successful injection.
+                if (!card || card.dataset.lpSwatchesInjected === 'true' || card.querySelector('.linked-product-swatches') || !isVisible(card)) {
                     return;
                 }
 
                 // Find pre-rendered content
-                const source = storage.querySelector(`[data-handle="${handle}"]`);
-                if (!source || !source.innerHTML.trim()) {
-                    processedLinks.add(handle);
+                const swatchesHtml = getStoredSwatches(storage, handle);
+                if (!swatchesHtml) {
                     return;
                 }
 
@@ -85,7 +111,7 @@
                 container.className = 'lp-injected-container';
                 container.style.width = '100%';
                 // We keep the innerHTML as is, which now includes the data-lp-handle from Liquid
-                container.innerHTML = source.innerHTML;
+                container.innerHTML = swatchesHtml;
 
                 // 3. Smart Insertion Point
                 const priceElement = card.querySelector(PRICE_SELECTORS);
@@ -95,10 +121,10 @@
                     card.appendChild(container);
                 }
                 
-                processedLinks.add(handle); 
+                card.dataset.lpSwatchesInjected = 'true';
             });
             
-            // Clear the processed set for next run if needed, but current pass is fine
+            // MutationObserver can retry cards that were added later or were hidden on the first pass.
         }
 
         // Run on load
@@ -132,6 +158,8 @@
             display: block;
             margin-top: 5px;
             clear: both;
+            max-width: 100%;
+            overflow: visible;
         }
         /* Fix for Dawn theme alignment */
         .card__content .lp-injected-container {
