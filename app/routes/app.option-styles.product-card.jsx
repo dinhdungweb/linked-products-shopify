@@ -393,6 +393,11 @@ export default function ProductCardCustomizer() {
     const s = styleSettings["button_card"];
     return (
         <BlockStack gap="400">
+            <Grid>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField type="number" label="Limit (Desktop)" value={s.basic.limitDesktop || 5} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'limitDesktop', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField type="number" label="Limit (Mobile)" value={s.basic.limitMobile || 5} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'limitMobile', v)} autoComplete="off" /></Grid.Cell>
+            </Grid>
+
             <BlockStack gap="200">
                 <Text variant="bodyMd">Style</Text>
                 <ButtonGroup variant="segmented">
