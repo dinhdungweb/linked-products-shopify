@@ -816,7 +816,7 @@ export default function Index() {
                   {isLimitReached && <Badge tone="critical">Limit reached</Badge>}
                 </div>
                 <BlockStack gap="150">
-                  <Text variant="heading2xl" as="h1">Welcome</Text>
+                  <Text variant="heading2xl" as="h1">Welcome to Linkify: Product Variants</Text>
                   <Text variant="bodyMd" tone="subdued">
                     Manage linked product groups, storefront visibility, and product-card options from one place.
                   </Text>
