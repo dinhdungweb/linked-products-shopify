@@ -424,6 +424,7 @@ export default function Index() {
   const completedSteps = (groups.length > 0 ? 1 : 0) + (isAppEmbedStepComplete ? 1 : 0);
   const setupProgress = completedSteps * 50;
   const usageLimitLabel = usageInfo?.limit === Infinity ? "Unlimited" : usageInfo?.limit;
+  const usageUnitLabel = usageInfo?.limit === 1 ? "group" : "groups";
   const usageProgress = usageInfo?.limit === Infinity
     ? 0
     : Math.min(100, ((usageInfo?.used || 0) / usageInfo?.limit) * 100);
@@ -645,26 +646,42 @@ export default function Index() {
       <div style={{
         padding: '20px',
         display: 'flex',
-        gap: '18px',
+        gap: '20px',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        flexWrap: 'wrap'
       }}>
-        <InlineStack gap="400" blockAlign="center" wrap={false}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '16px',
-            backgroundColor: '#F1F4F9',
-            color: '#2C6ECB',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <div style={{ width: '34px', height: '34px', display: 'flex' }}>
-              <Icon source={PlayCircleIcon} tone="inherit" />
-            </div>
+        <div style={{
+          width: '240px',
+          aspectRatio: '16 / 9',
+          borderRadius: '14px',
+          backgroundColor: '#F1F4F9',
+          color: '#2C6ECB',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          flexShrink: 0,
+          overflow: 'hidden'
+        }}>
+          <div style={{ width: '40px', height: '40px', display: 'flex' }}>
+            <Icon source={PlayCircleIcon} tone="inherit" />
           </div>
+          <div style={{
+            position: 'absolute',
+            left: '12px',
+            bottom: '10px',
+            padding: '3px 8px',
+            borderRadius: '100px',
+            backgroundColor: 'rgba(32, 34, 35, 0.78)',
+            color: '#FFFFFF',
+            fontSize: '12px',
+            fontWeight: 600
+          }}>
+            7:31
+          </div>
+        </div>
+        <div style={{ flex: '1 1 280px', minWidth: 0 }}>
           <BlockStack gap="200">
             <InlineStack gap="200" blockAlign="center">
             <div style={{
@@ -678,18 +695,19 @@ export default function Index() {
             }}>
               Tutorial
             </div>
-              <Text variant="bodySm" tone="subdued">7:31</Text>
             </InlineStack>
             <Text variant="headingMd" as="h2">How to use the app</Text>
             <Text variant="bodyMd" tone="subdued">
               Watch a quick walkthrough to get set up faster and avoid common mistakes in product linking.
             </Text>
           </BlockStack>
-        </InlineStack>
-        <InlineStack gap="300" wrap={false}>
-          <Button variant="primary" icon={PlayCircleIcon} onClick={() => window.open('https://www.youtube.com/watch?v=jO2yBhXzruE', '_blank')}>Watch video</Button>
-          <Button variant="secondary" icon={ExternalIcon} url="/app/help">Help center</Button>
-        </InlineStack>
+        </div>
+        <div style={{ width: '140px', marginLeft: 'auto' }}>
+          <BlockStack gap="200">
+            <Button fullWidth variant="primary" icon={PlayCircleIcon} onClick={() => window.open('https://www.youtube.com/watch?v=jO2yBhXzruE', '_blank')}>Watch video</Button>
+            <Button fullWidth variant="secondary" icon={ExternalIcon} url="/app/help">Help center</Button>
+          </BlockStack>
+        </div>
       </div>
     </div>
   );
@@ -793,12 +811,12 @@ export default function Index() {
           }}>
             <InlineStack align="space-between" blockAlign="start" gap="500">
               <BlockStack gap="300">
-                <InlineStack gap="200" blockAlign="center">
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', alignSelf: 'flex-start' }}>
                   <Badge tone="info">{usageInfo.planName} plan</Badge>
                   {isLimitReached && <Badge tone="critical">Limit reached</Badge>}
-                </InlineStack>
+                </div>
                 <BlockStack gap="150">
-                  <Text variant="heading2xl" as="h1">Linked product dashboard</Text>
+                  <Text variant="heading2xl" as="h1">Welcome</Text>
                   <Text variant="bodyMd" tone="subdued">
                     Manage linked product groups, storefront visibility, and product-card options from one place.
                   </Text>
@@ -925,7 +943,7 @@ export default function Index() {
                     </InlineStack>
                     <BlockStack gap="150">
                       <Text variant="headingLg" as="p">
-                        {usageInfo.used} / {usageLimitLabel} links
+                        {usageInfo.used} / {usageLimitLabel} {usageUnitLabel}
                       </Text>
                       <Text variant="bodySm" tone="subdued">
                         {isLimitReached ? "Upgrade to create more product groups." : "Usage is within your plan limit."}
