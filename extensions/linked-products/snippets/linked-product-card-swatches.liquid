@@ -86,6 +86,22 @@
   {%- endif -%}
 
   {%- assign two_color_style_val = active_style_settings.basic.twoColorStyle | default: 'LT_RB' -%}
+  {%- assign unavailable_style = active_style_settings.unavailable.style | default: active_style_settings.basic.unavailableStyle | default: 'cross_mark' -%}
+  {%- assign card_display_mode = app_settings.cardDisplayMode | default: 'swatches' -%}
+  {%- assign lp_available_count = 0 -%}
+  {%- for item in linked_handles_raw -%}
+    {%- assign item_handle = item.handle -%}
+    {%- if item_handle == current_handle -%}
+      {%- assign linked_prod_for_count = product -%}
+    {%- else -%}
+      {%- assign linked_prod_for_count = all_products[item_handle] -%}
+    {%- endif -%}
+    {%- if linked_prod_for_count != blank and linked_prod_for_count != empty -%}
+      {%- if inventory_behavior == 'hide' and linked_prod_for_count.available == false -%}{%- continue -%}{%- endif -%}
+      {%- if unavailable_style == 'hide' and linked_prod_for_count.available == false -%}{%- continue -%}{%- endif -%}
+      {%- assign lp_available_count = lp_available_count | plus: 1 -%}
+    {%- endif -%}
+  {%- endfor -%}
 
   {%- comment -%}3. Render Single Container Flow{%- endcomment -%}
   <style>
@@ -125,8 +141,10 @@
          --lp-btn-border: {{ active_style_settings.border.color | default: '#dbdfe2' }};
          --lp-btn-border-hover: {{ active_style_settings.border.hoverColor | default: '#8c9196' }};
          --lp-btn-border-active: {{ active_style_settings.border.activeColor | default: '#000' }};
+         --lp-unavailable-style: {{ unavailable_style }};
        "
-       data-hover-effect="{{ active_style_settings.basic.hoverEffect | default: 'none' }}">
+       data-hover-effect="{{ active_style_settings.basic.hoverEffect | default: 'none' }}"
+       data-unavailable-style="{{ unavailable_style }}">
     
     {%- if show_label -%}
         <div class="lp-card-label" style="text-align: {{ lp_align }}; color: var(--lp-label-color); font-size: var(--lp-label-size);">
@@ -134,6 +152,11 @@
         </div>
     {%- endif -%}
 
+    {%- if card_display_mode == 'count' -%}
+      <div class="lp-card-count" style="text-align: {{ lp_align }};">
+        {{ lp_available_count }} {% if lp_available_count == 1 %}option{% else %}options{% endif %}
+      </div>
+    {%- else -%}
     <div class="variant-picker__option-values" 
          style="display: flex; flex-wrap: wrap; gap: var(--lp-swatch-gap); justify-content: var(--lp-justify); width: 100%;
                 --lp-dd-padding: {{ active_style_settings.basic.padding | default: 8 }}px;
@@ -169,6 +192,7 @@
                     {%- assign linked_prod = all_products[item_handle] -%}
                     {%- if linked_prod != blank and linked_prod != empty -%}
                         {%- if inventory_behavior == 'hide' and linked_prod.available == false %}{% continue %}{% endif -%}
+                        {%- if unavailable_style == 'hide' and linked_prod.available == false %}{% continue %}{% endif -%}
                         {%- assign value = item.title | default: linked_prod.title -%}
                         <option value="{{ linked_prod.url }}" {% if item_handle == current_handle %}selected{% endif %}>
                             {{ value }}{% if linked_prod.available == false %} (Sold out){% endif %}
@@ -184,6 +208,7 @@
                 
                 {%- assign item_handle = item.handle -%}
                 {%- if item_handle == current_handle -%}
+                    {%- if unavailable_style == 'hide' and product.available == false %}{% continue %}{% endif -%}
                     {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
                     {%- render 'linked-product-option', 
                         product_obj: product,
@@ -202,6 +227,7 @@
                     {%- assign linked_prod = all_products[item_handle] -%}
                     {%- if linked_prod != blank and linked_prod != empty -%}
                         {%- if inventory_behavior == 'hide' and linked_prod.available == false %}{% continue %}{% endif -%}
+                        {%- if unavailable_style == 'hide' and linked_prod.available == false %}{% continue %}{% endif -%}
                         {%- assign value = item.title | default: linked_prod.title -%}
                         {%- render 'linked-product-option', 
                             product_obj: linked_prod,
@@ -220,7 +246,7 @@
                 {%- endif -%}
             {%- endfor -%}
 
-            {%- assign total_items = linked_handles_raw.size -%}
+            {%- assign total_items = lp_available_count -%}
             {%- if total_items > rendered_count -%}
                 {%- assign remaining = total_items | minus: rendered_count -%}
                 <span class="lp-more-count">
@@ -229,5 +255,6 @@
             {%- endif -%}
         {%- endif -%}
     </div>
+    {%- endif -%}
   </div>
 {%- endif -%}

@@ -65,17 +65,36 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
   image_swatch_card: { 
     ...BASE_SETTINGS, 
     basic: { ...BASE_SETTINGS.basic, swatchSize: 26, gap: 8, padding: 0, limitDesktop: 5 }, 
-    border: { ...BASE_SETTINGS.border, radius: 12 }, 
+    border: { ...BASE_SETTINGS.border, radius: 50 },
     variantName: { ...BASE_SETTINGS.variantName, show: false },
     label: { ...BASE_SETTINGS.label, show: false }
   },
   color_swatch_card: { 
     ...BASE_SETTINGS, 
     basic: { ...BASE_SETTINGS.basic, swatchSize: 26, gap: 8, padding: 0, limitDesktop: 5 }, 
-    border: { ...BASE_SETTINGS.border, radius: 12 }, 
+    border: { ...BASE_SETTINGS.border, radius: 50 },
     variantName: { ...BASE_SETTINGS.variantName, show: false },
     label: { ...BASE_SETTINGS.label, show: false }
   },
+};
+
+const normalizeUnavailableStyle = (settings) => {
+  return settings.unavailable?.style ?? settings.basic?.unavailableStyle ?? "cross_mark";
+};
+
+const normalizeTwoColorStyle = (style) => {
+  const map = { "L/R": "L_R", "LT/RB": "LT_RB", "T/B": "T_B", "LB/RT": "LB_RT" };
+  return map[style] || style || "LT_RB";
+};
+
+const getCardMediaRadius = (styleId, settings) => {
+  const radius = Number(settings.border?.radius ?? 0);
+  if (!styleId.includes('_card') || !styleId.includes('swatch')) {
+    return `${radius}px`;
+  }
+
+  const normalizedRadius = radius > 4 && radius < 50 ? 50 : radius;
+  return `${normalizedRadius}%`;
 };
 
 export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
@@ -210,16 +229,25 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
  export const PreviewRenderer = ({ styleId, settings, products, appSettings, isCard = false, hideLabel = false, label }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [hoveredIndex, setHoveredIndex] = React.useState(null);
-  
-  const displayProducts = (products || PREVIEW_PRODUCTS).map(p => ({
+
+  const sourceProducts = products || PREVIEW_PRODUCTS;
+  const explicitActiveIndex = sourceProducts.findIndex(p => p.isActive || p.selected);
+  const activeSourceIndex = explicitActiveIndex >= 0 ? explicitActiveIndex : 0;
+  const unavailableStyle = normalizeUnavailableStyle(settings);
+  const hideActiveSwatch = !isCard && Boolean(settings.basic?.hideActiveSwatch);
+  const activeSwatchFirst = !isCard && Boolean(settings.basic?.activeSwatchFirst);
+
+  const displayProducts = sourceProducts.map((p, index) => ({
     name: p.optionValue || p.name || '',
     color: p.customImageUrl || p.image || p.color || '',
     colorHex: p.customColor || p.colorHex || '#ffffff',
     colorHex2: p.customColor2 || p.colorHex2 || '#f5f5f5',
     style: p.style || 'one',
     price: p.price || (p.variants?.[0]?.price ? `$${p.variants[0].price}` : '$12.88'),
-    isUnavailable: p.isUnavailable || false
+    isUnavailable: p.isUnavailable || false,
+    isActive: index === activeSourceIndex
   }));
+  const activeProduct = displayProducts.find(p => p.isActive) || displayProducts[0] || PREVIEW_PRODUCTS[0];
 
   const isScroll = settings.layout?.type === 'scroll' || settings.layout?.type === 'scroll_mobile' || styleId.includes('scroll') || styleId.includes('slide');
   const isButton = styleId.includes('button');
@@ -232,7 +260,17 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
     ? (parseInt(settings.basic?.limitDesktop) || 5) 
     : (parseInt(settings.layout?.maxSwatches) || 100);
   
-  const finalDisplayProducts = displayProducts.filter(p => !(p.isUnavailable && settings.basic?.unavailableStyle === 'hide'));
+  const visibleProducts = displayProducts.filter(p => {
+    if (p.isUnavailable && unavailableStyle === 'hide') return false;
+    if (p.isActive && hideActiveSwatch) return false;
+    return true;
+  });
+  const finalDisplayProducts = activeSwatchFirst
+    ? [
+        ...visibleProducts.filter(p => p.isActive),
+        ...visibleProducts.filter(p => !p.isActive),
+      ]
+    : visibleProducts;
   const extraCount = finalDisplayProducts.length > displayLimit ? finalDisplayProducts.length - displayLimit : 0;
   const itemsToRender = finalDisplayProducts.slice(0, displayLimit);
   
@@ -240,7 +278,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
     return (
         <div style={{ padding: '4px 0', borderBottom: settings.border?.width ? 'none' : '1px solid #eee' }}>
             <Text variant="bodySm" tone="subdued">
-                {finalDisplayProducts.length === 1 ? '1 option' : `${finalDisplayProducts.length} options`}
+                {visibleProducts.length === 1 ? '1 option' : `${visibleProducts.length} options`}
             </Text>
         </div>
     );
@@ -280,7 +318,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                     <span style={{ 
                         fontWeight: settings.label?.selectedVariantFontWeight || 'semibold' 
                     }}>
-                        {displayProducts[1]?.name || 'Liquid'}
+                        {activeProduct?.name || 'Liquid'}
                     </span>
                 )}
            </div>
@@ -289,9 +327,9 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   };
 
   if (isDropdown) {
-    const activeProduct = displayProducts[0] || PREVIEW_PRODUCTS[1];
     const isImageDropdown = styleId === 'image_dropdown';
     const borderRadius = `${settings.border.radius}px`;
+    const dropdownOptions = visibleProducts.filter(p => !p.isActive);
     
     return (
       <div style={{ width: '100%' }}>
@@ -368,18 +406,18 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                 transform: isOpen ? 'translateY(0)' : 'translateY(-10px)',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
             }}>
-                {displayProducts.map((p, index) => (
+                {dropdownOptions.map((p, index) => (
                 <div 
                     key={index} 
                     style={{ 
                         padding: '12px 14px', 
-                        borderBottom: index === displayProducts.length - 1 ? 'none' : '1px solid #f1f1f1', 
+                        borderBottom: index === dropdownOptions.length - 1 ? 'none' : '1px solid #f1f1f1',
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'space-between',
                         gap: '12px', 
                         cursor: 'pointer',
-                        backgroundColor: index === 1 ? '#f6f6f6' : 'transparent'
+                        backgroundColor: 'transparent'
                     }}
                 >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -422,13 +460,13 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
 
   const containerStyle = { 
       display: 'flex', 
-      gap: `${settings.basic.gap}px`, 
+      gap: `${settings.basic?.gap ?? 8}px`,
       flexWrap: (isScroll && !isCard) ? 'wrap' : (isScroll ? 'nowrap' : 'wrap'),
       overflowX: (isScroll && isCard) ? 'auto' : 'visible',
       msOverflowStyle: (isScroll && isCard) ? 'none' : 'auto', 
       scrollbarWidth: (isScroll && isCard) ? 'none' : 'auto',   
       WebkitOverflowScrolling: 'touch',
-      justifyContent: settings.layout.align === 'center' ? 'center' : (settings.layout.align === 'right' ? 'flex-end' : 'flex-start'),
+      justifyContent: settings.layout?.align === 'center' ? 'center' : (settings.layout?.align === 'right' ? 'flex-end' : 'flex-start'),
       padding: '0', 
       width: '100%',
   };
@@ -451,7 +489,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
             style={{ ...containerStyle, marginTop: isCard ? 0 : `${settings.layout?.marginTop || 0}px`, marginBottom: isCard ? 0 : `${settings.layout?.marginBottom || 0}px` }}
           >
               {itemsToRender.map((p, i) => {
-                  const isActive = i === 1;
+                  const isActive = p.isActive;
                   const aspectRatio = settings.basic.aspectRatio || "1:1";
                   const [ratioW, ratioH] = aspectRatio.split(':').map(Number);
                   
@@ -459,11 +497,11 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                   
                   const renderSwatchInner = () => {
                     const size = settings.basic.swatchSize || settings.swatch?.size || 32;
-                    const radius = isRound ? '50%' : `${settings.border.radius}px`;
+                    const radius = isRound ? '50%' : getCardMediaRadius(styleId, settings);
 
                      if (isColor) {
                         const directions = { L_R: "to right", LT_RB: "to bottom right", T_B: "to bottom", LB_RT: "to top right" };
-                        const direction = directions[settings.basic.twoColorStyle] || "to bottom right";
+                        const direction = directions[normalizeTwoColorStyle(settings.basic.twoColorStyle)] || "to bottom right";
                         return ( <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: radius, background: p.style === 'two' ? `linear-gradient(${direction}, ${p.colorHex} 50%, ${p.colorHex2} 50%)` : p.colorHex }} /> );
                     }
 
@@ -511,7 +549,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                           }}>
                               {isActive && renderBadge(isActive, settings)}
                               {!isButton && renderSwatchInner()}
-                              {renderUnavailableEffect(p.isUnavailable, settings.basic?.unavailableStyle ?? "cross_mark")}
+                              {renderUnavailableEffect(p.isUnavailable, unavailableStyle)}
                               {shouldShowName && (
                                   <div style={{ padding: isButton ? 0 : '5px', textAlign: 'center', width: '100%', maxWidth: '100%', lineHeight: '1.2', wordBreak: 'break-word', boxSizing: 'border-box' }}>
                                       <div style={{ fontSize: `${settings.variantName?.fontSize}px`, fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'), display: '-webkit-box', WebkitLineClamp: settings.variantName?.maxLines || 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>

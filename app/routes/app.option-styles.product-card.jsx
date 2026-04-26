@@ -33,6 +33,24 @@ import {
 } from "../utils/style-utils";
 import { syncShopSettingsMetafields } from "../settings-sync.server";
 
+const normalizeCardSettings = (settings) => {
+  const twoColorMap = { "L/R": "L_R", "LT/RB": "LT_RB", "T/B": "T_B", "LB/RT": "LB_RT" };
+  const unavailableStyle = settings.unavailable?.style || settings.basic?.unavailableStyle;
+
+  return {
+    ...settings,
+    basic: {
+      ...settings.basic,
+      ...(settings.basic?.twoColorStyle ? { twoColorStyle: twoColorMap[settings.basic.twoColorStyle] || settings.basic.twoColorStyle } : {}),
+      ...(unavailableStyle ? { unavailableStyle } : {}),
+    },
+    unavailable: {
+      ...(settings.unavailable || {}),
+      ...(unavailableStyle ? { style: unavailableStyle } : {}),
+    },
+  };
+};
+
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
@@ -65,6 +83,7 @@ export const loader = async ({ request }) => {
         basic: { ...settings.basic, padding: settings.swatch.padding },
       };
     }
+    settings = normalizeCardSettings(settings);
     
     acc[id] = settings;
     return acc;
@@ -98,14 +117,17 @@ export const action = async ({ request }) => {
 
     // Save each style
     for (const [styleId, settings] of Object.entries(styleSettings)) {
-      if (settings.basic?.limitDesktop) settings.basic.limitDesktop = parseInt(settings.basic.limitDesktop);
-      if (settings.basic?.limitMobile) settings.basic.limitMobile = parseInt(settings.basic.limitMobile);
+      const normalizedSettings = normalizeCardSettings(settings);
+      if (normalizedSettings.basic?.limitDesktop) normalizedSettings.basic.limitDesktop = parseInt(normalizedSettings.basic.limitDesktop);
+      if (normalizedSettings.basic?.limitMobile) normalizedSettings.basic.limitMobile = parseInt(normalizedSettings.basic.limitMobile);
 
       await prisma.optionStyleSetting.upsert({
         where: { shop_styleId: { shop, styleId } },
-        update: { settings },
-        create: { shop, styleId, settings },
+        update: { settings: normalizedSettings },
+        create: { shop, styleId, settings: normalizedSettings },
       });
+
+      styleSettings[styleId] = normalizedSettings;
     }
 
     // Sync to metafields (Simplified for demo)
@@ -200,7 +222,10 @@ export default function ProductCardCustomizer() {
         [section]: {
           ...prev[styleId][section],
           [key]: value
-        }
+        },
+        ...(section === 'basic' && key === 'unavailableStyle'
+          ? { unavailable: { ...(prev[styleId].unavailable || {}), style: value } }
+          : {})
       }
     }));
   };
@@ -291,8 +316,13 @@ export default function ProductCardCustomizer() {
             <BlockStack gap="200">
                 <Text variant="bodyMd">Two color style</Text>
                 <ButtonGroup variant="segmented" fullWidth>
-                    {['L/R', 'LT/RB', 'T/B', 'LB/RT'].map(type => (
-                        <Button key={type} pressed={s.basic.twoColorStyle === type} onClick={() => handleStyleUpdate(styleId, 'basic', 'twoColorStyle', type)}>{type}</Button>
+                    {[
+                        ['L / R', 'L_R'],
+                        ['LT / RB', 'LT_RB'],
+                        ['T / B', 'T_B'],
+                        ['LB / RT', 'LB_RT'],
+                    ].map(([label, value]) => (
+                        <Button key={value} pressed={s.basic.twoColorStyle === value} onClick={() => handleStyleUpdate(styleId, 'basic', 'twoColorStyle', value)}>{label}</Button>
                     ))}
                 </ButtonGroup>
             </BlockStack>
@@ -315,7 +345,7 @@ export default function ProductCardCustomizer() {
                 {label: 'Overlay', value: 'overlay'},
                 {label: 'Cross mark', value: 'cross_mark'}
             ]}
-            value={s.basic.unavailableStyle || "cross_mark"}
+            value={s.unavailable?.style || s.basic.unavailableStyle || "cross_mark"}
             onChange={(v) => handleStyleUpdate(styleId, 'basic', 'unavailableStyle', v)}
         />
       </BlockStack>

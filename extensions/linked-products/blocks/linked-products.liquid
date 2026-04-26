@@ -141,6 +141,7 @@
   {%- endcase -%}
   
   {%- assign lp_hover_effect = active_style_settings.basic.hoverEffect | default: 'none' -%}
+  {%- assign lp_unavailable_style = active_style_settings.unavailable.style | default: active_style_settings.basic.unavailableStyle | default: 'cross_mark' -%}
 
   {%- assign lp_variant_font_size = active_style_settings.variantName.fontSize | default: 12 -%}
   {%- assign raw_variant_weight = active_style_settings.variantName.fontWeight | default: 'semibold' -%}
@@ -189,6 +190,23 @@
     {%- assign lp_is_scroll = true -%}
   {%- endif -%}
 
+  {%- assign lp_visible_count = 0 -%}
+  {%- for item in linked_handles_raw -%}
+    {%- assign item_handle_for_count = item.handle -%}
+    {%- if item_handle_for_count == product.handle -%}
+      {%- if lp_hide_active -%}{%- continue -%}{%- endif -%}
+      {%- if lp_unavailable_style == 'hide' and product.available == false -%}{%- continue -%}{%- endif -%}
+      {%- assign lp_visible_count = lp_visible_count | plus: 1 -%}
+    {%- else -%}
+      {%- assign linked_prod_for_count = all_products[item_handle_for_count] -%}
+      {%- if linked_prod_for_count != blank and linked_prod_for_count != empty -%}
+        {%- if inventory_behavior == 'hide' and linked_prod_for_count.available == false -%}{%- continue -%}{%- endif -%}
+        {%- if lp_unavailable_style == 'hide' and linked_prod_for_count.available == false -%}{%- continue -%}{%- endif -%}
+        {%- assign lp_visible_count = lp_visible_count | plus: 1 -%}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+
 
 
 
@@ -234,7 +252,7 @@
     --lp-hover-effect: {{ lp_hover_effect }};
     --lp-selected-weight: {{ lp_selected_weight }};
     --lp-show-selected: {% if lp_show_selected_variant %}block{% else %}none{% endif %};
-    --lp-unavailable-style: {{ active_style_settings.unavailable.style | default: 'cross_mark' }};
+    --lp-unavailable-style: {{ lp_unavailable_style }};
     --lp-block-bg: {{ app_settings.blockBgColor | default: '#ffffff' }};
     --lp-selected-bg: {{ app_settings.selectedBgColor | default: '#f4f6f8' }};
     --lp-neutral-bg: #f5f5f5;
@@ -249,7 +267,7 @@
     --lp-badge-bg: {{ lp_badge_bg }};
   "
   data-hover-effect="{{ lp_hover_effect }}"
-  data-unavailable-style="{{ active_style_settings.unavailable.style | default: 'cross_mark' }}"
+  data-unavailable-style="{{ lp_unavailable_style }}"
   >
     <div class="variant-picker">
       <fieldset class="variant-picker__option" style="text-align: {{ lp_layout_align }};">
@@ -289,6 +307,7 @@
                       {%- assign linked_prod = all_products[item_handle] -%}
                       {%- if linked_prod != blank and linked_prod != empty -%}
                         {%- if inventory_behavior == 'hide' and linked_prod.available == false %}{% continue %}{% endif -%}
+                        {%- if lp_unavailable_style == 'hide' and linked_prod.available == false %}{% continue %}{% endif -%}
                         {%- assign value = item.title | default: linked_prod.title -%}
                         <a href="{{ linked_prod.url }}" class="lp-dropdown__item {% if linked_prod.available == false %}is-sold-out{% endif %}">
                             {%- if active_selector_style == 'image_dropdown' -%}
@@ -335,6 +354,7 @@
             {%- if lp_active_first and lp_hide_active == false -%}
                 {%- for item in linked_handles_raw -%}
                     {%- if item.handle == current_handle_str -%}
+                        {%- if lp_unavailable_style == 'hide' and product.available == false %}{% continue %}{% endif -%}
                         {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
                         {%- render 'linked-product-option', 
                             product_obj: product,
@@ -355,9 +375,9 @@
             {%- endif -%}
 
             {%- comment -%}2. Main Loop for others{%- endcomment -%}
-            {%- for item in linked_handles_raw -%}
+              {%- for item in linked_handles_raw -%}
               {%- if rendered_count >= lp_max_swatches -%}
-                {%- assign remaining = linked_handles_raw.size | minus: rendered_count -%}
+                {%- assign remaining = lp_visible_count | minus: rendered_count -%}
                 {%- if remaining > 0 -%}
                     <span class="lp-more-count">+{{ remaining }}</span>
                 {%- endif -%}
@@ -368,6 +388,7 @@
               
               {%- if item_handle == current_handle_str -%}
                 {%- if lp_active_first or lp_hide_active %}{% continue %}{% endif -%}
+                {%- if lp_unavailable_style == 'hide' and product.available == false %}{% continue %}{% endif -%}
                 
                 {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
                 {%- render 'linked-product-option', 
@@ -387,6 +408,7 @@
                 {%- assign linked_prod = all_products[item_handle] -%}
                 {%- if linked_prod != blank and linked_prod != empty -%}
                   {%- if inventory_behavior == 'hide' and linked_prod.available == false -%}{%- continue -%}{%- endif -%}
+                  {%- if lp_unavailable_style == 'hide' and linked_prod.available == false -%}{%- continue -%}{%- endif -%}
 
                   {%- assign value = item.title | default: linked_prod.title -%}
                   {%- render 'linked-product-option', 

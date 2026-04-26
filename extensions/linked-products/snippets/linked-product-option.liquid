@@ -10,13 +10,13 @@
 {%- endcomment -%}
 
 {%- assign gradient_direction = 'to bottom right' -%}
-{%- if two_color_style == 'L_R' -%}
+{%- if two_color_style == 'L_R' or two_color_style == 'L/R' -%}
   {%- assign gradient_direction = 'to right' -%}
-{%- elsif two_color_style == 'LT_RB' -%}
+{%- elsif two_color_style == 'LT_RB' or two_color_style == 'LT/RB' -%}
   {%- assign gradient_direction = 'to bottom right' -%}
-{%- elsif two_color_style == 'T_B' -%}
+{%- elsif two_color_style == 'T_B' or two_color_style == 'T/B' -%}
   {%- assign gradient_direction = 'to bottom' -%}
-{%- elsif two_color_style == 'LB_RT' -%}
+{%- elsif two_color_style == 'LB_RT' or two_color_style == 'LB/RT' -%}
   {%- assign gradient_direction = 'to top right' -%}
 {%- endif -%}
 
