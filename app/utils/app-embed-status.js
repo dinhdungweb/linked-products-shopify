@@ -65,12 +65,17 @@ function writeCachedStatus(handle, target, status) {
   if (typeof window === "undefined") return;
 
   try {
-    if (status !== "active") return;
-
     const key = getCacheKey(handle, target);
-    const value = JSON.stringify({ status, checkedAt: Date.now() });
 
-    getBrowserStorages().forEach((storage) => storage.setItem(key, value));
+    if (status === "active") {
+      const value = JSON.stringify({ status, checkedAt: Date.now() });
+      getBrowserStorages().forEach((storage) => storage.setItem(key, value));
+      return;
+    }
+
+    if (status === "available") {
+      getBrowserStorages().forEach((storage) => storage.removeItem(key));
+    }
   } catch (_error) {
     // Ignore storage failures in restricted browser contexts.
   }
@@ -228,7 +233,11 @@ export function useAppEmbedStatus(shopify, options = {}) {
         if (mounted) {
           const nextState = getAppEmbedStatusFromExtensions(extensions, handle, target);
           writeCachedStatus(handle, target, nextState.status);
-          setState(nextState.status === "active" ? nextState : cachedActive || nextState);
+          setState(
+            nextState.status === "active" || nextState.status === "available"
+              ? nextState
+              : cachedActive || nextState,
+          );
         }
       } catch (_error) {
         if (mounted) {
