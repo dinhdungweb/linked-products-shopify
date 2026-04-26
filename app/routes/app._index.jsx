@@ -425,6 +425,18 @@ export default function Index() {
   const shopify = useAppBridge();
   const appEmbedStatus = useAppEmbedStatus(shopify);
   const isAppEmbedActive = appEmbedStatus.status === "active";
+  const isCheckingAppEmbed = appEmbedStatus.status === "checking";
+  const isAppEmbedStepComplete = isAppEmbedActive || isCheckingAppEmbed;
+  const shouldShowEmbedBanner = !isCheckingAppEmbed && !isAppEmbedActive;
+  const displayedAppEmbedStatus = isCheckingAppEmbed
+    ? {
+      label: "Active",
+      description: "App embed status is refreshing in the background.",
+    }
+    : appEmbedStatus;
+  const appEmbedActionLabel = isCheckingAppEmbed
+    ? "Review Theme"
+    : getAppEmbedActionLabel(appEmbedStatus.status);
   const themeEditorUrl = buildThemeEditorUrl(shop, apiKey);
 
   const isLimitReached = usageInfo?.used >= usageInfo?.limit;
@@ -805,7 +817,7 @@ export default function Index() {
                 )}
 
                 {/* Dynamic Alerts */}
-                {appEmbedStatus.status !== "active" && (
+                {shouldShowEmbedBanner && (
                   <Banner
                     title="Theme integration required"
                     tone={getAppEmbedTone(appEmbedStatus.status)}
@@ -839,9 +851,9 @@ export default function Index() {
                   />
                   <StatsCard
                     title="App Status"
-                    value={appEmbedStatus.label}
-                    icon={isAppEmbedActive ? CheckIcon : XIcon}
-                    color={isAppEmbedActive ? "#008060" : "#D82C0D"}
+                    value={displayedAppEmbedStatus.label}
+                    icon={isAppEmbedStepComplete ? CheckIcon : XIcon}
+                    color={isAppEmbedStepComplete ? "#008060" : "#D82C0D"}
                     subtitle="Storefront visibility"
                   />
                 </InlineGrid>
@@ -854,13 +866,13 @@ export default function Index() {
                         <Text variant="headingMd" as="h2">Setup guide</Text>
                         <Text variant="bodySm" tone="subdued">Follow these steps to finish your setup.</Text>
                       </BlockStack>
-                      <Badge tone={groups.length > 0 && isAppEmbedActive ? "success" : "attention"}>
-                        {groups.length > 0 && isAppEmbedActive ? "2/2 completed" : groups.length > 0 || isAppEmbedActive ? "1/2 completed" : "0/2 completed"}
+                      <Badge tone={groups.length > 0 && isAppEmbedStepComplete ? "success" : "attention"}>
+                        {groups.length > 0 && isAppEmbedStepComplete ? "2/2 completed" : groups.length > 0 || isAppEmbedStepComplete ? "1/2 completed" : "0/2 completed"}
                       </Badge>
                     </InlineStack>
 
                     <ProgressBar
-                      progress={(groups.length > 0 ? 50 : 0) + (isAppEmbedActive ? 50 : 0)}
+                      progress={(groups.length > 0 ? 50 : 0) + (isAppEmbedStepComplete ? 50 : 0)}
                       size="small"
                       tone="primary"
                     />
@@ -906,21 +918,21 @@ export default function Index() {
                                 backgroundColor: '#FFFFFF',
                                 padding: '10px',
                                 borderRadius: '12px',
-                                color: isAppEmbedActive ? '#008060' : '#8c9196',
+                                color: isAppEmbedStepComplete ? '#008060' : '#8c9196',
                                 display: 'flex',
                                 boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                               }}>
-                                <Icon source={isAppEmbedActive ? CheckIcon : AutomationIcon} tone="inherit" />
+                                <Icon source={isAppEmbedStepComplete ? CheckIcon : AutomationIcon} tone="inherit" />
                               </div>
                               <BlockStack gap="050">
                                 <Text variant="bodyMd" fontWeight="bold">Enable app embed</Text>
-                                <Text variant="bodySm" tone="subdued">{appEmbedStatus.description}</Text>
+                                <Text variant="bodySm" tone="subdued">{displayedAppEmbedStatus.description}</Text>
                               </BlockStack>
                             </div>
-                            <Button variant={isAppEmbedActive ? "tertiary" : "primary"} onClick={() => {
+                            <Button variant={isAppEmbedStepComplete ? "tertiary" : "primary"} onClick={() => {
                               window.open(themeEditorUrl, '_blank');
                             }}>
-                              {getAppEmbedActionLabel(appEmbedStatus.status)}
+                              {appEmbedActionLabel}
                             </Button>
                           </div>
                         </Box>

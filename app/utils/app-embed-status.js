@@ -26,6 +26,44 @@ const STATUS_META = {
   },
 };
 
+function getCacheKey(handle, target) {
+  return `linked-products:app-embed:${handle}:${target}`;
+}
+
+function readCachedStatus(handle, target) {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const cached = window.sessionStorage.getItem(getCacheKey(handle, target));
+    if (!cached) return null;
+
+    const parsed = JSON.parse(cached);
+    if (parsed?.status !== "active") return null;
+
+    return {
+      status: "active",
+      ...STATUS_META.active,
+    };
+  } catch (_error) {
+    return null;
+  }
+}
+
+function writeCachedStatus(handle, target, status) {
+  if (typeof window === "undefined") return;
+
+  try {
+    const key = getCacheKey(handle, target);
+    if (status === "active") {
+      window.sessionStorage.setItem(key, JSON.stringify({ status }));
+    } else {
+      window.sessionStorage.removeItem(key);
+    }
+  } catch (_error) {
+    // Ignore storage failures in restricted browser contexts.
+  }
+}
+
 function normalizeStatus(status) {
   if (status === "active" || status === "available" || status === "unavailable") {
     return status;
@@ -132,10 +170,12 @@ export function getAppEmbedStatusFromExtensions(
 
 export function useAppEmbedStatus(shopify, options = {}) {
   const { handle = APP_EMBED_HANDLE, target = APP_EMBED_TARGET } = options;
-  const [state, setState] = useState({
-    status: "checking",
-    ...STATUS_META.checking,
-  });
+  const [state, setState] = useState(() => (
+    readCachedStatus(handle, target) || {
+      status: "checking",
+      ...STATUS_META.checking,
+    }
+  ));
 
   useEffect(() => {
     let mounted = true;
@@ -144,6 +184,7 @@ export function useAppEmbedStatus(shopify, options = {}) {
       try {
         if (!shopify?.app || typeof shopify.app.extensions !== "function") {
           if (mounted) {
+            writeCachedStatus(handle, target, "unavailable");
             setState({
               status: "unavailable",
               ...STATUS_META.unavailable,
@@ -154,10 +195,13 @@ export function useAppEmbedStatus(shopify, options = {}) {
 
         const extensions = await shopify.app.extensions();
         if (mounted) {
-          setState(getAppEmbedStatusFromExtensions(extensions, handle, target));
+          const nextState = getAppEmbedStatusFromExtensions(extensions, handle, target);
+          writeCachedStatus(handle, target, nextState.status);
+          setState(nextState);
         }
       } catch (_error) {
         if (mounted) {
+          writeCachedStatus(handle, target, "needs_review");
           setState({
             status: "needs_review",
             ...STATUS_META.needs_review,

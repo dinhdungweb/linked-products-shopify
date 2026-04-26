@@ -410,6 +410,7 @@ export default function GroupsPage() {
   const navigation = useNavigation();
   const shopify = useAppBridge();
   const appEmbedStatus = useAppEmbedStatus(shopify);
+  const shouldShowEmbedBanner = appEmbedStatus.status !== "checking" && appEmbedStatus.status !== "active";
   const themeEditorUrl = buildThemeEditorUrl(shop, apiKey);
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -758,7 +759,7 @@ export default function GroupsPage() {
                 </InlineStack>
               </InlineStack>
 
-              {appEmbedStatus.status !== "active" && (
+              {shouldShowEmbedBanner && (
                 <Banner
                   title="Theme integration needs review"
                   tone={getAppEmbedTone(appEmbedStatus.status)}
