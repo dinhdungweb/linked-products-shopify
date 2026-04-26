@@ -53,7 +53,7 @@ import {
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
-import { syncGroupMetafields } from "../sync.server";
+import { syncGroupMetafields, syncShopActiveHandles } from "../sync.server";
 import {
   buildThemeEditorUrl,
   getAppEmbedActionLabel,
@@ -275,6 +275,7 @@ export async function action({ request }) {
     await prisma.productGroup.delete({
       where: { id: groupId },
     });
+    await syncShopActiveHandles(admin, prisma, session.shop);
 
     return json({ success: true, message: "Group and metafields deleted successfully" });
   }

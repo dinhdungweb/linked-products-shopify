@@ -51,7 +51,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { syncGroupMetafields } from "../sync.server";
+import { syncGroupMetafields, syncShopActiveHandles } from "../sync.server";
 import { 
     BASE_SETTINGS, 
     DEFAULT_SETTINGS_BY_STYLE, 
@@ -670,6 +670,7 @@ export async function action({ request, params }) {
         }
 
         await prisma.productGroup.delete({ where: { id: groupId } });
+        await syncShopActiveHandles(admin, prisma, session.shop);
         const { redirect } = await import("@remix-run/node");
         return redirect("/app/groups");
     }

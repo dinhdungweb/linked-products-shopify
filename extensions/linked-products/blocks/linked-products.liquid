@@ -5,8 +5,16 @@
 
 {%- assign linked_handles_raw = product.metafields.linked_products.linked_list.value -%}
 {%- assign group_status = product.metafields.linked_products.status.value | default: 'active' -%}
+{%- assign active_handles = shop.metafields.linked_products.active_handles.value -%}
+{%- assign registry_allows_product = true -%}
+{%- if active_handles != blank -%}
+  {%- assign registry_allows_product = false -%}
+  {%- if active_handles contains product.handle -%}
+    {%- assign registry_allows_product = true -%}
+  {%- endif -%}
+{%- endif -%}
 
-{%- if linked_handles_raw != blank and linked_handles_raw.size > 0 and group_status == 'active' -%}
+{%- if registry_allows_product and linked_handles_raw != blank and linked_handles_raw.size > 0 and group_status == 'active' -%}
   
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
   {%- assign app_settings = shop.metafields.linked_products.settings.value -%}

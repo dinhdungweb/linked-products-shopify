@@ -50,7 +50,7 @@ import {
   NoteIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
-import { syncGroupMetafields } from "../sync.server";
+import { syncGroupMetafields, syncShopActiveHandles } from "../sync.server";
 import {
   buildThemeEditorUrl,
   getAppEmbedActionLabel,
@@ -184,6 +184,7 @@ export async function action({ request }) {
     }
 
     await prisma.productGroup.delete({ where: { id: groupId } });
+    await syncShopActiveHandles(admin, prisma, session.shop);
     return json({ success: true, message: "Group deleted successfully" });
   }
 
@@ -380,6 +381,7 @@ export async function action({ request }) {
             await prisma.productGroup.delete({ where: { id: groupId } });
           }
         }
+        await syncShopActiveHandles(admin, prisma, session.shop);
         return json({ success: true, message: `Successfully deleted ${selectedIds.length} groups` });
       }
 

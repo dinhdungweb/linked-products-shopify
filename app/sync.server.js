@@ -1,8 +1,78 @@
 import { getGroupsWithinLimit } from "./billing.server";
 
+const SHOP_ACTIVE_HANDLES_KEY = "active_handles";
+
 function metafieldText(value, fallback) {
     const stringValue = value == null ? "" : String(value).trim();
     return stringValue || fallback;
+}
+
+async function getShopOwnerId(admin) {
+    const response = await admin.graphql(`
+        query LinkedProductsShopOwner {
+            shop {
+                id
+            }
+        }
+    `);
+    const result = await response.json();
+    return result.data?.shop?.id;
+}
+
+export async function syncShopActiveHandles(admin, prisma, shop) {
+    const allowedIds = await getGroupsWithinLimit(shop);
+    const where = {
+        shop,
+        status: "active",
+    };
+
+    if (allowedIds !== null) {
+        where.id = { in: allowedIds };
+    }
+
+    const groups = await prisma.productGroup.findMany({
+        where,
+        include: { products: true },
+    });
+
+    const handles = [
+        ...new Set(
+            groups.flatMap((group) => group.products.map((product) => product.productHandle).filter(Boolean)),
+        ),
+    ];
+
+    const shopOwnerId = await getShopOwnerId(admin);
+    if (!shopOwnerId) {
+        throw new Error("Shop owner ID not found");
+    }
+
+    const response = await admin.graphql(`
+        mutation SyncLinkedProductsActiveHandles($metafields: [MetafieldsSetInput!]!) {
+            metafieldsSet(metafields: $metafields) {
+                userErrors { field message }
+            }
+        }
+    `, {
+        variables: {
+            metafields: [{
+                ownerId: shopOwnerId,
+                namespace: "linked_products",
+                key: SHOP_ACTIVE_HANDLES_KEY,
+                value: JSON.stringify(handles),
+                type: "json",
+            }],
+        },
+    });
+
+    const result = await response.json();
+    const userErrors = result.data?.metafieldsSet?.userErrors || [];
+    if (userErrors.length > 0) {
+        const error = userErrors[0];
+        const field = Array.isArray(error.field) ? error.field.join(".") : error.field;
+        throw new Error(`${field ? `${field}: ` : ""}${error.message}`);
+    }
+
+    return { success: true, handles };
 }
 
 export async function syncGroupMetafields(admin, prisma, gId) {
@@ -86,5 +156,6 @@ export async function syncGroupMetafields(admin, prisma, gId) {
     }
 
     await prisma.productGroup.update({ where: { id: gId }, data: { syncStatus: "synced" } });
+    await syncShopActiveHandles(admin, prisma, group.shop);
     return { success: true };
 }
