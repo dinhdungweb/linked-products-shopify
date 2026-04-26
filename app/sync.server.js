@@ -1,5 +1,10 @@
 import { getGroupsWithinLimit } from "./billing.server";
 
+function metafieldText(value, fallback) {
+    const stringValue = value == null ? "" : String(value).trim();
+    return stringValue || fallback;
+}
+
 export async function syncGroupMetafields(admin, prisma, gId) {
     const group = await prisma.productGroup.findUnique({
         where: { id: gId },
@@ -38,12 +43,12 @@ export async function syncGroupMetafields(admin, prisma, gId) {
         // If the group is draft, we send empty/null or just don't send?
         // Let's add a "group_status" metafield that the liquid can check.
         metafields.push({ ...base, key: "linked_list", value: JSON.stringify(metafieldValue), type: "json" });
-        metafields.push({ ...base, key: "option_value", value: product.optionValue || "", type: "single_line_text_field" });
-        metafields.push({ ...base, key: "inventory_behavior", value: group.inventoryBehavior || "show", type: "single_line_text_field" });
-        metafields.push({ ...base, key: "option_name", value: group.optionName || "Color", type: "single_line_text_field" });
-        metafields.push({ ...base, key: "selector_style", value: group.selectorStyle || "button", type: "single_line_text_field" });
-        metafields.push({ ...base, key: "style", value: product.style || "one", type: "single_line_text_field" });
-        metafields.push({ ...base, key: "color2", value: product.customColor2 || "", type: "single_line_text_field" });
+        metafields.push({ ...base, key: "option_value", value: metafieldText(product.optionValue, product.productHandle || "Option"), type: "single_line_text_field" });
+        metafields.push({ ...base, key: "inventory_behavior", value: metafieldText(group.inventoryBehavior, "show"), type: "single_line_text_field" });
+        metafields.push({ ...base, key: "option_name", value: metafieldText(group.optionName, "Color"), type: "single_line_text_field" });
+        metafields.push({ ...base, key: "selector_style", value: metafieldText(group.selectorStyle, "button"), type: "single_line_text_field" });
+        metafields.push({ ...base, key: "style", value: metafieldText(product.style, "one"), type: "single_line_text_field" });
+        metafields.push({ ...base, key: "color2", value: metafieldText(product.customColor2, "none"), type: "single_line_text_field" });
         // Determine card style ID
         let cStyle = group.cardSelectorStyle || "image_swatch_card";
         if (cStyle === "swatch") {
@@ -73,8 +78,10 @@ export async function syncGroupMetafields(admin, prisma, gId) {
         `, { variables: { metafields: batch } });
         const result = await metafieldMutation.json();
         if (result.data?.metafieldsSet?.userErrors?.length > 0) {
-            console.error(`[Sync Error] ${result.data.metafieldsSet.userErrors[0].message}`);
-            throw new Error(result.data.metafieldsSet.userErrors[0].message);
+            const error = result.data.metafieldsSet.userErrors[0];
+            const field = Array.isArray(error.field) ? error.field.join(".") : error.field;
+            console.error(`[Sync Error] ${field ? `${field}: ` : ""}${error.message}`);
+            throw new Error(`${field ? `${field}: ` : ""}${error.message}`);
         }
     }
 
