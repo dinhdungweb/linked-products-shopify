@@ -28,15 +28,15 @@
   {%- assign active_selector_style = meta_selector_style | default: 'block' -%}
   {%- assign active_option_name = meta_option_name| default: 'Color' -%}
 
-  {%- comment -%}Auto-migrate legacy style ID or Handle _card suffix{%- endcomment -%}
-  {%- if active_selector_style == 'image_swatch_on_card' -%}
-    {%- assign active_selector_style = 'image_swatch_card' -%}
-  {%- elsif active_selector_style == 'color_swatch_on_card' -%}
-    {%- assign active_selector_style = 'color_swatch_card' -%}
-  {%- elsif active_selector_style == 'button_on_card' -%}
-    {%- assign active_selector_style = 'button_card' -%}
-  {%- elsif active_selector_style == 'dropdown_on_card' -%}
-    {%- assign active_selector_style = 'dropdown_card' -%}
+  {%- comment -%}Normalize legacy/card IDs back to product-page style IDs{%- endcomment -%}
+  {%- if active_selector_style == 'swatch' or active_selector_style == 'image_swatch_on_card' or active_selector_style == 'image_swatch_card' -%}
+    {%- assign active_selector_style = 'image_swatch' -%}
+  {%- elsif active_selector_style == 'color_swatch_on_card' or active_selector_style == 'color_swatch_card' -%}
+    {%- assign active_selector_style = 'color_swatch' -%}
+  {%- elsif active_selector_style == 'button_on_card' or active_selector_style == 'button_card' or active_selector_style == 'pill' -%}
+    {%- assign active_selector_style = 'button' -%}
+  {%- elsif active_selector_style == 'dropdown_on_card' or active_selector_style == 'dropdown_card' -%}
+    {%- assign active_selector_style = 'dropdown' -%}
   {%- endif -%}
 
   {%- assign active_style_settings = style_customizations[active_selector_style] -%}

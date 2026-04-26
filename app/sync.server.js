@@ -1,4 +1,5 @@
 import { getGroupsWithinLimit } from "./billing.server";
+import { normalizeProductCardStyle } from "./utils/style-mapping";
 
 const SHOP_ACTIVE_HANDLES_KEY = "active_handles";
 
@@ -119,17 +120,7 @@ export async function syncGroupMetafields(admin, prisma, gId) {
         metafields.push({ ...base, key: "selector_style", value: metafieldText(group.selectorStyle, "button"), type: "single_line_text_field" });
         metafields.push({ ...base, key: "style", value: metafieldText(product.style, "one"), type: "single_line_text_field" });
         metafields.push({ ...base, key: "color2", value: metafieldText(product.customColor2, "none"), type: "single_line_text_field" });
-        // Determine card style ID
-        let cStyle = group.cardSelectorStyle || "image_swatch_card";
-        if (cStyle === "swatch") {
-            cStyle = "image_swatch_card";
-        } else if (cStyle === "pill") {
-            cStyle = "button_card";
-        } else if (cStyle === "same") {
-            cStyle = (group.selectorStyle || "button") + "_card";
-            cStyle = cStyle.replace("swatch_card", "image_swatch_card");
-            if (cStyle.includes("button") || cStyle.includes("block")) cStyle = "button_card";
-        }
+        const cStyle = normalizeProductCardStyle(group.cardSelectorStyle, group.selectorStyle);
         metafields.push({ ...base, key: "card_selector_style", value: cStyle, type: "single_line_text_field" });
         metafields.push({ ...base, key: "status", value: isPlanDisabled ? "plan_disabled" : (group.status || "active"), type: "single_line_text_field" });
     }

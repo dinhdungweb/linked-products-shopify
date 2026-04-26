@@ -57,6 +57,7 @@ import {
     DEFAULT_SETTINGS_BY_STYLE, 
     PreviewRenderer 
 } from "../utils/style-utils";
+import { normalizeProductCardStyle } from "../utils/style-mapping";
 import { syncShopSettingsMetafields } from "../settings-sync.server";
 
 const STYLE_OPTIONS = [
@@ -815,6 +816,7 @@ export default function GroupDetail() {
     const [localOptionName, setLocalOptionName] = useState(group.optionName || "Color");
     const [localSelectorStyle, setLocalSelectorStyle] = useState(group.selectorStyle || "image_swatch");
     const [localCardSelectorStyle, setLocalCardSelectorStyle] = useState(group.cardSelectorStyle || "image_swatch_card");
+    const effectiveCardPreviewStyle = normalizeProductCardStyle(localCardSelectorStyle, localSelectorStyle);
     const [localInventoryBehavior, setLocalInventoryBehavior] = useState(group.inventoryBehavior || "show");
     const [localStatus, setLocalStatus] = useState(group.status || "active");
     const [localProducts, setLocalProducts] = useState(group.products || []);
@@ -1109,8 +1111,8 @@ export default function GroupDetail() {
                                                         <Text variant="bodyXs" tone="subdued">$49.00 USD</Text>
                                                         <div style={{ marginTop: '8px' }}>
                                                             <PreviewRenderer 
-                                                                styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} 
-                                                                settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} 
+                                                                styleId={effectiveCardPreviewStyle}
+                                                                settings={styleSettings[effectiveCardPreviewStyle] || DEFAULT_SETTINGS_BY_STYLE[effectiveCardPreviewStyle] || BASE_SETTINGS}
                                                                 products={localProducts} 
                                                                 appSettings={appSettings}
                                                                 isCard={true}
@@ -1121,8 +1123,8 @@ export default function GroupDetail() {
                                                 </Box>
                                             ) : (
                                                 <PreviewRenderer 
-                                                    styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} 
-                                                    settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} 
+                                                    styleId={effectiveCardPreviewStyle}
+                                                    settings={styleSettings[effectiveCardPreviewStyle] || DEFAULT_SETTINGS_BY_STYLE[effectiveCardPreviewStyle] || BASE_SETTINGS}
                                                     products={localProducts} 
                                                     appSettings={appSettings}
                                                     isCard={true}

@@ -1,16 +1,4 @@
-function normalizeProductCardStyle(style) {
-  if (style === "image_swatch_on_card" || style === "swatch" || style === "image_swatch") {
-    return "image_swatch_card";
-  }
-  if (style === "button_on_card" || style === "pill" || style === "button") {
-    return "button_card";
-  }
-  if (style === "dropdown_on_card" || style === "dropdown") {
-    return "dropdown_card";
-  }
-
-  return style || "image_swatch_card";
-}
+import { normalizeProductCardStyle } from "./utils/style-mapping";
 
 function buildStorefrontAppSettings(settings) {
   const defaultProductCardStyle = normalizeProductCardStyle(settings.defaultProductCardStyle);

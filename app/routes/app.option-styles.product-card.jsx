@@ -31,6 +31,7 @@ import {
   DEFAULT_SETTINGS_BY_STYLE, 
   PreviewRenderer
 } from "../utils/style-utils";
+import { PRODUCT_PAGE_STYLE_IDS } from "../utils/style-mapping";
 import { syncShopSettingsMetafields } from "../settings-sync.server";
 
 const normalizeCardSettings = (settings) => {
@@ -142,12 +143,24 @@ export const action = async ({ request }) => {
     
     // Merge new card styles
     Object.assign(allStyles, styleSettings);
-    
-    // BACKWARDS COMPATIBILITY SYNC:
-    // Some products might still point to old style names. Update them too.
-    if (styleSettings.image_swatch_card) allStyles.swatch = styleSettings.image_swatch_card;
-    if (styleSettings.button_card) allStyles.pill = styleSettings.button_card;
-    if (styleSettings.color_swatch_card) allStyles.color_swatch = styleSettings.color_swatch_card;
+
+    const productPageStyles = await prisma.optionStyleSetting.findMany({
+      where: { shop, styleId: { in: PRODUCT_PAGE_STYLE_IDS } },
+    });
+    const restoredPageStyleIds = new Set();
+    for (const style of productPageStyles) {
+      allStyles[style.styleId] = style.settings;
+      restoredPageStyleIds.add(style.styleId);
+    }
+
+    for (const styleId of PRODUCT_PAGE_STYLE_IDS) {
+      if (!restoredPageStyleIds.has(styleId) && allStyles[styleId]?.basic?.limitDesktop !== undefined) {
+        delete allStyles[styleId];
+      }
+    }
+
+    delete allStyles.swatch;
+    delete allStyles.pill;
 
     const metafieldsResponse = await admin.graphql(`
       mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
