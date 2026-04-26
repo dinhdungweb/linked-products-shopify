@@ -426,17 +426,12 @@ export default function Index() {
   const appEmbedStatus = useAppEmbedStatus(shopify);
   const isAppEmbedActive = appEmbedStatus.status === "active";
   const isCheckingAppEmbed = appEmbedStatus.status === "checking";
-  const isAppEmbedStepComplete = isAppEmbedActive || isCheckingAppEmbed;
+  const isAppEmbedStepComplete = isAppEmbedActive;
   const shouldShowEmbedBanner = !isCheckingAppEmbed && !isAppEmbedActive;
-  const displayedAppEmbedStatus = isCheckingAppEmbed
-    ? {
-      label: "Active",
-      description: "App embed status is refreshing in the background.",
-    }
-    : appEmbedStatus;
-  const appEmbedActionLabel = isCheckingAppEmbed
-    ? "Review Theme"
-    : getAppEmbedActionLabel(appEmbedStatus.status);
+  const displayedAppEmbedStatus = appEmbedStatus;
+  const appEmbedActionLabel = getAppEmbedActionLabel(appEmbedStatus.status);
+  const appEmbedStepIcon = isCheckingAppEmbed ? AutomationIcon : (isAppEmbedActive ? CheckIcon : XIcon);
+  const appEmbedStepColor = isCheckingAppEmbed ? '#8c9196' : (isAppEmbedActive ? '#008060' : '#D82C0D');
   const themeEditorUrl = buildThemeEditorUrl(shop, apiKey);
 
   const isLimitReached = usageInfo?.used >= usageInfo?.limit;
@@ -852,8 +847,8 @@ export default function Index() {
                   <StatsCard
                     title="App Status"
                     value={displayedAppEmbedStatus.label}
-                    icon={isAppEmbedStepComplete ? CheckIcon : XIcon}
-                    color={isAppEmbedStepComplete ? "#008060" : "#D82C0D"}
+                    icon={appEmbedStepIcon}
+                    color={appEmbedStepColor}
                     subtitle="Storefront visibility"
                   />
                 </InlineGrid>
@@ -918,11 +913,11 @@ export default function Index() {
                                 backgroundColor: '#FFFFFF',
                                 padding: '10px',
                                 borderRadius: '12px',
-                                color: isAppEmbedStepComplete ? '#008060' : '#8c9196',
+                                color: appEmbedStepColor,
                                 display: 'flex',
                                 boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                               }}>
-                                <Icon source={isAppEmbedStepComplete ? CheckIcon : AutomationIcon} tone="inherit" />
+                                <Icon source={appEmbedStepIcon} tone="inherit" />
                               </div>
                               <BlockStack gap="050">
                                 <Text variant="bodyMd" fontWeight="bold">Enable app embed</Text>

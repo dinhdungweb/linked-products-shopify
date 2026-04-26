@@ -205,12 +205,10 @@ export function getAppEmbedStatusFromExtensions(
 
 export function useAppEmbedStatus(shopify, options = {}) {
   const { handle = APP_EMBED_HANDLE, target = APP_EMBED_TARGET } = options;
-  const [state, setState] = useState(() => (
-    readCachedStatus(handle, target) || {
-      status: "checking",
-      ...STATUS_META.checking,
-    }
-  ));
+  const [state, setState] = useState({
+    status: "checking",
+    ...STATUS_META.checking,
+  });
 
   useEffect(() => {
     let mounted = true;
