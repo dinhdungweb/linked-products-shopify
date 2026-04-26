@@ -11,7 +11,6 @@ import {
   TextField,
   Checkbox,
   Button,
-  Icon,
   Divider,
   RangeSlider,
   ButtonGroup,
@@ -19,8 +18,9 @@ import {
   Tabs,
   Banner,
   Link,
-  Tooltip,
   Grid,
+  Popover,
+  ColorPicker,
 } from "@shopify/polaris";
 import {
   InfoIcon,
@@ -37,6 +37,10 @@ import { syncShopSettingsMetafields } from "../settings-sync.server";
 const normalizeCardSettings = (settings) => {
   const twoColorMap = { "L/R": "L_R", "LT/RB": "LT_RB", "T/B": "T_B", "LB/RT": "LB_RT" };
   const unavailableStyle = settings.unavailable?.style || settings.basic?.unavailableStyle;
+  const blockBg = settings.basic?.blockBg || settings.basic?.buttonColor;
+  const blockBgActive = settings.basic?.blockBgActive || settings.basic?.buttonColorActive;
+  const blockBgHover = settings.basic?.blockBgHover || settings.basic?.buttonColorHover;
+  const labelActiveColor = settings.label?.activeColor || settings.label?.colorActive;
 
   return {
     ...settings,
@@ -44,6 +48,13 @@ const normalizeCardSettings = (settings) => {
       ...settings.basic,
       ...(settings.basic?.twoColorStyle ? { twoColorStyle: twoColorMap[settings.basic.twoColorStyle] || settings.basic.twoColorStyle } : {}),
       ...(unavailableStyle ? { unavailableStyle } : {}),
+      ...(blockBg ? { blockBg } : {}),
+      ...(blockBgActive ? { blockBgActive } : {}),
+      ...(blockBgHover ? { blockBgHover } : {}),
+    },
+    label: {
+      ...(settings.label || {}),
+      ...(labelActiveColor ? { activeColor: labelActiveColor } : {}),
     },
     unavailable: {
       ...(settings.unavailable || {}),
@@ -51,6 +62,110 @@ const normalizeCardSettings = (settings) => {
     },
   };
 };
+
+const normalizeHex = (value, fallback = "#000000") => {
+  const raw = String(value || fallback).trim();
+  const withHash = raw.startsWith("#") ? raw : `#${raw}`;
+
+  if (/^#[0-9a-f]{3}$/i.test(withHash)) {
+    return `#${withHash.slice(1).split("").map((char) => `${char}${char}`).join("")}`.toUpperCase();
+  }
+
+  if (/^#[0-9a-f]{6}$/i.test(withHash)) {
+    return withHash.toUpperCase();
+  }
+
+  return fallback.toUpperCase();
+};
+
+const hexToHsb = (value) => {
+  const hex = normalizeHex(value).slice(1);
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+
+  let hue = 0;
+  if (delta !== 0) {
+    if (max === r) hue = 60 * (((g - b) / delta) % 6);
+    else if (max === g) hue = 60 * ((b - r) / delta + 2);
+    else hue = 60 * ((r - g) / delta + 4);
+  }
+
+  return {
+    hue: hue < 0 ? hue + 360 : hue,
+    saturation: max === 0 ? 0 : delta / max,
+    brightness: max,
+  };
+};
+
+const hsbToHex = ({ hue, saturation, brightness }) => {
+  const chroma = brightness * saturation;
+  const x = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = brightness - chroma;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  if (hue < 60) [r, g, b] = [chroma, x, 0];
+  else if (hue < 120) [r, g, b] = [x, chroma, 0];
+  else if (hue < 180) [r, g, b] = [0, chroma, x];
+  else if (hue < 240) [r, g, b] = [0, x, chroma];
+  else if (hue < 300) [r, g, b] = [x, 0, chroma];
+  else [r, g, b] = [chroma, 0, x];
+
+  return `#${[r, g, b]
+    .map((channel) => Math.round((channel + m) * 255).toString(16).padStart(2, "0"))
+    .join("")}`.toUpperCase();
+};
+
+function ColorField({ label, value, fallback = "#000000", onChange }) {
+  const [active, setActive] = useState(false);
+  const hex = normalizeHex(value, fallback);
+
+  const activator = (
+    <button
+      type="button"
+      onClick={() => setActive((open) => !open)}
+      style={{
+        width: "100%",
+        minHeight: "38px",
+        padding: "8px 10px",
+        border: "1px solid #8c9196",
+        borderRadius: "6px",
+        background: "#ffffff",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        cursor: "pointer",
+        textAlign: "left",
+      }}
+    >
+      <span
+        style={{
+          width: "18px",
+          height: "18px",
+          borderRadius: "4px",
+          border: "1px solid rgba(0,0,0,0.2)",
+          background: hex,
+          flexShrink: 0,
+        }}
+      />
+      <span style={{ flex: 1, fontSize: "13px" }}>{label}</span>
+      <span style={{ fontSize: "12px", color: "#6d7175", fontFamily: "monospace" }}>{hex}</span>
+    </button>
+  );
+
+  return (
+    <Popover active={active} activator={activator} onClose={() => setActive(false)}>
+      <Box padding="300">
+        <ColorPicker color={hexToHsb(hex)} onChange={(color) => onChange(hsbToHex(color))} />
+      </Box>
+    </Popover>
+  );
+}
 
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
@@ -320,9 +435,9 @@ export default function ProductCardCustomizer() {
 
         <Text variant="bodyMd" fontWeight="semibold">Border color</Text>
         <Grid>
-            <Grid.Cell columnSpan={{xs: 4}}><TextField label="Normal" value={s.border.color} onChange={(v) => handleStyleUpdate(styleId, 'border', 'color', v)} autoComplete="off" /></Grid.Cell>
-            <Grid.Cell columnSpan={{xs: 4}}><TextField label="Active" value={s.border.activeColor} onChange={(v) => handleStyleUpdate(styleId, 'border', 'activeColor', v)} autoComplete="off" /></Grid.Cell>
-            <Grid.Cell columnSpan={{xs: 4}}><TextField label="Hover" value={s.border.hoverColor || "#5f6772"} onChange={(v) => handleStyleUpdate(styleId, 'border', 'hoverColor', v)} autoComplete="off" /></Grid.Cell>
+            <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Normal" value={s.border.color} fallback="#DBDFE2" onChange={(v) => handleStyleUpdate(styleId, 'border', 'color', v)} /></Grid.Cell>
+            <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Active" value={s.border.activeColor} fallback="#000000" onChange={(v) => handleStyleUpdate(styleId, 'border', 'activeColor', v)} /></Grid.Cell>
+            <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Hover" value={s.border.hoverColor || "#5f6772"} fallback="#5F6772" onChange={(v) => handleStyleUpdate(styleId, 'border', 'hoverColor', v)} /></Grid.Cell>
         </Grid>
 
         {styleId.includes('color') && (
@@ -373,18 +488,18 @@ export default function ProductCardCustomizer() {
             
             <Text variant="bodyMd" fontWeight="semibold">Background color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.basic.blockBg || "#FFFFFF"} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'blockBg', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.basic.blockBgActive || "#eee"} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'blockBgActive', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><ColorField label="Normal" value={s.basic.blockBg || "#FFFFFF"} fallback="#FFFFFF" onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'blockBg', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><ColorField label="Active" value={s.basic.blockBgActive || "#eee"} fallback="#EEEEEE" onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'blockBgActive', v)} /></Grid.Cell>
             </Grid>
 
             <Text variant="bodyMd" fontWeight="semibold">Text color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.label.color} onChange={(v) => handleStyleUpdate("dropdown_card", 'label', 'color', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.label.colorActive || "#202020"} onChange={(v) => handleStyleUpdate("dropdown_card", 'label', 'colorActive', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><ColorField label="Normal" value={s.label.color} fallback="#202020" onChange={(v) => handleStyleUpdate("dropdown_card", 'label', 'color', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><ColorField label="Active" value={s.label.colorActive || "#202020"} fallback="#202020" onChange={(v) => handleStyleUpdate("dropdown_card", 'label', 'colorActive', v)} /></Grid.Cell>
             </Grid>
 
             <RangeSlider label={`Border thickness (${s.border.width}px)`} value={s.border.width} onChange={(v) => handleStyleUpdate("dropdown_card", 'border', 'width', v)} min={1} max={4} output />
-            <TextField label="Border color" value={s.border.color} onChange={(v) => handleStyleUpdate("dropdown_card", 'border', 'color', v)} autoComplete="off" />
+            <ColorField label="Border color" value={s.border.color} fallback="#E1E3E5" onChange={(v) => handleStyleUpdate("dropdown_card", 'border', 'color', v)} />
         </BlockStack>
     );
   };
@@ -410,15 +525,23 @@ export default function ProductCardCustomizer() {
             
             <Text variant="bodyMd" fontWeight="semibold">Border color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Normal" value={s.border.color} onChange={(v) => handleStyleUpdate("button_card", 'border', 'color', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Active" value={s.border.activeColor} onChange={(v) => handleStyleUpdate("button_card", 'border', 'activeColor', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Hover" value={s.border.hoverColor || "#4f5354"} onChange={(v) => handleStyleUpdate("button_card", 'border', 'hoverColor', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Normal" value={s.border.color} fallback="#DBDFE2" onChange={(v) => handleStyleUpdate("button_card", 'border', 'color', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Active" value={s.border.activeColor} fallback="#000000" onChange={(v) => handleStyleUpdate("button_card", 'border', 'activeColor', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Hover" value={s.border.hoverColor || "#4f5354"} fallback="#4F5354" onChange={(v) => handleStyleUpdate("button_card", 'border', 'hoverColor', v)} /></Grid.Cell>
             </Grid>
 
-            <Text variant="bodyMd" fontWeight="semibold">Button color</Text>
+            <Text variant="bodyMd" fontWeight="semibold">Background color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.basic.buttonColor || "#FFFFFF"} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'buttonColor', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.basic.buttonColorActive || "#FFFFFF"} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'buttonColorActive', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Normal" value={s.basic.blockBg || s.basic.buttonColor || "#FFFFFF"} fallback="#FFFFFF" onChange={(v) => handleStyleUpdate("button_card", 'basic', 'blockBg', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Active" value={s.basic.blockBgActive || s.basic.buttonColorActive || "#EEEEEE"} fallback="#EEEEEE" onChange={(v) => handleStyleUpdate("button_card", 'basic', 'blockBgActive', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Hover" value={s.basic.blockBgHover || "#F4F4F4"} fallback="#F4F4F4" onChange={(v) => handleStyleUpdate("button_card", 'basic', 'blockBgHover', v)} /></Grid.Cell>
+            </Grid>
+
+            <Text variant="bodyMd" fontWeight="semibold">Text color</Text>
+            <Grid>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Normal" value={s.label.color || "#000000"} fallback="#000000" onChange={(v) => handleStyleUpdate("button_card", 'label', 'color', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Active" value={s.label.activeColor || "#000000"} fallback="#000000" onChange={(v) => handleStyleUpdate("button_card", 'label', 'activeColor', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Hover" value={s.label.hoverColor || "#000000"} fallback="#000000" onChange={(v) => handleStyleUpdate("button_card", 'label', 'hoverColor', v)} /></Grid.Cell>
             </Grid>
         </BlockStack>
     );

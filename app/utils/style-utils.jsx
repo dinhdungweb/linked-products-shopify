@@ -54,13 +54,13 @@ export const DEFAULT_SETTINGS_BY_STYLE = {
   },
   button_card: {
     ...BASE_SETTINGS,
-    basic: { ...BASE_SETTINGS.basic, swatchSize: 0, padding: 8, limitDesktop: 5 },
-    label: { ...BASE_SETTINGS.label, show: false, fontSize: 12, border: true }
+    basic: { ...BASE_SETTINGS.basic, swatchSize: 0, padding: 8, limitDesktop: 5, blockBg: "#FFFFFF", blockBgActive: "#EEEEEE", blockBgHover: "#F4F4F4" },
+    label: { ...BASE_SETTINGS.label, show: false, fontSize: 12, border: true, color: "#000000", activeColor: "#000000", hoverColor: "#000000" }
   },
   dropdown_card: {
     ...BASE_SETTINGS,
-    basic: { ...BASE_SETTINGS.basic, padding: 8, limitDesktop: 5 },
-    label: { ...BASE_SETTINGS.label, show: false, fontSize: 13, border: true }
+    basic: { ...BASE_SETTINGS.basic, padding: 8, limitDesktop: 5, blockBg: "#FFFFFF", blockBgActive: "#EEEEEE" },
+    label: { ...BASE_SETTINGS.label, show: false, fontSize: 13, border: true, color: "#202020", colorActive: "#202020" }
   },
   image_swatch_card: { 
     ...BASE_SETTINGS, 
@@ -131,7 +131,11 @@ export const getOuterStyle = (isActive, settings, styleId, isCard = false) => {
       border: `${isActive ? (b.width + 1) : b.width || 1}px solid ${isActive ? (b.activeColor || '#000') : (b.color || '#ccc')}`,
       borderRadius: (b.radius !== undefined) ? `${b.radius}px` : (isRound ? '50%' : '0px'),
       cursor: 'pointer',
-      backgroundColor: '#fff',
+      backgroundColor: isButton
+        ? (isActive
+          ? (settings.basic?.blockBgActive || settings.basic?.buttonColorActive || '#eeeeee')
+          : (settings.basic?.blockBg || settings.basic?.buttonColor || '#ffffff'))
+        : '#fff',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -552,7 +556,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                               {renderUnavailableEffect(p.isUnavailable, unavailableStyle)}
                               {shouldShowName && (
                                   <div style={{ padding: isButton ? 0 : '5px', textAlign: 'center', width: '100%', maxWidth: '100%', lineHeight: '1.2', wordBreak: 'break-word', boxSizing: 'border-box' }}>
-                                      <div style={{ fontSize: `${settings.variantName?.fontSize}px`, fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'), display: '-webkit-box', WebkitLineClamp: settings.variantName?.maxLines || 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      <div style={{ fontSize: `${settings.variantName?.fontSize}px`, fontWeight: settings.variantName?.fontWeight || (isActive ? 'bold' : 'normal'), color: isActive ? (settings.label?.activeColor || settings.label?.color || '#000000') : (settings.label?.color || '#000000'), display: '-webkit-box', WebkitLineClamp: settings.variantName?.maxLines || 1, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                           {p.name}
                                       </div>
                                       {settings.price?.show && ( <div style={{ fontSize: `${settings.price?.fontSize || 10}px`, fontWeight: settings.price?.fontWeight || 'normal', color: settings.price?.color || '#6d7175', marginTop: '3px' }}>{p.price}</div> )}
