@@ -131,16 +131,18 @@ function ColorField({ label, value, fallback = "#000000", onChange }) {
       onClick={() => setActive((open) => !open)}
       style={{
         width: "100%",
-        minHeight: "38px",
+        minHeight: "48px",
         padding: "8px 10px",
         border: "1px solid #8c9196",
         borderRadius: "6px",
         background: "#ffffff",
-        display: "flex",
+        display: "grid",
+        gridTemplateColumns: "18px minmax(0, 1fr)",
         alignItems: "center",
         gap: "8px",
         cursor: "pointer",
         textAlign: "left",
+        overflow: "hidden",
       }}
     >
       <span
@@ -153,8 +155,14 @@ function ColorField({ label, value, fallback = "#000000", onChange }) {
           flexShrink: 0,
         }}
       />
-      <span style={{ flex: 1, fontSize: "13px" }}>{label}</span>
-      <span style={{ fontSize: "12px", color: "#6d7175", fontFamily: "monospace" }}>{hex}</span>
+      <span style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+        <span style={{ fontSize: "13px", lineHeight: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {label}
+        </span>
+        <span style={{ fontSize: "11px", lineHeight: "13px", color: "#6d7175", fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {hex}
+        </span>
+      </span>
     </button>
   );
 
