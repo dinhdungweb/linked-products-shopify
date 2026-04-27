@@ -1,3 +1,14 @@
+{%- assign lp_app_settings = shop.metafields.linked_products.app_settings.value -%}
+{%- if lp_app_settings == blank -%}
+  {%- assign lp_app_settings = shop.metafields.linked_products.settings.value -%}
+{%- endif -%}
+
+{%- if lp_app_settings.customCssCollection != blank -%}
+  <style id="lp-custom-collection-css-block">
+    {{ lp_app_settings.customCssCollection }}
+  </style>
+{%- endif -%}
+
 {%- render 'linked-product-card-swatches', product: product -%}
 
 

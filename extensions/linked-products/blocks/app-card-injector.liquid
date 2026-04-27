@@ -1,6 +1,34 @@
-  {{ 'linked-products.css' | asset_url | stylesheet_tag }}
+  {%- assign lp_app_settings = shop.metafields.linked_products.app_settings.value -%}
+  {%- if lp_app_settings == blank -%}
+    {%- assign lp_app_settings = shop.metafields.linked_products.settings.value -%}
+  {%- endif -%}
+  {%- assign lp_show_product_cards = lp_app_settings.showOnProductCards -%}
+  {%- if lp_show_product_cards == nil -%}
+    {%- assign lp_show_product_cards = true -%}
+  {%- endif -%}
 
-  {%- if shop.metafields.linked_products.settings.value.showOnProductCards -%}
+  {%- assign lp_should_render_cards = false -%}
+  {%- if lp_app_settings.appEnabled != false and lp_show_product_cards -%}
+    {%- if template.name == 'collection' and lp_app_settings.applyToCollection != false -%}
+      {%- assign lp_should_render_cards = true -%}
+    {%- elsif template.name == 'search' and lp_app_settings.applyToSearch != false -%}
+      {%- assign lp_should_render_cards = true -%}
+    {%- elsif template.name == 'index' and lp_app_settings.applyToHome == true -%}
+      {%- assign lp_should_render_cards = true -%}
+    {%- elsif template.name == 'product' -%}
+      {%- assign lp_should_render_cards = true -%}
+    {%- endif -%}
+  {%- endif -%}
+
+  {%- if lp_should_render_cards -%}
+    {{ 'linked-products.css' | asset_url | stylesheet_tag }}
+
+    {%- if lp_app_settings.customCssCollection != blank -%}
+      <style id="lp-custom-collection-css">
+        {{ lp_app_settings.customCssCollection }}
+      </style>
+    {%- endif -%}
+
     <div id="lp-swatch-storage" style="display: none !important;" aria-hidden="true">
         {%- if template.name == 'collection' -%}
             {%- for product in collection.products -%}

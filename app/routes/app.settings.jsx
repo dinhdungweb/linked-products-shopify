@@ -88,20 +88,7 @@ export const action = async ({ request }) => {
     selectOptionLabel: data.selectOptionLabel || "{option}",
     soldOutLabel: data.soldOutLabel || "Sold out",
     unavailableLabel: data.unavailableLabel || "Unavailable",
-    swatchSize: parseInt(data.swatchSize, 10) || 50,
-    itemsGap: parseInt(data.itemsGap, 10) || 8,
-    borderRadius: parseInt(data.borderRadius, 10) || 8,
-    borderWidth: parseInt(data.borderWidth, 10) || 1,
-    borderColor: data.borderColor || "#e5e5e5",
-    selectedBorderColor: data.selectedBorderColor || "#000000",
     showOptionName: data.showOptionName === "true",
-    blockPaddingX: parseInt(data.blockPaddingX, 10) || 12,
-    blockPaddingY: parseInt(data.blockPaddingY, 10) || 8,
-    blockFontSize: parseInt(data.blockFontSize, 10) || 14,
-    blockBgColor: data.blockBgColor || "#ffffff",
-    blockTextColor: data.blockTextColor || "#000000",
-    selectedBgColor: data.selectedBgColor || "#dddddd",
-    selectedTextColor: data.selectedTextColor || "#000000",
     customCssProduct: data.customCssProduct || "",
     customCssCollection: data.customCssCollection || "",
   };
@@ -183,31 +170,6 @@ function ToggleRow({ title, description, checked, onChange }) {
         <Checkbox label="Toggle setting" labelHidden checked={Boolean(checked)} onChange={onChange} />
       </InlineStack>
     </div>
-  );
-}
-
-function NumberField({ label, value, onChange, suffix }) {
-  return (
-    <TextField
-      label={label}
-      type="number"
-      value={String(value ?? "")}
-      onChange={onChange}
-      suffix={suffix}
-      autoComplete="off"
-    />
-  );
-}
-
-function ColorField({ label, value, onChange }) {
-  return (
-    <TextField
-      label={label}
-      value={value || ""}
-      onChange={onChange}
-      placeholder="#000000"
-      autoComplete="off"
-    />
   );
 }
 
@@ -522,47 +484,6 @@ export default function SettingsPage() {
                         )}
                       </BlockStack>
                     </Card>
-
-                    <InlineGrid columns={{ xs: 1, md: 2 }} gap="500">
-                      <Card padding="500">
-                        <BlockStack gap="400">
-                          <SectionHeader
-                            icon={PaintBrushFlatIcon}
-                            title="Global fallback style"
-                            description="Used when a specific style setting is missing from a group or template."
-                          />
-                          <Divider />
-                          <InlineGrid columns={{ xs: 1, sm: 2 }} gap="300">
-                            <NumberField label="Swatch size" value={settings.swatchSize} suffix="px" onChange={(value) => handleSettingChange("swatchSize", value)} />
-                            <NumberField label="Items gap" value={settings.itemsGap} suffix="px" onChange={(value) => handleSettingChange("itemsGap", value)} />
-                            <NumberField label="Border radius" value={settings.borderRadius} suffix="px" onChange={(value) => handleSettingChange("borderRadius", value)} />
-                            <NumberField label="Border width" value={settings.borderWidth} suffix="px" onChange={(value) => handleSettingChange("borderWidth", value)} />
-                            <ColorField label="Border color" value={settings.borderColor} onChange={(value) => handleSettingChange("borderColor", value)} />
-                            <ColorField label="Selected border" value={settings.selectedBorderColor} onChange={(value) => handleSettingChange("selectedBorderColor", value)} />
-                          </InlineGrid>
-                        </BlockStack>
-                      </Card>
-
-                      <Card padding="500">
-                        <BlockStack gap="400">
-                          <SectionHeader
-                            icon={StoreOnlineIcon}
-                            title="Button fallback style"
-                            description="Fallback values for button-like option styles."
-                          />
-                          <Divider />
-                          <InlineGrid columns={{ xs: 1, sm: 2 }} gap="300">
-                            <NumberField label="Padding X" value={settings.blockPaddingX} suffix="px" onChange={(value) => handleSettingChange("blockPaddingX", value)} />
-                            <NumberField label="Padding Y" value={settings.blockPaddingY} suffix="px" onChange={(value) => handleSettingChange("blockPaddingY", value)} />
-                            <NumberField label="Font size" value={settings.blockFontSize} suffix="px" onChange={(value) => handleSettingChange("blockFontSize", value)} />
-                            <ColorField label="Background" value={settings.blockBgColor} onChange={(value) => handleSettingChange("blockBgColor", value)} />
-                            <ColorField label="Text color" value={settings.blockTextColor} onChange={(value) => handleSettingChange("blockTextColor", value)} />
-                            <ColorField label="Selected background" value={settings.selectedBgColor} onChange={(value) => handleSettingChange("selectedBgColor", value)} />
-                            <ColorField label="Selected text" value={settings.selectedTextColor} onChange={(value) => handleSettingChange("selectedTextColor", value)} />
-                          </InlineGrid>
-                        </BlockStack>
-                      </Card>
-                    </InlineGrid>
 
                     <Card padding="500">
                       <BlockStack gap="400">

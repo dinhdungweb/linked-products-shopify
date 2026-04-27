@@ -4,9 +4,14 @@ function buildStorefrontAppSettings(settings) {
   const defaultProductCardStyle = normalizeProductCardStyle(settings.defaultProductCardStyle);
 
   return {
-    swatchSize: settings.swatchSize ?? 50,
-    itemsGap: settings.itemsGap ?? 8,
-    cardLimit: settings.cardLimit ?? 5,
+    appEnabled: settings.appEnabled ?? true,
+    showOnProductCards: settings.showOnProductCards ?? true,
+    applyToCollection: settings.applyToCollection ?? true,
+    applyToSearch: settings.applyToSearch ?? true,
+    applyToHome: settings.applyToHome ?? false,
+    soldOutLabel: settings.soldOutLabel || "Sold out",
+    unavailableLabel: settings.unavailableLabel || "Unavailable",
+    customCssCollection: settings.customCssCollection || "",
     cardAlign: settings.cardAlign || "left",
     cardMarginTop: settings.cardMarginTop ?? 0,
     cardMarginBottom: settings.cardMarginBottom ?? 5,

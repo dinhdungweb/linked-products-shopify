@@ -19,6 +19,8 @@
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
   {%- assign app_settings = shop.metafields.linked_products.settings.value -%}
   {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
+  {%- assign lp_sold_out_label = app_settings.soldOutLabel | default: 'Sold out' -%}
+  {%- assign lp_unavailable_label = app_settings.unavailableLabel | default: 'Unavailable' -%}
   
   {%- if app_settings.appEnabled != false -%}
   
@@ -180,6 +182,10 @@
   {%- assign lp_badge_size = active_style_settings.badge.fontSize | default: 10 -%}
   {%- assign lp_badge_color = active_style_settings.badge.color | default: '#ffffff' -%}
   {%- assign lp_badge_bg = active_style_settings.badge.bgColor | default: '#000000' -%}
+  {%- assign lp_button_padding = active_style_settings.basic.padding | default: 8 -%}
+  {%- assign lp_button_padding_x = lp_button_padding | times: 1.5 -%}
+  {%- assign lp_block_bg = active_style_settings.basic.blockBg | default: '#ffffff' -%}
+  {%- assign lp_selected_bg = active_style_settings.basic.blockBgActive | default: '#f4f6f8' -%}
 
   {%- assign lp_layout_type = active_style_settings.layout.type | default: 'stack' -%}
   {%- assign lp_is_scroll = false -%}
@@ -222,8 +228,8 @@
     --lp-swatch-size: {{ lp_swatch_size | replace: 'px', '' }}px;
     --lp-items-gap: {{ lp_items_gap }}px;
     --lp-swatch-padding: {{ lp_padding }}px;
-    --lp-block-padding-y: {{ app_settings.blockPaddingY | default: 8 }}px;
-    --lp-block-padding-x: {{ app_settings.blockPaddingX | default: 12 }}px;
+    --lp-block-padding-y: {{ lp_button_padding }}px;
+    --lp-block-padding-x: {{ lp_button_padding_x }}px;
     --lp-border-radius: {{ lp_border_radius }}{{ lp_radius_unit }};
     --lp-border-color: {{ lp_border_color }};
     --lp-selected-border-color: {{ lp_selected_border_color }};
@@ -253,8 +259,8 @@
     --lp-selected-weight: {{ lp_selected_weight }};
     --lp-show-selected: {% if lp_show_selected_variant %}block{% else %}none{% endif %};
     --lp-unavailable-style: {{ lp_unavailable_style }};
-    --lp-block-bg: {{ app_settings.blockBgColor | default: '#ffffff' }};
-    --lp-selected-bg: {{ app_settings.selectedBgColor | default: '#f4f6f8' }};
+    --lp-block-bg: {{ lp_block_bg }};
+    --lp-selected-bg: {{ lp_selected_bg }};
     --lp-neutral-bg: #f5f5f5;
     --lp-neutral-border: rgba(0,0,0,0.05);
     {% if lp_shadow_show %}
@@ -329,7 +335,7 @@
                             {%- endif -%}
                             <span class="lp-dropdown__text">{{ value }}</span>
                             {%- if linked_prod.available == false -%}
-                                <span class="lp-dropdown__sold-out">(Sold out)</span>
+                                <span class="lp-dropdown__sold-out">({{ lp_sold_out_label }})</span>
                                 <span class="lp-unavailable-effect"></span>
                             {%- endif -%}
                         </a>
@@ -366,7 +372,9 @@
                             custom_color: item.color,
                             custom_color2: item.color2,
                             item_style: item.style,
-                            two_color_style: lp_two_color_style
+                            two_color_style: lp_two_color_style,
+                            sold_out_label: lp_sold_out_label,
+                            unavailable_label: lp_unavailable_label
                         -%}
                         {%- assign rendered_count = 1 -%}
                         {%- break -%}
@@ -401,7 +409,9 @@
                     custom_color: item.color,
                     custom_color2: item.color2,
                     item_style: item.style,
-                    two_color_style: lp_two_color_style
+                    two_color_style: lp_two_color_style,
+                    sold_out_label: lp_sold_out_label,
+                    unavailable_label: lp_unavailable_label
                 -%}
                 {%- assign rendered_count = rendered_count | plus: 1 -%}
               {%- else -%}
@@ -421,7 +431,9 @@
                       custom_color: item.color,
                       custom_color2: item.color2,
                       item_style: item.style,
-                      two_color_style: lp_two_color_style
+                      two_color_style: lp_two_color_style,
+                      sold_out_label: lp_sold_out_label,
+                      unavailable_label: lp_unavailable_label
                   -%}
                   {%- assign rendered_count = rendered_count | plus: 1 -%}
                 {%- endif -%}
