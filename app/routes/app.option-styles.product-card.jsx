@@ -344,8 +344,13 @@ export default function ProductCardCustomizer() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (actionData?.success) shopify.toast.show(actionData.message);
-    else if (actionData?.error) shopify.toast.show(actionData.error, { isError: true });
+    if (actionData?.syncWarning) {
+      shopify.toast.show("Saved, but storefront sync failed. Try saving again.", { isError: true });
+    } else if (actionData?.success) {
+      shopify.toast.show(actionData.message);
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
+    }
   }, [actionData, shopify]);
 
   const handleTabChange = useCallback((index) => setSelectedTab(index), []);

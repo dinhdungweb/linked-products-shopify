@@ -7,7 +7,6 @@ import {
     BlockStack,
     Text,
     Badge,
-    Banner,
     Divider,
     ProgressBar,
     Button,
@@ -23,7 +22,7 @@ import {
     ProductListIcon,
     StarFilledIcon,
 } from "@shopify/polaris-icons";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
 
 const PLAN_ORDER = ["free", "basic", "advanced", "premium"];
@@ -379,6 +378,7 @@ export default function PricingPage() {
     const actionData = useActionData();
     const submit = useSubmit();
     const navigation = useNavigation();
+    const shopify = useAppBridge();
     const [searchParams] = useSearchParams();
     const isSubmitting = navigation.state !== "idle" && navigation.formData?.get("action") === "subscribe";
     const isCancelling = navigation.state !== "idle" && navigation.formData?.get("action") === "cancel";
@@ -395,6 +395,16 @@ export default function PricingPage() {
             }
         }
     }, [actionData]);
+
+    useEffect(() => {
+        if (actionData?.error) {
+            shopify.toast.show(actionData.error, { isError: true });
+        } else if (actionData?.message) {
+            shopify.toast.show(actionData.message);
+        } else if (justUpgraded) {
+            shopify.toast.show("Your plan has been activated successfully");
+        }
+    }, [actionData, justUpgraded, shopify]);
 
     const getIdTokenHeaders = async () => {
         try {
@@ -461,11 +471,6 @@ export default function PricingPage() {
 
             <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "18px 0 40px" }}>
                 <BlockStack gap="500">
-                    {actionData?.error && <Banner tone="critical"><p>{actionData.error}</p></Banner>}
-                    {(actionData?.message || justUpgraded) && (
-                        <Banner tone="success"><p>{actionData?.message || "Your plan has been activated successfully!"}</p></Banner>
-                    )}
-
                     <div style={{
                         backgroundColor: "#FFFFFF",
                         border: "1px solid #E3E3E3",

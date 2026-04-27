@@ -23,7 +23,7 @@ import {
   ProgressBar,
   Tabs,
 } from "@shopify/polaris";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { DeleteIcon, PlayIcon, PauseCircleIcon, EditIcon } from "@shopify/polaris-icons";
 import { runAutomationRule } from "../models/automation.server";
 import { PLANS } from "../billing.config";
@@ -235,6 +235,7 @@ export default function AutomationsPage() {
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
+  const shopify = useAppBridge();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState(null);
@@ -247,13 +248,13 @@ export default function AutomationsPage() {
     optionName: "Color",
     selectorStyle: "image_swatch",
   });
-  const [actionBannerVisible, setActionBannerVisible] = useState(true);
-
   useEffect(() => {
-    if (actionData) {
-      setActionBannerVisible(true);
+    if (actionData?.success) {
+      shopify.toast.show(actionData.message || "Action completed");
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
     }
-  }, [actionData]);
+  }, [actionData, shopify]);
 
   const isLoading = navigation.state === "submitting" || navigation.state === "loading";
 
@@ -335,17 +336,6 @@ export default function AutomationsPage() {
       <Layout>
         <Layout.Section>
           <BlockStack gap="400">
-            {actionData?.success && actionBannerVisible && (
-              <Banner tone="success" onDismiss={() => setActionBannerVisible(false)}>
-                <p>{actionData.message}</p>
-              </Banner>
-            )}
-            {actionData?.error && actionBannerVisible && (
-              <Banner tone="critical" onDismiss={() => setActionBannerVisible(false)}>
-                <p>{actionData.error}</p>
-              </Banner>
-            )}
-
             <Banner tone="info">
               <p>
                 Automations help you bulk-create product groups by detecting patterns in your product titles, SKUs, tags, or collections.

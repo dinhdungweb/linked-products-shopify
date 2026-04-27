@@ -429,6 +429,15 @@ export default function Index() {
     ? 0
     : Math.min(100, ((usageInfo?.used || 0) / usageInfo?.limit) * 100);
 
+  useEffect(() => {
+    if (actionData?.success) {
+      const message = actionData.message?.split("\n")[0] || "Action completed";
+      shopify.toast.show(message);
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
+    }
+  }, [actionData, shopify]);
+
   const StatsCard = ({ title, value, icon, color, progress, subtitle }) => (
     <div style={{
       height: '100%',
@@ -737,14 +746,6 @@ export default function Index() {
     </BlockStack>
   );
 
-  const [actionBannerVisible, setActionBannerVisible] = useState(true);
-
-  // Reset banner visibility when actionData changes
-  useEffect(() => {
-    if (actionData) {
-      setActionBannerVisible(true);
-    }
-  }, [actionData]);
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvData, setCsvData] = useState("");
   const [file, setFile] = useState(null);
@@ -839,12 +840,6 @@ export default function Index() {
           <Layout>
             <Layout.Section>
               <BlockStack gap="500">
-                {actionData?.success && actionBannerVisible && (
-                  <Banner tone="success" onDismiss={() => setActionBannerVisible(false)}>
-                    <p>{actionData.message}</p>
-                  </Banner>
-                )}
-
                 {/* Dynamic Alerts */}
                 {shouldShowEmbedBanner && (
                   <Banner

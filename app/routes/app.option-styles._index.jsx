@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Page,
   Card,
@@ -17,9 +17,9 @@ import {
   ActionList,
 } from "@shopify/polaris";
 import { LinkIcon, QuestionCircleIcon, PlusIcon, MenuHorizontalIcon, StarIcon, DuplicateIcon, DeleteIcon, InfoIcon } from "@shopify/polaris-icons";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { json } from "@remix-run/node";
-import { useLoaderData, useSubmit as useRemixSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useSubmit as useRemixSubmit } from "@remix-run/react";
 import {
   BASE_SETTINGS,
   DEFAULT_SETTINGS_BY_STYLE,
@@ -117,6 +117,7 @@ export const action = async ({ request }) => {
 
     return json({
       success: true,
+      message: "Default style updated",
       syncWarning: syncResult.ok ? null : syncResult.error,
     });
   }
@@ -126,10 +127,25 @@ export const action = async ({ request }) => {
 
 export default function OptionStylesPage() {
   const { styleSettings, usedStyles, appSettings } = useLoaderData();
+  const actionData = useActionData();
   const submit = useRemixSubmit();
+  const shopify = useAppBridge();
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [activeMenu, setActiveMenu] = useState(null);
+
+  useEffect(() => {
+    if (actionData?.syncWarning) {
+      shopify.toast.show("Default updated, but storefront sync failed. Try saving again.", { isError: true });
+      return;
+    }
+
+    if (actionData?.success) {
+      shopify.toast.show(actionData.message || "Default style updated");
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
+    }
+  }, [actionData, shopify]);
 
   const toggleMenu = (styleId) => setActiveMenu(activeMenu === styleId ? null : styleId);
 

@@ -31,7 +31,7 @@ import {
   StoreOnlineIcon,
   ThemeEditIcon,
 } from "@shopify/polaris-icons";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { syncShopSettingsMetafieldsSafely } from "../settings-sync.server";
 import { buildThemeEditorUrl } from "../utils/app-embed-status";
 
@@ -171,10 +171,10 @@ export default function SettingsPage() {
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
+  const shopify = useAppBridge();
   const isSaving = navigation.state !== "idle";
 
   const [selectedTab, setSelectedTab] = useState(0);
-  const [showBanner, setShowBanner] = useState(false);
   const [settings, setSettings] = useState(initialSettings);
 
   useEffect(() => {
@@ -182,11 +182,17 @@ export default function SettingsPage() {
   }, [initialSettings]);
 
   useEffect(() => {
-    if (!actionData?.success) return undefined;
-    setShowBanner(true);
-    const timeout = setTimeout(() => setShowBanner(false), 3000);
-    return () => clearTimeout(timeout);
-  }, [actionData]);
+    if (actionData?.syncWarning) {
+      shopify.toast.show("Saved, but storefront sync failed. Try saving again.", { isError: true });
+      return;
+    }
+
+    if (actionData?.success) {
+      shopify.toast.show("Settings updated successfully");
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
+    }
+  }, [actionData, shopify]);
 
   const handleSettingChange = useCallback((key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -305,12 +311,6 @@ export default function SettingsPage() {
               </InlineStack>
             </InlineStack>
           </div>
-
-          {showBanner && (
-            <Banner tone="success" onDismiss={() => setShowBanner(false)}>
-              <p>Settings have been updated successfully.</p>
-            </Banner>
-          )}
 
           <InlineGrid columns={{ xs: 1, sm: 2, md: 3 }} gap="400">
             <MetricCard
