@@ -32,7 +32,7 @@ import {
   ThemeEditIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { syncShopSettingsMetafields } from "../settings-sync.server";
+import { syncShopSettingsMetafieldsSafely } from "../settings-sync.server";
 import { buildThemeEditorUrl } from "../utils/app-embed-status";
 
 export const loader = async ({ request }) => {
@@ -54,11 +54,7 @@ export const loader = async ({ request }) => {
   }
 
   if (isFirstInstall) {
-    try {
-      await syncShopSettingsMetafields(admin, prisma, shop, settings);
-    } catch (error) {
-      console.error("[AutoSync] Failed to initialize metafield:", error);
-    }
+    await syncShopSettingsMetafieldsSafely(admin, prisma, shop, settings);
   }
 
   return json({ settings, shop, apiKey: process.env.SHOPIFY_API_KEY || "" });
@@ -92,9 +88,13 @@ export const action = async ({ request }) => {
     create: { shop, ...settingsData },
   });
 
-  await syncShopSettingsMetafields(admin, prisma, shop, updatedSettings);
+  const syncResult = await syncShopSettingsMetafieldsSafely(admin, prisma, shop, updatedSettings);
 
-  return json({ success: true, settings: updatedSettings });
+  return json({
+    success: true,
+    settings: updatedSettings,
+    syncWarning: syncResult.ok ? null : syncResult.error,
+  });
 };
 
 function IconBox({ icon, tone = "#2C6ECB", background = "#F4F6F8" }) {

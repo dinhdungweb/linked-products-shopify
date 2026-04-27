@@ -22,6 +22,36 @@ function buildStorefrontAppSettings(settings) {
   };
 }
 
+function getErrorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function graphqlWithRetry(admin, query, options, label) {
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return options === undefined
+        ? await admin.graphql(query)
+        : await admin.graphql(query, options);
+    } catch (error) {
+      if (attempt === maxAttempts) {
+        throw error;
+      }
+
+      console.warn(
+        `[SettingsSync] ${label} failed, retrying (${attempt}/${maxAttempts}):`,
+        getErrorMessage(error),
+      );
+      await wait(250 * attempt);
+    }
+  }
+}
+
 export async function syncShopSettingsMetafields(admin, prisma, shop, settingsOverride = null) {
   const settings = settingsOverride || await prisma.appSetting.findUnique({
     where: { shop },
@@ -29,7 +59,7 @@ export async function syncShopSettingsMetafields(admin, prisma, shop, settingsOv
     data: { shop },
   });
 
-  const shopData = await admin.graphql(`{ shop { id } }`);
+  const shopData = await graphqlWithRetry(admin, `{ shop { id } }`, undefined, "Resolve shop id");
   const shopJson = await shopData.json();
   const shopId = shopJson.data?.shop?.id;
 
@@ -37,7 +67,7 @@ export async function syncShopSettingsMetafields(admin, prisma, shop, settingsOv
     throw new Error("Could not resolve Shopify shop id");
   }
 
-  const response = await admin.graphql(`
+  const response = await graphqlWithRetry(admin, `
     mutation setShopSettings($metafields: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $metafields) {
         userErrors { field message }
@@ -62,7 +92,7 @@ export async function syncShopSettingsMetafields(admin, prisma, shop, settingsOv
         },
       ],
     },
-  });
+  }, "Set shop settings metafields");
 
   const result = await response.json();
   const errors = result.data?.metafieldsSet?.userErrors || [];
@@ -71,4 +101,15 @@ export async function syncShopSettingsMetafields(admin, prisma, shop, settingsOv
   }
 
   return settings;
+}
+
+export async function syncShopSettingsMetafieldsSafely(admin, prisma, shop, settingsOverride = null) {
+  try {
+    const settings = await syncShopSettingsMetafields(admin, prisma, shop, settingsOverride);
+    return { ok: true, settings };
+  } catch (error) {
+    const message = getErrorMessage(error);
+    console.warn("[SettingsSync] Shopify settings metafield sync skipped:", message);
+    return { ok: false, error: message, settings: settingsOverride };
+  }
 }

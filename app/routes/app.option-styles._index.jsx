@@ -27,7 +27,7 @@ import {
 } from "../utils/style-utils";
 import prisma from "../db.server";
 import { authenticate } from "../shopify.server";
-import { syncShopSettingsMetafields } from "../settings-sync.server";
+import { syncShopSettingsMetafieldsSafely } from "../settings-sync.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -113,9 +113,12 @@ export const action = async ({ request }) => {
       },
     });
 
-    await syncShopSettingsMetafields(admin, prisma, shop, updatedSettings);
+    const syncResult = await syncShopSettingsMetafieldsSafely(admin, prisma, shop, updatedSettings);
 
-    return json({ success: true });
+    return json({
+      success: true,
+      syncWarning: syncResult.ok ? null : syncResult.error,
+    });
   }
 
   return json({ error: "Invalid action" }, { status: 400 });

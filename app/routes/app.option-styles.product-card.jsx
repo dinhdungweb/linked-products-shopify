@@ -32,7 +32,7 @@ import {
   PreviewRenderer
 } from "../utils/style-utils";
 import { PRODUCT_PAGE_STYLE_IDS } from "../utils/style-mapping";
-import { syncShopSettingsMetafields } from "../settings-sync.server";
+import { syncShopSettingsMetafieldsSafely } from "../settings-sync.server";
 
 const normalizeCardSettings = (settings) => {
   const twoColorMap = { "L/R": "L_R", "LT/RB": "LT_RB", "T/B": "T_B", "LB/RT": "LB_RT" };
@@ -309,9 +309,13 @@ export const action = async ({ request }) => {
       throw new Error(metafieldsErrors.map((error) => error.message).join(", "));
     }
 
-    await syncShopSettingsMetafields(admin, prisma, shop, updatedAppSettings);
+    const syncResult = await syncShopSettingsMetafieldsSafely(admin, prisma, shop, updatedAppSettings);
 
-    return json({ success: true, message: "Settings saved successfully" });
+    return json({
+      success: true,
+      message: "Settings saved successfully",
+      syncWarning: syncResult.ok ? null : syncResult.error,
+    });
   } catch (error) {
     console.error("Save card settings error:", error);
     return json({ success: false, error: error.message });
