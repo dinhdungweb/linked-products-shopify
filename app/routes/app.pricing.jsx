@@ -156,70 +156,78 @@ function PlanCard({ planKey, plan, usageInfo, isSubmitting, onSubscribe }) {
                 : `Upgrade to ${planName}`;
 
     return (
-        <div style={{ height: "100%", display: "flex" }}>
-            <Card padding="500">
-                <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: "18px" }}>
-                    <BlockStack gap="300">
-                        <InlineStack align="space-between" blockAlign="start" wrap={false}>
-                            <BlockStack gap="100">
-                                <Text as="h2" variant="headingLg">{planName}</Text>
-                                <Text as="p" variant="bodySm" tone="subdued">{PLAN_DETAILS[planKey].eyebrow}</Text>
-                            </BlockStack>
-                            {isCurrent ? (
-                                <Badge tone="success">Current</Badge>
-                            ) : isPopular ? (
-                                <Badge tone="info">Popular</Badge>
-                            ) : null}
-                        </InlineStack>
-
-                        <BlockStack gap="100">
-                            <InlineStack gap="100" blockAlign="end">
-                                <Text as="p" variant="heading2xl">${plan.price}</Text>
-                                {plan.price > 0 && <Text as="p" tone="subdued">/ month</Text>}
-                            </InlineStack>
-                            <Text as="p" variant="bodySm" tone="subdued">
-                                {plan.price === 0 ? "Forever free" : "Billed every 30 days"}
-                            </Text>
-                        </BlockStack>
-
-                        <Text as="p" variant="bodyMd" tone="subdued">
-                            {PLAN_DETAILS[planKey].description}
-                        </Text>
+        <div style={{
+            width: "100%",
+            minHeight: "518px",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "18px",
+            backgroundColor: "#FFFFFF",
+            border: "1px solid #E3E3E3",
+            borderRadius: "12px",
+            padding: "20px",
+            boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+        }}>
+            <BlockStack gap="300">
+                <InlineStack align="space-between" blockAlign="start" wrap={false}>
+                    <BlockStack gap="100">
+                        <Text as="h2" variant="headingLg">{planName}</Text>
+                        <Text as="p" variant="bodySm" tone="subdued">{PLAN_DETAILS[planKey].eyebrow}</Text>
                     </BlockStack>
+                    {isCurrent ? (
+                        <Badge tone="success">Current</Badge>
+                    ) : isPopular ? (
+                        <Badge tone="info">Popular</Badge>
+                    ) : null}
+                </InlineStack>
 
-                    <div style={{
-                        border: "1px solid #E3E3E3",
-                        borderRadius: "10px",
-                        padding: "12px",
-                        backgroundColor: isPopular ? "#F1F8FF" : "#FAFAFA",
-                    }}>
-                        <BlockStack gap="100">
-                            <Text as="p" variant="bodySm" tone="subdued">Group capacity</Text>
-                            <Text as="p" variant="headingMd">{getLimitLabel(planKey, plan.groupLimit)}</Text>
-                        </BlockStack>
-                    </div>
+                <BlockStack gap="100">
+                    <InlineStack gap="100" blockAlign="end">
+                        <Text as="p" variant="heading2xl">${plan.price}</Text>
+                        {plan.price > 0 && <Text as="p" tone="subdued">/ month</Text>}
+                    </InlineStack>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                        {plan.price === 0 ? "Forever free" : "Billed every 30 days"}
+                    </Text>
+                </BlockStack>
 
-                    <Divider />
+                <Text as="p" variant="bodyMd" tone="subdued">
+                    {PLAN_DETAILS[planKey].description}
+                </Text>
+            </BlockStack>
 
-                    <BlockStack gap="300">
-                        {PLAN_DETAILS[planKey].features.map((feature) => (
-                            <FeatureItem key={feature}>{feature}</FeatureItem>
-                        ))}
-                    </BlockStack>
+            <div style={{
+                border: "1px solid #E3E3E3",
+                borderRadius: "10px",
+                padding: "12px",
+                backgroundColor: isPopular ? "#F1F8FF" : "#FAFAFA",
+            }}>
+                <BlockStack gap="100">
+                    <Text as="p" variant="bodySm" tone="subdued">Group capacity</Text>
+                    <Text as="p" variant="headingMd">{getLimitLabel(planKey, plan.groupLimit)}</Text>
+                </BlockStack>
+            </div>
 
-                    <div style={{ marginTop: "auto", paddingTop: "4px" }}>
-                        <Button
-                            fullWidth
-                            variant={isCurrent ? undefined : "primary"}
-                            disabled={isCurrent}
-                            loading={isSubmitting}
-                            onClick={() => onSubscribe(planKey)}
-                        >
-                            {buttonLabel}
-                        </Button>
-                    </div>
-                </div>
-            </Card>
+            <Divider />
+
+            <BlockStack gap="300">
+                {PLAN_DETAILS[planKey].features.map((feature) => (
+                    <FeatureItem key={feature}>{feature}</FeatureItem>
+                ))}
+            </BlockStack>
+
+            <div style={{ marginTop: "auto", paddingTop: "8px" }}>
+                <Button
+                    fullWidth
+                    variant={isCurrent ? undefined : "primary"}
+                    disabled={isCurrent}
+                    loading={isSubmitting}
+                    onClick={() => onSubscribe(planKey)}
+                >
+                    {buttonLabel}
+                </Button>
+            </div>
         </div>
     );
 }
@@ -562,15 +570,27 @@ export default function PricingPage() {
 
                     <InlineGrid columns={{ xs: 1, md: usageInfo.plan !== "free" ? 2 : 1 }} gap="400">
                         <Card padding="500">
-                            <BlockStack gap="300">
-                                <InlineStack gap="200" blockAlign="center">
-                                    <Icon source={StarFilledIcon} tone="success" />
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
+                                <div style={{
+                                    width: "36px",
+                                    height: "36px",
+                                    borderRadius: "10px",
+                                    backgroundColor: "#EAF8F0",
+                                    color: "#008060",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexShrink: 0,
+                                }}>
+                                    <Icon source={StarFilledIcon} tone="inherit" />
+                                </div>
+                                <BlockStack gap="100">
                                     <Text variant="headingMd" as="h2">All plans include storefront styling</Text>
-                                </InlineStack>
-                                <Text variant="bodyMd" tone="subdued">
-                                    Color swatches, image swatches, dropdowns, buttons, product page settings, and product card settings remain available on every plan.
-                                </Text>
-                            </BlockStack>
+                                    <Text variant="bodyMd" tone="subdued">
+                                        Color swatches, image swatches, dropdowns, buttons, product page settings, and product card settings remain available on every plan.
+                                    </Text>
+                                </BlockStack>
+                            </div>
                         </Card>
 
                         {usageInfo.plan !== "free" && (
