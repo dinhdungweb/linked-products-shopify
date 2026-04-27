@@ -1,37 +1,36 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { json } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import { useLoaderData, useSubmit, useNavigation, useActionData } from "@remix-run/react";
 import {
   Page,
-  Layout,
   Card,
   Text,
   BlockStack,
   InlineStack,
-  Box,
   TextField,
   Checkbox,
   Badge,
   Button,
   Tabs,
-  Grid,
   Icon,
   Banner,
   Divider,
   InlineGrid,
-  EmptyState,
 } from "@shopify/polaris";
 import {
-  SettingsIcon,
+  AppExtensionIcon,
   CheckCircleIcon,
+  CodeIcon,
+  DesktopIcon,
+  EmailIcon,
   ExternalIcon,
   LanguageIcon,
-  InfoIcon,
-  PaintBrushFlatIcon,
   MagicIcon,
-  EmailIcon,
-  CheckIcon,
-  XIcon
+  PaintBrushFlatIcon,
+  SaveIcon,
+  SettingsIcon,
+  StoreOnlineIcon,
+  ThemeEditIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { syncShopSettingsMetafields } from "../settings-sync.server";
@@ -58,8 +57,8 @@ export const loader = async ({ request }) => {
   if (isFirstInstall) {
     try {
       await syncShopSettingsMetafields(admin, prisma, shop, settings);
-    } catch (e) {
-      console.error("[AutoSync] Failed to initialize metafield:", e);
+    } catch (error) {
+      console.error("[AutoSync] Failed to initialize metafield:", error);
     }
   }
 
@@ -74,7 +73,6 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
   const data = Object.fromEntries(formData);
 
-  // Convert types
   const settingsData = {
     appEnabled: data.appEnabled === "true",
     showOnProductCards: data.showOnProductCards === "true",
@@ -86,26 +84,26 @@ export const action = async ({ request }) => {
     seamlessSwitching: data.seamlessSwitching === "true",
     autoScroll: data.autoScroll === "true",
     enableAutosuggestion: data.enableAutosuggestion === "true",
-    notificationEmail: data.notificationEmail,
-    selectOptionLabel: data.selectOptionLabel,
-    soldOutLabel: data.soldOutLabel,
-    unavailableLabel: data.unavailableLabel,
-    swatchSize: parseInt(data.swatchSize) || 50,
-    itemsGap: parseInt(data.itemsGap) || 8,
-    borderRadius: parseInt(data.borderRadius) || 8,
-    borderWidth: parseInt(data.borderWidth) || 1,
-    borderColor: data.borderColor,
-    selectedBorderColor: data.selectedBorderColor,
+    notificationEmail: data.notificationEmail || null,
+    selectOptionLabel: data.selectOptionLabel || "{option}",
+    soldOutLabel: data.soldOutLabel || "Sold out",
+    unavailableLabel: data.unavailableLabel || "Unavailable",
+    swatchSize: parseInt(data.swatchSize, 10) || 50,
+    itemsGap: parseInt(data.itemsGap, 10) || 8,
+    borderRadius: parseInt(data.borderRadius, 10) || 8,
+    borderWidth: parseInt(data.borderWidth, 10) || 1,
+    borderColor: data.borderColor || "#e5e5e5",
+    selectedBorderColor: data.selectedBorderColor || "#000000",
     showOptionName: data.showOptionName === "true",
-    blockPaddingX: parseInt(data.blockPaddingX) || 12,
-    blockPaddingY: parseInt(data.blockPaddingY) || 8,
-    blockFontSize: parseInt(data.blockFontSize) || 14,
-    blockBgColor: data.blockBgColor,
-    blockTextColor: data.blockTextColor,
-    selectedBgColor: data.selectedBgColor,
-    selectedTextColor: data.selectedTextColor,
-    customCssProduct: data.customCssProduct,
-    customCssCollection: data.customCssCollection,
+    blockPaddingX: parseInt(data.blockPaddingX, 10) || 12,
+    blockPaddingY: parseInt(data.blockPaddingY, 10) || 8,
+    blockFontSize: parseInt(data.blockFontSize, 10) || 14,
+    blockBgColor: data.blockBgColor || "#ffffff",
+    blockTextColor: data.blockTextColor || "#000000",
+    selectedBgColor: data.selectedBgColor || "#dddddd",
+    selectedTextColor: data.selectedTextColor || "#000000",
+    customCssProduct: data.customCssProduct || "",
+    customCssCollection: data.customCssCollection || "",
   };
 
   const updatedSettings = await prisma.appSetting.upsert({
@@ -119,44 +117,161 @@ export const action = async ({ request }) => {
   return json({ success: true, settings: updatedSettings });
 };
 
+function IconBox({ icon, tone = "#2C6ECB", background = "#F4F6F8" }) {
+  return (
+    <div style={{
+      width: "40px",
+      height: "40px",
+      borderRadius: "10px",
+      backgroundColor: background,
+      color: tone,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    }}>
+      <Icon source={icon} tone="inherit" />
+    </div>
+  );
+}
+
+function MetricCard({ icon, label, value, helpText, tone = "#2C6ECB", background = "#F4F6F8" }) {
+  return (
+    <Card padding="400">
+      <BlockStack gap="300">
+        <InlineStack align="space-between" blockAlign="center" wrap={false}>
+          <Text as="p" variant="bodySm" tone="subdued">{label}</Text>
+          <IconBox icon={icon} tone={tone} background={background} />
+        </InlineStack>
+        <BlockStack gap="100">
+          <Text as="p" variant="headingLg">{value}</Text>
+          <Text as="p" variant="bodySm" tone="subdued">{helpText}</Text>
+        </BlockStack>
+      </BlockStack>
+    </Card>
+  );
+}
+
+function SectionHeader({ icon, title, description, badge }) {
+  return (
+    <InlineStack align="space-between" blockAlign="start" gap="400">
+      <InlineStack gap="300" blockAlign="start" wrap={false}>
+        <IconBox icon={icon} />
+        <BlockStack gap="100">
+          <Text variant="headingMd" as="h2">{title}</Text>
+          {description && <Text variant="bodySm" tone="subdued">{description}</Text>}
+        </BlockStack>
+      </InlineStack>
+      {badge}
+    </InlineStack>
+  );
+}
+
+function ToggleRow({ title, description, checked, onChange }) {
+  return (
+    <div style={{
+      border: "1px solid #E3E3E3",
+      borderRadius: "12px",
+      padding: "14px",
+      backgroundColor: "#FAFAFA",
+    }}>
+      <InlineStack align="space-between" blockAlign="start" gap="400">
+        <BlockStack gap="100">
+          <Text as="p" variant="bodyMd" fontWeight="semibold">{title}</Text>
+          {description && <Text as="p" variant="bodySm" tone="subdued">{description}</Text>}
+        </BlockStack>
+        <Checkbox label="Toggle setting" labelHidden checked={Boolean(checked)} onChange={onChange} />
+      </InlineStack>
+    </div>
+  );
+}
+
+function NumberField({ label, value, onChange, suffix }) {
+  return (
+    <TextField
+      label={label}
+      type="number"
+      value={String(value ?? "")}
+      onChange={onChange}
+      suffix={suffix}
+      autoComplete="off"
+    />
+  );
+}
+
+function ColorField({ label, value, onChange }) {
+  return (
+    <TextField
+      label={label}
+      value={value || ""}
+      onChange={onChange}
+      placeholder="#000000"
+      autoComplete="off"
+    />
+  );
+}
+
 export default function SettingsPage() {
   const { settings: initialSettings, shop, apiKey } = useLoaderData();
+  const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
-  const isLoading = navigation.state !== "idle";
+  const isSaving = navigation.state !== "idle";
 
   const [selectedTab, setSelectedTab] = useState(0);
   const [showBanner, setShowBanner] = useState(false);
-
-  // Settings State
   const [settings, setSettings] = useState(initialSettings);
 
   useEffect(() => {
     setSettings(initialSettings);
   }, [initialSettings]);
 
+  useEffect(() => {
+    if (!actionData?.success) return undefined;
+    setShowBanner(true);
+    const timeout = setTimeout(() => setShowBanner(false), 3000);
+    return () => clearTimeout(timeout);
+  }, [actionData]);
+
   const handleSettingChange = useCallback((key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+    setSettings((prev) => ({ ...prev, [key]: value }));
   }, []);
+
+  const hasChanges = useMemo(
+    () => JSON.stringify(settings) !== JSON.stringify(initialSettings),
+    [settings, initialSettings],
+  );
 
   const handleSave = useCallback(() => {
     const formData = new FormData();
-    Object.keys(settings).forEach(key => {
+    Object.keys(settings).forEach((key) => {
       let value = settings[key];
-      if (typeof value === 'number' && isNaN(value)) value = 0;
-      if (value === "" && (key.includes('Size') || key.includes('Gap') || key.includes('Radius') || key.includes('Width') || key.includes('Padding'))) value = 0;
-      formData.append(key, value);
+      if (typeof value === "number" && Number.isNaN(value)) value = 0;
+      if (value === "" && (key.includes("Size") || key.includes("Gap") || key.includes("Radius") || key.includes("Width") || key.includes("Padding"))) value = 0;
+      formData.append(key, value ?? "");
     });
+
     submit(formData, { method: "post" });
-    setShowBanner(true);
-    setTimeout(() => setShowBanner(false), 3000);
   }, [settings, submit]);
+
+  const themeEditorUrl = buildThemeEditorUrl(shop, apiKey);
+  const appStatusLabel = settings.appEnabled ? "Active" : "Disabled";
+  const cardStatusLabel = settings.showOnProductCards ? "Enabled" : "Hidden";
+  const activeSurfaces = [
+    settings.applyToCollection ? "Collections" : null,
+    settings.applyToSearch ? "Search" : null,
+    settings.applyToHome ? "Home" : null,
+  ].filter(Boolean);
+  const productCardHelpText = settings.showOnProductCards
+    ? activeSurfaces.length > 0 ? activeSurfaces.join(", ") : "No card surfaces selected"
+    : "Product card options are hidden";
+  const optionLabelPreview = (settings.selectOptionLabel || "{option}").replace("{option}", "Color");
 
   const tabs = useMemo(() => [
     {
       id: "general",
       content: (
-        <InlineStack gap="200" align="start" blockAlign="center">
+        <InlineStack gap="200" blockAlign="center">
           <Icon source={SettingsIcon} />
           <span>General</span>
         </InlineStack>
@@ -164,29 +279,29 @@ export default function SettingsPage() {
       panelID: "general-panel",
     },
     {
-      id: "appearance",
+      id: "storefront",
       content: (
-        <InlineStack gap="200" align="start" blockAlign="center">
+        <InlineStack gap="200" blockAlign="center">
           <Icon source={PaintBrushFlatIcon} />
           <span>Storefront</span>
         </InlineStack>
       ),
-      panelID: "appearance-panel",
+      panelID: "storefront-panel",
     },
     {
-      id: "theme-setup",
+      id: "theme",
       content: (
-        <InlineStack gap="200" align="start" blockAlign="center">
-          <Icon source={ExternalIcon} />
-          <span>Theme Setup</span>
+        <InlineStack gap="200" blockAlign="center">
+          <Icon source={ThemeEditIcon} />
+          <span>Theme setup</span>
         </InlineStack>
       ),
-      panelID: "theme-setup-panel",
+      panelID: "theme-panel",
     },
     {
       id: "translation",
       content: (
-        <InlineStack gap="200" align="start" blockAlign="center">
+        <InlineStack gap="200" blockAlign="center">
           <Icon source={LanguageIcon} />
           <span>Translation</span>
         </InlineStack>
@@ -197,283 +312,447 @@ export default function SettingsPage() {
 
   return (
     <Page fullWidth>
-      <TitleBar title="App Settings" />
-      
-      <BlockStack gap="600">
-        {/* Header Hero Section */}
-        <Box 
-          padding="600" 
-          background="bg-surface-secondary" 
-          borderRadius="300" 
-          borderWidth="025" 
-          borderColor="border-subdued"
-          shadow="sm"
-        >
-          <InlineStack align="space-between" blockAlign="center">
-            <InlineStack gap="300" blockAlign="center">
-              <Box padding="200" background="bg-fill-brand-selected" borderRadius="200">
-                <Icon source={SettingsIcon} tone="brand" />
-              </Box>
-              <BlockStack gap="0">
-                <Text variant="headingXl" as="h1">Configurations</Text>
-                <Text variant="bodyMd" tone="subdued">Manage your preferences, display logic, and theme integration.</Text>
+      <TitleBar title="Settings" />
+
+      <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "18px 0 40px" }}>
+        <BlockStack gap="500">
+          <div style={{
+            backgroundColor: "#FFFFFF",
+            border: "1px solid #E3E3E3",
+            borderRadius: "14px",
+            padding: "24px",
+            boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+          }}>
+            <InlineStack align="space-between" blockAlign="start" gap="500">
+              <BlockStack gap="300">
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap", alignSelf: "flex-start" }}>
+                  <Badge tone={settings.appEnabled ? "success" : "critical"}>{appStatusLabel}</Badge>
+                  {hasChanges && <Badge tone="attention">Unsaved changes</Badge>}
+                </div>
+                <BlockStack gap="150">
+                  <Text variant="heading2xl" as="h1">Settings</Text>
+                  <Text variant="bodyMd" tone="subdued">
+                    Manage storefront behavior, app visibility, theme setup, and customer-facing labels from one place.
+                  </Text>
+                </BlockStack>
               </BlockStack>
+              <InlineStack gap="300" wrap={false}>
+                <Button icon={ExternalIcon} url={themeEditorUrl} external>Theme editor</Button>
+                <Button
+                  variant="primary"
+                  icon={SaveIcon}
+                  onClick={handleSave}
+                  loading={isSaving}
+                  disabled={!hasChanges && !isSaving}
+                >
+                  Save changes
+                </Button>
+              </InlineStack>
             </InlineStack>
-            <InlineStack gap="300">
-              <Button 
-                variant="primary" 
-                size="large" 
-                onClick={handleSave} 
-                loading={isLoading} 
-                icon={CheckCircleIcon}
-              >
-                Save All Changes
-              </Button>
-            </InlineStack>
-          </InlineStack>
-        </Box>
+          </div>
 
-        {showBanner && (
-          <Banner tone="success" onDismiss={() => setShowBanner(false)}>
-            <p>Settings have been updated successfully.</p>
-          </Banner>
-        )}
+          {showBanner && (
+            <Banner tone="success" onDismiss={() => setShowBanner(false)}>
+              <p>Settings have been updated successfully.</p>
+            </Banner>
+          )}
 
-        <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab}>
-          <Box paddingBlockStart="400" paddingBlockEnd="800">
-            
-            {/* TAB 0: GENERAL */}
-            {selectedTab === 0 && (
-              <BlockStack gap="600">
-                <Card>
-                  <InlineStack align="space-between" blockAlign="center">
-                    <BlockStack gap="100">
-                      <Text variant="headingMd" as="h3">App Visibility</Text>
-                      <Text variant="bodyMd" tone="subdued">Control if the linked products are visible on your storefront.</Text>
+          <InlineGrid columns={{ xs: 1, sm: 2, md: 3 }} gap="400">
+            <MetricCard
+              icon={StoreOnlineIcon}
+              label="App visibility"
+              value={appStatusLabel}
+              helpText={settings.appEnabled ? "Storefront rendering is allowed" : "Storefront output is disabled"}
+              tone={settings.appEnabled ? "#008060" : "#D82C0D"}
+              background={settings.appEnabled ? "#EAF8F0" : "#FFF1F0"}
+            />
+            <MetricCard
+              icon={DesktopIcon}
+              label="Product cards"
+              value={cardStatusLabel}
+              helpText={productCardHelpText}
+              tone={settings.showOnProductCards ? "#2C6ECB" : "#8A6116"}
+            />
+            <MetricCard
+              icon={LanguageIcon}
+              label="Storefront label"
+              value={optionLabelPreview}
+              helpText="Preview using Color as the option name"
+              tone="#8A6116"
+            />
+          </InlineGrid>
+
+          <Card padding="0">
+            <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab}>
+              <div style={{ padding: "20px" }}>
+                {selectedTab === 0 && (
+                  <InlineGrid columns={{ xs: 1, md: "2fr 1fr" }} gap="500">
+                    <BlockStack gap="500">
+                      <Card padding="500">
+                        <BlockStack gap="400">
+                          <SectionHeader
+                            icon={AppExtensionIcon}
+                            title="App visibility"
+                            description="Control whether linked product options can render on your storefront."
+                            badge={<Badge tone={settings.appEnabled ? "success" : "critical"}>{appStatusLabel}</Badge>}
+                          />
+                          <Divider />
+                          <ToggleRow
+                            title={settings.appEnabled ? "App is active" : "App is disabled"}
+                            description="When disabled, the app keeps admin data intact but stops storefront rendering."
+                            checked={settings.appEnabled}
+                            onChange={(value) => handleSettingChange("appEnabled", value)}
+                          />
+                        </BlockStack>
+                      </Card>
+
+                      <Card padding="500">
+                        <BlockStack gap="400">
+                          <SectionHeader
+                            icon={MagicIcon}
+                            title="Automation and cleanup"
+                            description="Keep product groups clean when product availability changes."
+                          />
+                          <Divider />
+                          <InlineGrid columns={{ xs: 1, sm: 2 }} gap="300">
+                            <ToggleRow
+                              title="Hide inaccessible products"
+                              description="Hide draft, archived, or unpublished products from storefront options."
+                              checked={settings.hideInaccessible}
+                              onChange={(value) => handleSettingChange("hideInaccessible", value)}
+                            />
+                            <ToggleRow
+                              title="Remove archived products"
+                              description="Clean archived products out of groups when syncing."
+                              checked={settings.removeArchived}
+                              onChange={(value) => handleSettingChange("removeArchived", value)}
+                            />
+                            <ToggleRow
+                              title="Auto-suggest groups"
+                              description="Suggest product groupings based on product title patterns."
+                              checked={settings.enableAutosuggestion}
+                              onChange={(value) => handleSettingChange("enableAutosuggestion", value)}
+                            />
+                          </InlineGrid>
+                        </BlockStack>
+                      </Card>
+
+                      <Card padding="500">
+                        <BlockStack gap="400">
+                          <SectionHeader
+                            icon={EmailIcon}
+                            title="Communication"
+                            description="Choose where operational notifications should be sent."
+                          />
+                          <Divider />
+                          <TextField
+                            label="Notification email"
+                            value={settings.notificationEmail || ""}
+                            onChange={(value) => handleSettingChange("notificationEmail", value)}
+                            placeholder="admin@yourstore.com"
+                            autoComplete="email"
+                            helpText="Used for sync reports and critical alerts."
+                          />
+                        </BlockStack>
+                      </Card>
                     </BlockStack>
-                    <InlineStack gap="300" blockAlign="center">
-                      <Badge tone={settings.appEnabled ? "success" : "critical"} progress={settings.appEnabled ? "complete" : "incomplete"}>
-                        <InlineStack gap="100" blockAlign="center">
-                          <Icon source={settings.appEnabled ? CheckCircleIcon : XIcon} tone={settings.appEnabled ? "success" : "critical"} />
-                          <Text variant="bodySm" fontWeight="bold">
-                            {settings.appEnabled ? "ACTIVE" : "DISABLED"}
-                          </Text>
-                        </InlineStack>
-                      </Badge>
-                      <Button 
-                        variant="secondary" 
-                        onClick={() => handleSettingChange("appEnabled", !settings.appEnabled)}
-                        tone={settings.appEnabled ? "critical" : undefined}
-                      >
-                        {settings.appEnabled ? "Disable App" : "Activate App"}
-                      </Button>
-                    </InlineStack>
-                  </InlineStack>
-                </Card>
 
-                <InlineGrid columns={{ xs: 1, md: "2fr 1fr" }} gap="400">
-                  <BlockStack gap="400">
-                    <Card>
+                    <Card padding="500">
                       <BlockStack gap="400">
-                         <Text variant="headingMd" as="h3">Automation & Inventory</Text>
-                         <Divider />
-                         <Checkbox 
-                           label="Hide inaccessible products" 
-                           checked={settings.hideInaccessible} 
-                           onChange={(v) => handleSettingChange("hideInaccessible", v)} 
-                           helpText="Automatically hides draft, archived, or unpublished products from the store selection." 
-                         />
-                         <Checkbox 
-                           label="Remove archived products" 
-                           checked={settings.removeArchived} 
-                           onChange={(v) => handleSettingChange("removeArchived", v)} 
-                           helpText="Clean up your groups by removing products that have been archived in Shopify." 
-                         />
-                         <Checkbox 
-                           label="Auto-suggest groups (AI)" 
-                           checked={settings.enableAutosuggestion} 
-                           onChange={(v) => handleSettingChange("enableAutosuggestion", v)} 
-                           helpText="Use smart logic to suggest product groupings based on title patterns." 
-                         />
+                        <IconBox icon={SettingsIcon} tone="#2C6ECB" />
+                        <BlockStack gap="100">
+                          <Text variant="headingMd" as="h2">Settings sync</Text>
+                          <Text variant="bodyMd" tone="subdued">
+                            Saving this page writes shop-level metafields so the theme extension can read the latest storefront defaults.
+                          </Text>
+                        </BlockStack>
+                        <Divider />
+                        <BlockStack gap="200">
+                          <InlineStack align="space-between">
+                            <Text as="p" variant="bodySm" tone="subdued">Shop</Text>
+                            <Text as="p" variant="bodySm" fontWeight="semibold">{shop}</Text>
+                          </InlineStack>
+                          <InlineStack align="space-between">
+                            <Text as="p" variant="bodySm" tone="subdued">Theme setup</Text>
+                            <Badge tone="info">Manual review</Badge>
+                          </InlineStack>
+                          <InlineStack align="space-between">
+                            <Text as="p" variant="bodySm" tone="subdued">Changes</Text>
+                            <Badge tone={hasChanges ? "attention" : "success"}>{hasChanges ? "Pending" : "Saved"}</Badge>
+                          </InlineStack>
+                        </BlockStack>
+                      </BlockStack>
+                    </Card>
+                  </InlineGrid>
+                )}
+
+                {selectedTab === 1 && (
+                  <BlockStack gap="500">
+                    <Card padding="500">
+                      <BlockStack gap="400">
+                        <SectionHeader
+                          icon={DesktopIcon}
+                          title="Product card display"
+                          description="Choose where linked options appear in product grids."
+                          badge={<Badge tone={settings.showOnProductCards ? "success" : "attention"}>{cardStatusLabel}</Badge>}
+                        />
+                        <Divider />
+                        <ToggleRow
+                          title="Show options on product cards"
+                          description="Display linked product options in collection grids, search results, and selected home sections."
+                          checked={settings.showOnProductCards}
+                          onChange={(value) => handleSettingChange("showOnProductCards", value)}
+                        />
+                        {settings.showOnProductCards && (
+                          <div style={{
+                            border: "1px solid #E3E3E3",
+                            borderRadius: "12px",
+                            padding: "16px",
+                            backgroundColor: "#FAFAFA",
+                          }}>
+                            <BlockStack gap="300">
+                              <Text as="p" variant="bodyMd" fontWeight="semibold">Card surfaces</Text>
+                              <InlineGrid columns={{ xs: 1, sm: 3 }} gap="300">
+                                <Checkbox label="Collection pages" checked={Boolean(settings.applyToCollection)} onChange={(value) => handleSettingChange("applyToCollection", value)} />
+                                <Checkbox label="Search results" checked={Boolean(settings.applyToSearch)} onChange={(value) => handleSettingChange("applyToSearch", value)} />
+                                <Checkbox label="Home page sections" checked={Boolean(settings.applyToHome)} onChange={(value) => handleSettingChange("applyToHome", value)} />
+                              </InlineGrid>
+                            </BlockStack>
+                          </div>
+                        )}
                       </BlockStack>
                     </Card>
 
-                    <Card>
-                       <BlockStack gap="400">
-                          <InlineStack gap="200" align="start" blockAlign="center">
-                            <Box background="bg-fill-info-secondary" padding="100" borderRadius="100">
-                                <Icon source={EmailIcon} tone="info" />
-                            </Box>
-                            <Text variant="headingMd" as="h3">Communication</Text>
-                          </InlineStack>
-                          <TextField 
-                            label="Notification Email" 
-                            value={settings.notificationEmail || ""} 
-                            onChange={(v) => handleSettingChange("notificationEmail", v)} 
-                            placeholder="admin@yourstore.com" 
-                            autoComplete="email" 
-                            helpText="We will send sync reports and critical alerts to this address."
+                    <InlineGrid columns={{ xs: 1, md: 2 }} gap="500">
+                      <Card padding="500">
+                        <BlockStack gap="400">
+                          <SectionHeader
+                            icon={PaintBrushFlatIcon}
+                            title="Global fallback style"
+                            description="Used when a specific style setting is missing from a group or template."
                           />
-                       </BlockStack>
+                          <Divider />
+                          <InlineGrid columns={{ xs: 1, sm: 2 }} gap="300">
+                            <NumberField label="Swatch size" value={settings.swatchSize} suffix="px" onChange={(value) => handleSettingChange("swatchSize", value)} />
+                            <NumberField label="Items gap" value={settings.itemsGap} suffix="px" onChange={(value) => handleSettingChange("itemsGap", value)} />
+                            <NumberField label="Border radius" value={settings.borderRadius} suffix="px" onChange={(value) => handleSettingChange("borderRadius", value)} />
+                            <NumberField label="Border width" value={settings.borderWidth} suffix="px" onChange={(value) => handleSettingChange("borderWidth", value)} />
+                            <ColorField label="Border color" value={settings.borderColor} onChange={(value) => handleSettingChange("borderColor", value)} />
+                            <ColorField label="Selected border" value={settings.selectedBorderColor} onChange={(value) => handleSettingChange("selectedBorderColor", value)} />
+                          </InlineGrid>
+                        </BlockStack>
+                      </Card>
+
+                      <Card padding="500">
+                        <BlockStack gap="400">
+                          <SectionHeader
+                            icon={StoreOnlineIcon}
+                            title="Button fallback style"
+                            description="Fallback values for button-like option styles."
+                          />
+                          <Divider />
+                          <InlineGrid columns={{ xs: 1, sm: 2 }} gap="300">
+                            <NumberField label="Padding X" value={settings.blockPaddingX} suffix="px" onChange={(value) => handleSettingChange("blockPaddingX", value)} />
+                            <NumberField label="Padding Y" value={settings.blockPaddingY} suffix="px" onChange={(value) => handleSettingChange("blockPaddingY", value)} />
+                            <NumberField label="Font size" value={settings.blockFontSize} suffix="px" onChange={(value) => handleSettingChange("blockFontSize", value)} />
+                            <ColorField label="Background" value={settings.blockBgColor} onChange={(value) => handleSettingChange("blockBgColor", value)} />
+                            <ColorField label="Text color" value={settings.blockTextColor} onChange={(value) => handleSettingChange("blockTextColor", value)} />
+                            <ColorField label="Selected background" value={settings.selectedBgColor} onChange={(value) => handleSettingChange("selectedBgColor", value)} />
+                            <ColorField label="Selected text" value={settings.selectedTextColor} onChange={(value) => handleSettingChange("selectedTextColor", value)} />
+                          </InlineGrid>
+                        </BlockStack>
+                      </Card>
+                    </InlineGrid>
+
+                    <Card padding="500">
+                      <BlockStack gap="400">
+                        <SectionHeader
+                          icon={CheckCircleIcon}
+                          title="Product page behavior"
+                          description="Control navigation behavior when customers switch linked products."
+                        />
+                        <Divider />
+                        <InlineGrid columns={{ xs: 1, sm: 3 }} gap="300">
+                          <ToggleRow
+                            title="Show option name"
+                            description="Show the option label above storefront options."
+                            checked={settings.showOptionName}
+                            onChange={(value) => handleSettingChange("showOptionName", value)}
+                          />
+                          <ToggleRow
+                            title="Seamless switching"
+                            description="Switch linked products without a full page refresh when supported."
+                            checked={settings.seamlessSwitching}
+                            onChange={(value) => handleSettingChange("seamlessSwitching", value)}
+                          />
+                          <ToggleRow
+                            title="Auto scroll"
+                            description="Scroll back to product details after switching."
+                            checked={settings.autoScroll}
+                            onChange={(value) => handleSettingChange("autoScroll", value)}
+                          />
+                        </InlineGrid>
+                      </BlockStack>
+                    </Card>
+
+                    <Card padding="500">
+                      <BlockStack gap="400">
+                        <SectionHeader
+                          icon={CodeIcon}
+                          title="Custom CSS"
+                          description="Inject CSS for advanced storefront overrides."
+                        />
+                        <Divider />
+                        <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+                          <TextField
+                            label="Product page CSS"
+                            value={settings.customCssProduct || ""}
+                            onChange={(value) => handleSettingChange("customCssProduct", value)}
+                            multiline={6}
+                            autoComplete="off"
+                            placeholder=".linked-product-options { }"
+                          />
+                          <TextField
+                            label="Collection page CSS"
+                            value={settings.customCssCollection || ""}
+                            onChange={(value) => handleSettingChange("customCssCollection", value)}
+                            multiline={6}
+                            autoComplete="off"
+                            placeholder=".linked-product-card-swatches { }"
+                          />
+                        </InlineGrid>
+                      </BlockStack>
                     </Card>
                   </BlockStack>
+                )}
 
-                  <Card background="bg-surface-secondary">
-                    <BlockStack gap="400">
-                       <Box padding="200" background="bg-fill-info-selected" borderRadius="200" width="40px">
-                          <Icon source={InfoIcon} tone="info" />
-                       </Box>
-                       <Text variant="headingMd">Need Help?</Text>
-                       <Text variant="bodyMd" tone="subdued">
-                         Setting up linked products helps increase conversion rates by showing available variations directly on collections.
-                       </Text>
-                       <Button url="https://help.example.com" variant="tertiary" icon={ExternalIcon} target="_blank">Documentation</Button>
-                    </BlockStack>
-                  </Card>
-                </InlineGrid>
-              </BlockStack>
-            )}
+                {selectedTab === 2 && (
+                  <InlineGrid columns={{ xs: 1, md: "2fr 1fr" }} gap="500">
+                    <Card padding="500">
+                      <BlockStack gap="400">
+                        <SectionHeader
+                          icon={ThemeEditIcon}
+                          title="Theme setup"
+                          description="Enable the app embed in Shopify's theme editor so storefront assets can load."
+                          badge={<Badge tone="info">One-time setup</Badge>}
+                        />
+                        <Divider />
+                        <div style={{
+                          border: "1px solid #E3E3E3",
+                          borderRadius: "12px",
+                          padding: "18px",
+                          backgroundColor: "#FAFAFA",
+                        }}>
+                          <InlineStack align="space-between" blockAlign="center" gap="400">
+                            <InlineStack gap="300" blockAlign="center" wrap={false}>
+                              <IconBox icon={AppExtensionIcon} tone="#008060" background="#EAF8F0" />
+                              <BlockStack gap="100">
+                                <Text as="p" variant="bodyMd" fontWeight="semibold">Linked Product Variants app embed</Text>
+                                <Text as="p" variant="bodySm" tone="subdued">Open the theme editor and turn on the app embed for your active theme.</Text>
+                              </BlockStack>
+                            </InlineStack>
+                            <Button variant="primary" icon={ExternalIcon} url={themeEditorUrl} external>Open theme editor</Button>
+                          </InlineStack>
+                        </div>
+                        <Banner tone="info" icon={MagicIcon}>
+                          <p>For Online Store 2.0 themes, you can also add the app block on product templates when you need exact placement.</p>
+                        </Banner>
+                      </BlockStack>
+                    </Card>
 
-            {/* TAB 1: STOREFRONT */}
-            {selectedTab === 1 && (
-              <BlockStack gap="500">
-                <Card>
-                  <BlockStack gap="400">
-                    <Text variant="headingMd" as="h2">Product Card Display</Text>
-                    <Text variant="bodyMd" tone="subdued">Choose where the linked options appear across your storefront.</Text>
-                    <Divider />
-                    <Checkbox
-                      label="Show options on product cards in collections and grids"
-                      checked={settings.showOnProductCards}
-                      onChange={(value) => handleSettingChange("showOnProductCards", value)}
-                    />
-                    
-                    {settings.showOnProductCards && (
-                      <Box paddingInlineStart="600" padding="400" background="bg-surface-secondary" borderRadius="200">
+                    <Card padding="500">
+                      <BlockStack gap="400">
+                        <IconBox icon={CheckCircleIcon} tone="#008060" background="#EAF8F0" />
+                        <BlockStack gap="100">
+                          <Text variant="headingMd" as="h2">Checklist</Text>
+                          <Text variant="bodyMd" tone="subdued">Use this quick review after editing your theme.</Text>
+                        </BlockStack>
+                        <Divider />
                         <BlockStack gap="300">
-                          <Text variant="bodyMd" fontWeight="semibold">Display on these pages:</Text>
-                          <InlineStack gap="600">
-                            <Checkbox label="Collection Pages" checked={settings.applyToCollection} onChange={(v) => handleSettingChange("applyToCollection", v)} />
-                            <Checkbox label="Search Results" checked={settings.applyToSearch} onChange={(v) => handleSettingChange("applyToSearch", v)} />
-                            <Checkbox label="Home Page Sections" checked={settings.applyToHome} onChange={(v) => handleSettingChange("applyToHome", v)} />
+                          <InlineStack gap="200" blockAlign="center" wrap={false}>
+                            <Icon source={CheckCircleIcon} tone="success" />
+                            <Text as="p">App embed is enabled</Text>
+                          </InlineStack>
+                          <InlineStack gap="200" blockAlign="center" wrap={false}>
+                            <Icon source={CheckCircleIcon} tone="success" />
+                            <Text as="p">Product template shows options</Text>
+                          </InlineStack>
+                          <InlineStack gap="200" blockAlign="center" wrap={false}>
+                            <Icon source={CheckCircleIcon} tone="success" />
+                            <Text as="p">Collection cards match your product card settings</Text>
                           </InlineStack>
                         </BlockStack>
-                      </Box>
-                    )}
+                      </BlockStack>
+                    </Card>
+                  </InlineGrid>
+                )}
 
-                    {/* Hidden legacy multi-option setting */}
-                  </BlockStack>
-                </Card>
-
-                <Card title="Styling & Behavior">
-                  <BlockStack gap="400">
-                    <Text variant="headingMd" as="h2">Behaviors</Text>
-                    <Divider />
-                    <InlineGrid columns={{ xs: 1, sm: 2 }} gap="400">
-                        <Checkbox 
-                          label="Seamless Switching" 
-                          checked={settings.seamlessSwitching} 
-                          onChange={(v) => handleSettingChange("seamlessSwitching", v)} 
-                          helpText="Load variants without refreshing the entire page."
+                {selectedTab === 3 && (
+                  <InlineGrid columns={{ xs: 1, md: "2fr 1fr" }} gap="500">
+                    <Card padding="500">
+                      <BlockStack gap="400">
+                        <SectionHeader
+                          icon={LanguageIcon}
+                          title="Storefront labels"
+                          description="Customize customer-facing text in your storefront options."
                         />
-                        <Checkbox 
-                          label="Auto Scroll to Top" 
-                          checked={settings.autoScroll} 
-                          onChange={(v) => handleSettingChange("autoScroll", v)} 
-                          helpText="Scroll back to product details when switching variants."
+                        <Divider />
+                        <TextField
+                          label="Select option label"
+                          value={settings.selectOptionLabel || ""}
+                          onChange={(value) => handleSettingChange("selectOptionLabel", value)}
+                          helpText="Use {option} as a placeholder. Example: Choose {option}."
+                          autoComplete="off"
                         />
-                    </InlineGrid>
-                  </BlockStack>
-                </Card>
+                        <InlineGrid columns={{ xs: 1, sm: 2 }} gap="400">
+                          <TextField
+                            label="Sold out text"
+                            value={settings.soldOutLabel || ""}
+                            onChange={(value) => handleSettingChange("soldOutLabel", value)}
+                            autoComplete="off"
+                          />
+                          <TextField
+                            label="Unavailable text"
+                            value={settings.unavailableLabel || ""}
+                            onChange={(value) => handleSettingChange("unavailableLabel", value)}
+                            autoComplete="off"
+                          />
+                        </InlineGrid>
+                      </BlockStack>
+                    </Card>
 
-                <Card title="Advanced Aesthetics">
-                  <BlockStack gap="400">
-                    <Text variant="headingMd" as="h2">Custom CSS</Text>
-                    <Text variant="bodyMd" tone="subdued">Override default styles by injecting your own CSS blocks.</Text>
-                    <Divider />
-                    <TextField 
-                      label="Product Page CSS" 
-                      value={settings.customCssProduct} 
-                      onChange={(v) => handleSettingChange("customCssProduct", v)} 
-                      multiline={4} 
-                      autoComplete="off" 
-                      placeholder=".variant-selector { ... }"
-                    />
-                    <TextField 
-                      label="Collection Page CSS" 
-                      value={settings.customCssCollection} 
-                      onChange={(v) => handleSettingChange("customCssCollection", v)} 
-                      multiline={4} 
-                      autoComplete="off" 
-                      placeholder=".card-swatch { ... }"
-                    />
-                  </BlockStack>
-                </Card>
-              </BlockStack>
-            )}
+                    <Card padding="500">
+                      <BlockStack gap="400">
+                        <SectionHeader
+                          icon={StoreOnlineIcon}
+                          title="Preview"
+                          description="Example customer-facing copy."
+                        />
+                        <Divider />
+                        <BlockStack gap="300">
+                          <div style={{ border: "1px solid #E3E3E3", borderRadius: "12px", padding: "14px", backgroundColor: "#FAFAFA" }}>
+                            <Text as="p" variant="bodyMd" fontWeight="semibold">{optionLabelPreview}</Text>
+                          </div>
+                          <div style={{ border: "1px solid #E3E3E3", borderRadius: "12px", padding: "14px", backgroundColor: "#FAFAFA" }}>
+                            <Text as="p" variant="bodyMd">{settings.soldOutLabel || "Sold out"}</Text>
+                          </div>
+                          <div style={{ border: "1px solid #E3E3E3", borderRadius: "12px", padding: "14px", backgroundColor: "#FAFAFA" }}>
+                            <Text as="p" variant="bodyMd">{settings.unavailableLabel || "Unavailable"}</Text>
+                          </div>
+                        </BlockStack>
+                      </BlockStack>
+                    </Card>
+                  </InlineGrid>
+                )}
+              </div>
+            </Tabs>
+          </Card>
 
-            {/* TAB 2: THEME SETUP */}
-            {selectedTab === 2 && (
-              <BlockStack gap="500">
-                <Card>
-                   <EmptyState
-                     heading="Enable App in Theme Editor"
-                     action={{
-                       content: 'Open Theme Editor',
-                       url: buildThemeEditorUrl(shop, apiKey),
-                       external: true,
-                     }}
-                     image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-                   >
-                     <p>You must enable the <b>App Embed</b> to allow the variant swatches to render on your storefront. This is a one-time setup required by Shopify.</p>
-                   </EmptyState>
-                </Card>
-                
-                <Banner tone="info" icon={MagicIcon}>
-                  <p><b>Pro Tip:</b> Use the "App Block" feature in Online Store 2.0 themes to place the swatches exactly where you want on the product page.</p>
-                </Banner>
-              </BlockStack>
-            )}
-
-            {/* TAB 3: TRANSLATION */}
-            {selectedTab === 3 && (
-              <BlockStack gap="500">
-                <Card>
-                  <BlockStack gap="400">
-                    <Text variant="headingMd" as="h2">Storefront Labels</Text>
-                    <Text variant="bodyMd" tone="subdued">Customize how text appears to your customers.</Text>
-                    <Divider />
-                    <TextField 
-                      label="Select Option Label" 
-                      value={settings.selectOptionLabel} 
-                      onChange={(v) => handleSettingChange("selectOptionLabel", v)} 
-                      helpText="Use {option} as a placeholder (e.g., 'View more {option}')." 
-                      autoComplete="off" 
-                    />
-                    <Grid>
-                       <Grid.Cell columnSpan={{ xs: 6, md: 3 }}>
-                         <TextField label="Sold Out Text" value={settings.soldOutLabel} onChange={(v) => handleSettingChange("soldOutLabel", v)} autoComplete="off" />
-                       </Grid.Cell>
-                       <Grid.Cell columnSpan={{ xs: 6, md: 3 }}>
-                         <TextField label="Unavailable Text" value={settings.unavailableLabel} onChange={(v) => handleSettingChange("unavailableLabel", v)} autoComplete="off" />
-                       </Grid.Cell>
-                    </Grid>
-                  </BlockStack>
-                </Card>
-              </BlockStack>
-            )}
-
-          </Box>
-        </Tabs>
-
-        <Divider />
-        
-        <Box padding="400">
           <InlineStack align="center">
-            <Text variant="bodySm" tone="subdued">Variants Linked Products v2.0 • Made with ❤️ for your store</Text>
+            <Text variant="bodySm" tone="subdued">Linkify: Product Variants settings</Text>
           </InlineStack>
-        </Box>
-      </BlockStack>
+        </BlockStack>
+      </div>
     </Page>
   );
 }
