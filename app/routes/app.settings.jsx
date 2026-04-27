@@ -22,7 +22,6 @@ import {
   CheckCircleIcon,
   CodeIcon,
   DesktopIcon,
-  EmailIcon,
   ExternalIcon,
   LanguageIcon,
   MagicIcon,
@@ -79,12 +78,6 @@ export const action = async ({ request }) => {
     applyToCollection: data.applyToCollection === "true",
     applyToSearch: data.applyToSearch === "true",
     applyToHome: data.applyToHome === "true",
-    hideInaccessible: data.hideInaccessible === "true",
-    removeArchived: data.removeArchived === "true",
-    seamlessSwitching: data.seamlessSwitching === "true",
-    autoScroll: data.autoScroll === "true",
-    enableAutosuggestion: data.enableAutosuggestion === "true",
-    notificationEmail: data.notificationEmail || null,
     selectOptionLabel: data.selectOptionLabel || "{option}",
     soldOutLabel: data.soldOutLabel || "Sold out",
     unavailableLabel: data.unavailableLabel || "Unavailable",
@@ -371,49 +364,17 @@ export default function SettingsPage() {
                       <Card padding="500">
                         <BlockStack gap="400">
                           <SectionHeader
-                            icon={MagicIcon}
-                            title="Automation and cleanup"
-                            description="Keep product groups clean when product availability changes."
-                          />
-                          <Divider />
-                          <InlineGrid columns={{ xs: 1, sm: 2 }} gap="300">
-                            <ToggleRow
-                              title="Hide inaccessible products"
-                              description="Hide draft, archived, or unpublished products from storefront options."
-                              checked={settings.hideInaccessible}
-                              onChange={(value) => handleSettingChange("hideInaccessible", value)}
-                            />
-                            <ToggleRow
-                              title="Remove archived products"
-                              description="Clean archived products out of groups when syncing."
-                              checked={settings.removeArchived}
-                              onChange={(value) => handleSettingChange("removeArchived", value)}
-                            />
-                            <ToggleRow
-                              title="Auto-suggest groups"
-                              description="Suggest product groupings based on product title patterns."
-                              checked={settings.enableAutosuggestion}
-                              onChange={(value) => handleSettingChange("enableAutosuggestion", value)}
-                            />
-                          </InlineGrid>
-                        </BlockStack>
-                      </Card>
-
-                      <Card padding="500">
-                        <BlockStack gap="400">
-                          <SectionHeader
-                            icon={EmailIcon}
-                            title="Communication"
-                            description="Choose where operational notifications should be sent."
+                            icon={PaintBrushFlatIcon}
+                            title="Storefront defaults"
+                            description="Set the default option wording used when new groups are created."
                           />
                           <Divider />
                           <TextField
-                            label="Notification email"
-                            value={settings.notificationEmail || ""}
-                            onChange={(value) => handleSettingChange("notificationEmail", value)}
-                            placeholder="admin@yourstore.com"
-                            autoComplete="email"
-                            helpText="Used for sync reports and critical alerts."
+                            label="Default option label"
+                            value={settings.selectOptionLabel || ""}
+                            onChange={(value) => handleSettingChange("selectOptionLabel", value)}
+                            helpText="Use {option} as a placeholder. Example: Choose {option}."
+                            autoComplete="off"
                           />
                         </BlockStack>
                       </Card>
@@ -490,29 +451,15 @@ export default function SettingsPage() {
                         <SectionHeader
                           icon={CheckCircleIcon}
                           title="Product page behavior"
-                          description="Control navigation behavior when customers switch linked products."
+                          description="Control the label shown above product-page linked options."
                         />
                         <Divider />
-                        <InlineGrid columns={{ xs: 1, sm: 3 }} gap="300">
-                          <ToggleRow
-                            title="Show option name"
-                            description="Show the option label above storefront options."
-                            checked={settings.showOptionName}
-                            onChange={(value) => handleSettingChange("showOptionName", value)}
-                          />
-                          <ToggleRow
-                            title="Seamless switching"
-                            description="Switch linked products without a full page refresh when supported."
-                            checked={settings.seamlessSwitching}
-                            onChange={(value) => handleSettingChange("seamlessSwitching", value)}
-                          />
-                          <ToggleRow
-                            title="Auto scroll"
-                            description="Scroll back to product details after switching."
-                            checked={settings.autoScroll}
-                            onChange={(value) => handleSettingChange("autoScroll", value)}
-                          />
-                        </InlineGrid>
+                        <ToggleRow
+                          title="Show option name"
+                          description="Show the option label and selected value above storefront options."
+                          checked={settings.showOptionName}
+                          onChange={(value) => handleSettingChange("showOptionName", value)}
+                        />
                       </BlockStack>
                     </Card>
 
@@ -618,13 +565,6 @@ export default function SettingsPage() {
                           description="Customize customer-facing text in your storefront options."
                         />
                         <Divider />
-                        <TextField
-                          label="Select option label"
-                          value={settings.selectOptionLabel || ""}
-                          onChange={(value) => handleSettingChange("selectOptionLabel", value)}
-                          helpText="Use {option} as a placeholder. Example: Choose {option}."
-                          autoComplete="off"
-                        />
                         <InlineGrid columns={{ xs: 1, sm: 2 }} gap="400">
                           <TextField
                             label="Sold out text"

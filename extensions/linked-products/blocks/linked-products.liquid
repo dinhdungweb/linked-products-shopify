@@ -111,7 +111,9 @@
   {%- assign lp_max_swatches = active_style_settings.layout.maxSwatches | default: 100 -%}
 
   {%- assign lp_show_label = true -%}
-  {%- if active_style_settings.label.show == false -%}
+  {%- if app_settings.showOptionName == false -%}
+    {%- assign lp_show_label = false -%}
+  {%- elsif active_style_settings.label.show == false -%}
     {%- assign lp_show_label = false -%}
   {%- endif -%}
 
