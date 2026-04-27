@@ -8,12 +8,8 @@ import {
   InlineStack,
   Spinner,
   Text,
-  TextField,
 } from "@shopify/polaris";
 import { ImportIcon, NoteIcon } from "@shopify/polaris-icons";
-
-const CSV_HEADER = "Group Name,Option Name,Selector Style,Card Style,Status,Product Handles";
-const CSV_EXAMPLE = "Summer Tees,Color,image_swatch,image_swatch_card,active,red-shirt,blue-shirt,green-shirt";
 
 function formatFileSize(size = 0) {
   if (size < 1024) return `${size} B`;
@@ -24,46 +20,65 @@ function formatFileSize(size = 0) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function getLineCount(csvData) {
-  return csvData
+function getDataLines(csvData) {
+  const lines = (csvData || "")
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter(Boolean).length;
+    .filter(Boolean);
+
+  if (lines.length === 0) return [];
+
+  const hasHeader = lines[0].toLowerCase().includes("group name") ||
+    lines[0].toLowerCase().includes("option name");
+
+  return hasHeader ? lines.slice(1) : lines;
 }
 
-function CodeSample({ label, children }) {
-  return (
-    <BlockStack gap="150">
-      <Text as="p" variant="bodySm" tone="subdued">
-        {label}
-      </Text>
-      <code style={{
-        display: "block",
-        padding: "10px 12px",
-        borderRadius: "8px",
-        backgroundColor: "#FFFFFF",
-        border: "1px solid #E3E3E3",
-        color: "#202223",
-        fontSize: "12px",
-        lineHeight: "18px",
-        whiteSpace: "pre-wrap",
-        wordBreak: "break-word",
-      }}>
-        {children}
-      </code>
-    </BlockStack>
-  );
+function buildPreviewRows(csvData) {
+  const lines = (csvData || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) return [];
+
+  const hasHeader = lines[0].toLowerCase().includes("group name") ||
+    lines[0].toLowerCase().includes("option name");
+  const dataLines = hasHeader ? lines.slice(1) : lines;
+
+  return dataLines.slice(0, 5).map((line, index) => {
+    const parts = line.split(",").map((part) => part.trim()).filter(Boolean);
+
+    if (hasHeader) {
+      return {
+        id: `${index}-${line}`,
+        groupName: parts[0] || "Untitled Group",
+        optionName: parts[1] || "Color",
+        status: parts[4] || "active",
+        handles: parts.slice(5),
+      };
+    }
+
+    return {
+      id: `${index}-${line}`,
+      groupName: parts[0] || "Untitled Group",
+      optionName: "Color",
+      status: "active",
+      handles: parts.slice(1),
+    };
+  });
 }
 
 export function ImportCsvModalContent({
   isImporting,
   file,
   csvData,
-  onCsvDataChange,
   onDrop,
   onFileRemove,
 }) {
-  const lineCount = getLineCount(csvData || "");
+  const dataLines = getDataLines(csvData);
+  const previewRows = buildPreviewRows(csvData);
+  const hiddenRows = Math.max(0, dataLines.length - previewRows.length);
 
   if (isImporting) {
     return (
@@ -82,46 +97,9 @@ export function ImportCsvModalContent({
   }
 
   return (
-    <BlockStack gap="500">
-      <div style={{
-        border: "1px solid #DDE3EA",
-        borderRadius: "12px",
-        backgroundColor: "#F7FAFC",
-        padding: "16px",
-      }}>
-        <BlockStack gap="350">
-          <InlineStack align="space-between" blockAlign="start" gap="300">
-            <BlockStack gap="100">
-              <Text as="h3" variant="headingSm">CSV template</Text>
-              <Text as="p" variant="bodySm" tone="subdued">
-                One row creates one group. Use Shopify product handles, not product titles.
-              </Text>
-            </BlockStack>
-            <Badge tone="info">2+ handles required</Badge>
-          </InlineStack>
-
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "12px",
-          }}>
-            <CodeSample label="Header row">{CSV_HEADER}</CodeSample>
-            <CodeSample label="Example row">{CSV_EXAMPLE}</CodeSample>
-          </div>
-        </BlockStack>
-      </div>
-
-      <BlockStack gap="250">
-        <InlineStack align="space-between" blockAlign="center">
-          <BlockStack gap="050">
-            <Text as="h3" variant="headingSm">Upload CSV file</Text>
-            <Text as="p" variant="bodySm" tone="subdued">
-              Choose an exported file or drag a CSV file into this area.
-            </Text>
-          </BlockStack>
-          {file && <Badge tone="success">File selected</Badge>}
-        </InlineStack>
-
+    <BlockStack gap="400">
+      <BlockStack gap="200">
+        <Text as="h3" variant="headingSm">CSV file</Text>
         <DropZone onDrop={onDrop} allowMultiple={false} accept=".csv, text/csv">
           {file ? (
             <Box padding="400">
@@ -143,7 +121,7 @@ export function ImportCsvModalContent({
                   <BlockStack gap="050">
                     <Text variant="bodyMd" fontWeight="semibold">{file.name}</Text>
                     <Text variant="bodySm" tone="subdued">
-                      {formatFileSize(file.size)} loaded into the editor below.
+                      {formatFileSize(file.size)} ready to import
                     </Text>
                   </BlockStack>
                 </InlineStack>
@@ -175,9 +153,9 @@ export function ImportCsvModalContent({
                   <Icon source={ImportIcon} tone="inherit" />
                 </div>
                 <BlockStack gap="100" align="center">
-                  <Text as="p" variant="bodyMd" fontWeight="semibold">Drop your CSV file here</Text>
+                  <Text as="p" variant="bodyMd" fontWeight="semibold">Drop CSV file here</Text>
                   <Text as="p" variant="bodySm" tone="subdued" alignment="center">
-                    Or click to browse. Only CSV files are supported.
+                    Or click to upload. Exported group CSV files are supported.
                   </Text>
                 </BlockStack>
               </BlockStack>
@@ -186,28 +164,76 @@ export function ImportCsvModalContent({
         </DropZone>
       </BlockStack>
 
-      <BlockStack gap="250">
+      <BlockStack gap="200">
         <InlineStack align="space-between" blockAlign="center">
-          <BlockStack gap="050">
-            <Text as="h3" variant="headingSm">CSV data</Text>
-            <Text as="p" variant="bodySm" tone="subdued">
-              Paste or edit rows before importing.
-            </Text>
-          </BlockStack>
-          <Badge tone={lineCount > 0 ? "success" : "subdued"}>
-            {lineCount} {lineCount === 1 ? "line" : "lines"}
+          <Text as="h3" variant="headingSm">Preview</Text>
+          <Badge tone={dataLines.length > 0 ? "success" : "subdued"}>
+            {dataLines.length} {dataLines.length === 1 ? "group" : "groups"}
           </Badge>
         </InlineStack>
-        <TextField
-          label="CSV data"
-          labelHidden
-          value={csvData}
-          onChange={onCsvDataChange}
-          multiline={6}
-          placeholder={`${CSV_HEADER}\n${CSV_EXAMPLE}`}
-          autoComplete="off"
-          helpText="Leave the header row in place when importing exported files."
-        />
+
+        <div style={{
+          border: "1px solid #E3E3E3",
+          borderRadius: "10px",
+          overflow: "hidden",
+          backgroundColor: "#FFFFFF",
+        }}>
+          {previewRows.length > 0 ? (
+            <>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(160px, 1.2fr) minmax(90px, 0.7fr) minmax(90px, 0.6fr) minmax(160px, 1fr)",
+                gap: "12px",
+                padding: "10px 12px",
+                backgroundColor: "#F7F7F7",
+                borderBottom: "1px solid #E3E3E3",
+              }}>
+                <Text as="p" variant="bodySm" fontWeight="semibold">Group</Text>
+                <Text as="p" variant="bodySm" fontWeight="semibold">Option</Text>
+                <Text as="p" variant="bodySm" fontWeight="semibold">Status</Text>
+                <Text as="p" variant="bodySm" fontWeight="semibold">Products</Text>
+              </div>
+              {previewRows.map((row) => (
+                <div
+                  key={row.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(160px, 1.2fr) minmax(90px, 0.7fr) minmax(90px, 0.6fr) minmax(160px, 1fr)",
+                    gap: "12px",
+                    padding: "12px",
+                    borderBottom: "1px solid #F1F1F1",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text as="p" variant="bodyMd" fontWeight="semibold" truncate>{row.groupName}</Text>
+                  <Text as="p" variant="bodySm" tone="subdued" truncate>{row.optionName}</Text>
+                  <Badge tone={row.status === "active" ? "success" : "subdued"}>{row.status}</Badge>
+                  <Text as="p" variant="bodySm" tone="subdued" truncate>
+                    {row.handles.length > 0
+                      ? `${row.handles.slice(0, 3).join(", ")}${row.handles.length > 3 ? ` +${row.handles.length - 3}` : ""}`
+                      : "No handles"}
+                  </Text>
+                </div>
+              ))}
+              {hiddenRows > 0 && (
+                <Box padding="300" background="bg-surface-secondary">
+                  <Text as="p" variant="bodySm" tone="subdued" alignment="center">
+                    Showing first 5 groups. {hiddenRows} more will be imported.
+                  </Text>
+                </Box>
+              )}
+            </>
+          ) : (
+            <Box padding="800">
+              <BlockStack gap="200" align="center">
+                <Text as="p" variant="bodyMd" fontWeight="semibold">No preview yet</Text>
+                <Text as="p" variant="bodySm" tone="subdued" alignment="center">
+                  Upload a CSV file to preview product groups before importing.
+                </Text>
+              </BlockStack>
+            </Box>
+          )}
+        </div>
       </BlockStack>
     </BlockStack>
   );
