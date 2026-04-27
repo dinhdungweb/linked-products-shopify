@@ -96,6 +96,58 @@ const PREVIEW_IMAGES = [
 
 const PREVIEW_COLORS = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
 
+function getErrorMessage(error) {
+    return error instanceof Error ? error.message : String(error);
+}
+
+async function syncShopSettingsMetafieldsSafely(admin, prisma, shop, settings) {
+    try {
+        await syncShopSettingsMetafields(admin, prisma, shop, settings);
+    } catch (error) {
+        console.warn("[Groups] Could not sync shop settings metafields:", getErrorMessage(error));
+    }
+}
+
+async function fetchShopCurrencyCode(admin) {
+    try {
+        const shopResponse = await admin.graphql(`{ shop { currencyCode } }`);
+        const shopData = await shopResponse.json();
+        return shopData.data?.shop?.currencyCode || "USD";
+    } catch (error) {
+        console.warn("[Groups] Could not fetch shop currency code:", getErrorMessage(error));
+        return "USD";
+    }
+}
+
+async function fetchShopifyProducts(admin, productIds) {
+    if (productIds.length === 0) return [];
+
+    try {
+        const response = await admin.graphql(`
+      query GetProducts($ids: [ID!]!) {
+        nodes(ids: $ids) {
+          ... on Product {
+            id
+            title
+            handle
+            featuredImage { url }
+            status
+            totalInventory
+            images(first: 10) { nodes { url } }
+            variants(first: 5) { nodes { id title price availableForSale image { url } } }
+          }
+        }
+      }
+    `, { variables: { ids: productIds } });
+
+        const result = await response.json();
+        return result.data?.nodes || [];
+    } catch (error) {
+        console.warn("[Groups] Could not fetch product details:", getErrorMessage(error));
+        return [];
+    }
+}
+
 // Color conversion helpers
 function hexToHsb(hex) {
     if (!hex || !hex.startsWith('#')) return { hue: 0, saturation: 0, brightness: 1 };
@@ -308,10 +360,10 @@ export async function loader({ request, params }) {
     }, {});
 
     if (groupId === "new") {
-        let currentCardStyle = appSettings.defaultProductCardStyle || "image_swatch_card";
-        if (currentCardStyle.endsWith("_on_card")) {
-            currentCardStyle = currentCardStyle.replace("_on_card", "_card");
-        }
+        let currentCardStyle = normalizeProductCardStyle(
+            appSettings.defaultProductCardStyle,
+            appSettings.defaultProductPageStyle || "image_swatch",
+        );
         
         const isValidCardStyle = STYLE_OPTIONS.some(s => s.id === currentCardStyle && s.category === "Product Card");
         
@@ -321,7 +373,7 @@ export async function loader({ request, params }) {
                 where: { shop: session.shop },
                 data: { defaultProductCardStyle: currentCardStyle }
             });
-            await syncShopSettingsMetafields(admin, prisma, shop, updatedSettings);
+            await syncShopSettingsMetafieldsSafely(admin, prisma, shop, updatedSettings);
         }
 
         // Fetch all products in other active groups to detect conflicts
@@ -372,10 +424,7 @@ export async function loader({ request, params }) {
 
     let productDetails = [];
     
-    // Fetch shop info for currency
-    const shopResponse = await admin.graphql(`{ shop { currencyCode } }`);
-    const shopData = await shopResponse.json();
-    const currencyCode = shopData.data?.shop?.currencyCode || "USD";
+    const currencyCode = await fetchShopCurrencyCode(admin);
     
     // Formatter for currency
     const priceFormatter = new Intl.NumberFormat('en-US', {
@@ -385,25 +434,7 @@ export async function loader({ request, params }) {
     
     if (group.products.length > 0) {
         const productIds = group.products.map((p) => p.productId);
-        const response = await admin.graphql(`
-      query GetProducts($ids: [ID!]!) {
-        nodes(ids: $ids) {
-          ... on Product {
-            id
-            title
-            handle
-            featuredImage { url }
-            status
-            totalInventory
-            images(first: 10) { nodes { url } }
-            variants(first: 5) { nodes { id title price availableForSale image { url } } }
-          }
-        }
-      }
-    `, { variables: { ids: productIds } });
-
-        const result = await response.json();
-        const shopifyProducts = result.data?.nodes || [];
+        const shopifyProducts = await fetchShopifyProducts(admin, productIds);
 
         productDetails = group.products.map((item) => {
             const shopifyProduct = shopifyProducts.find((p) => p?.id === item.productId);
@@ -488,7 +519,10 @@ export async function action({ request, params }) {
             const appSettings = await prisma.appSetting.findUnique({ where: { shop: session.shop } });
             
             // Clean up card style if it inherited a page style
-            let cardStyle = appSettings?.defaultProductCardStyle || "image_swatch_card";
+            let cardStyle = normalizeProductCardStyle(
+                appSettings?.defaultProductCardStyle,
+                appSettings?.defaultProductPageStyle || "image_swatch",
+            );
             const isValidCard = STYLE_OPTIONS.some(s => s.id === cardStyle && s.category === "Product Card");
             if (!isValidCard) cardStyle = "image_swatch_card";
 
