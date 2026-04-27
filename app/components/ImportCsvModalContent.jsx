@@ -11,6 +11,13 @@ import {
 } from "@shopify/polaris";
 import { ImportIcon, NoteIcon } from "@shopify/polaris-icons";
 
+const SAMPLE_CSV = [
+  "Group Name,Option Name,Selector Style,Card Style,Status,Product Handles",
+  "Summer Tees,Color,image_swatch,image_swatch_card,active,red-shirt,blue-shirt,green-shirt",
+].join("\n");
+
+const SAMPLE_CSV_URL = `data:text/csv;charset=utf-8,${encodeURIComponent(SAMPLE_CSV)}`;
+
 function formatFileSize(size = 0) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) {
@@ -73,6 +80,7 @@ export function ImportCsvModalContent({
   isImporting,
   file,
   csvData,
+  showPreview = false,
   onDrop,
   onFileRemove,
 }) {
@@ -96,77 +104,18 @@ export function ImportCsvModalContent({
     );
   }
 
-  return (
-    <BlockStack gap="400">
-      <BlockStack gap="200">
-        <Text as="h3" variant="headingSm">CSV file</Text>
-        <DropZone onDrop={onDrop} allowMultiple={false} accept=".csv, text/csv">
-          {file ? (
-            <Box padding="400">
-              <InlineStack align="space-between" blockAlign="center" gap="400" wrap={false}>
-                <InlineStack gap="300" blockAlign="center" wrap={false}>
-                  <div style={{
-                    width: "42px",
-                    height: "42px",
-                    borderRadius: "10px",
-                    backgroundColor: "#F1F4F9",
-                    color: "#2C6ECB",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}>
-                    <Icon source={NoteIcon} tone="inherit" />
-                  </div>
-                  <BlockStack gap="050">
-                    <Text variant="bodyMd" fontWeight="semibold">{file.name}</Text>
-                    <Text variant="bodySm" tone="subdued">
-                      {formatFileSize(file.size)} ready to import
-                    </Text>
-                  </BlockStack>
-                </InlineStack>
-                <Button
-                  variant="plain"
-                  tone="critical"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onFileRemove();
-                  }}
-                >
-                  Remove
-                </Button>
-              </InlineStack>
-            </Box>
-          ) : (
-            <Box padding="600">
-              <BlockStack gap="300" align="center">
-                <div style={{
-                  width: "46px",
-                  height: "46px",
-                  borderRadius: "12px",
-                  backgroundColor: "#F1F4F9",
-                  color: "#2C6ECB",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}>
-                  <Icon source={ImportIcon} tone="inherit" />
-                </div>
-                <BlockStack gap="100" align="center">
-                  <Text as="p" variant="bodyMd" fontWeight="semibold">Drop CSV file here</Text>
-                  <Text as="p" variant="bodySm" tone="subdued" alignment="center">
-                    Or click to upload. Exported group CSV files are supported.
-                  </Text>
-                </BlockStack>
-              </BlockStack>
-            </Box>
-          )}
-        </DropZone>
-      </BlockStack>
-
-      <BlockStack gap="200">
+  if (showPreview) {
+    return (
+      <BlockStack gap="300">
         <InlineStack align="space-between" blockAlign="center">
-          <Text as="h3" variant="headingSm">Preview</Text>
+          <BlockStack gap="050">
+            <Text as="h3" variant="headingSm">Preview import</Text>
+            {file && (
+              <Text as="p" variant="bodySm" tone="subdued">
+                {file.name} - {formatFileSize(file.size)}
+              </Text>
+            )}
+          </BlockStack>
           <Badge tone={dataLines.length > 0 ? "success" : "subdued"}>
             {dataLines.length} {dataLines.length === 1 ? "group" : "groups"}
           </Badge>
@@ -235,6 +184,74 @@ export function ImportCsvModalContent({
           )}
         </div>
       </BlockStack>
+    );
+  }
+
+  return (
+    <BlockStack gap="500">
+      <DropZone onDrop={onDrop} allowMultiple={false} accept=".csv, text/csv">
+        <Box padding="600">
+          <div style={{
+            minHeight: "120px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            {file ? (
+              <InlineStack align="space-between" blockAlign="center" gap="400" wrap={false}>
+                <InlineStack gap="300" blockAlign="center" wrap={false}>
+                  <div style={{
+                    width: "42px",
+                    height: "42px",
+                    borderRadius: "10px",
+                    backgroundColor: "#F1F4F9",
+                    color: "#2C6ECB",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}>
+                    <Icon source={NoteIcon} tone="inherit" />
+                  </div>
+                  <BlockStack gap="050">
+                    <Text as="p" variant="bodyMd" fontWeight="semibold">{file.name}</Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      {formatFileSize(file.size)} selected
+                    </Text>
+                  </BlockStack>
+                </InlineStack>
+                <Button
+                  variant="plain"
+                  tone="critical"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onFileRemove();
+                  }}
+                >
+                  Remove
+                </Button>
+              </InlineStack>
+            ) : (
+              <BlockStack gap="300" align="center">
+                <Button icon={ImportIcon}>Add file</Button>
+              </BlockStack>
+            )}
+          </div>
+        </Box>
+      </DropZone>
+
+      <a
+        href={SAMPLE_CSV_URL}
+        download="linked-product-groups-sample.csv"
+        style={{
+          color: "#005BD3",
+          textDecoration: "none",
+          fontSize: "13px",
+          width: "fit-content",
+        }}
+      >
+        Download sample CSV
+      </a>
     </BlockStack>
   );
 }

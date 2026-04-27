@@ -745,6 +745,7 @@ export default function Index() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvData, setCsvData] = useState("");
   const [file, setFile] = useState(null);
+  const [showCsvPreview, setShowCsvPreview] = useState(false);
 
   const isLoading = navigation.state === "submitting" || navigation.state === "loading";
   const isImporting = isLoading && navigation.formData?.get("action") === "importCSV";
@@ -754,6 +755,7 @@ export default function Index() {
       if (acceptedFiles.length > 0) {
         const file = acceptedFiles[0];
         setFile(file);
+        setShowCsvPreview(false);
         
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -782,6 +784,7 @@ export default function Index() {
       setShowImportModal(false);
       setFile(null);
       setCsvData("");
+      setShowCsvPreview(false);
     }
   }, [actionData, showImportModal]);
 
@@ -1011,11 +1014,12 @@ export default function Index() {
           setShowImportModal(false);
           setCsvData("");
           setFile(null);
+          setShowCsvPreview(false);
         }}
-        title="Import product groups"
+        title="Import product groups by CSV"
         primaryAction={{
-          content: isImporting ? "Importing..." : "Start import",
-          onAction: handleImportFile,
+          content: isImporting ? "Importing..." : (showCsvPreview ? "Import groups" : "Upload and preview"),
+          onAction: showCsvPreview ? handleImportFile : () => setShowCsvPreview(true),
           loading: isImporting,
           disabled: !csvData.trim() || isImporting,
         }}
@@ -1025,6 +1029,7 @@ export default function Index() {
             setShowImportModal(false);
             setCsvData("");
             setFile(null);
+            setShowCsvPreview(false);
           },
           disabled: isImporting,
         }]}
@@ -1034,11 +1039,12 @@ export default function Index() {
             isImporting={isImporting}
             file={file}
             csvData={csvData}
-            onCsvDataChange={setCsvData}
+            showPreview={showCsvPreview}
             onDrop={handleDrop}
             onFileRemove={() => {
               setFile(null);
               setCsvData("");
+              setShowCsvPreview(false);
             }}
           />
         </Modal.Section>
