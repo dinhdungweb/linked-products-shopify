@@ -32,7 +32,7 @@ import { PLANS } from "../billing.config";
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { getUsageInfo, confirmSubscription } = await import("../billing.server");
+  const { getUsageInfo, confirmSubscription, isBillingTestMode } = await import("../billing.server");
 
   const { admin, session, billing } = await authenticate.admin(request);
   const shop = session.shop;
@@ -41,7 +41,7 @@ export async function loader({ request }) {
 
   try {
     const billingCheck = await billing.check({
-      isTest: process.env.NODE_ENV !== "production",
+      isTest: isBillingTestMode(),
       plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
     });
 

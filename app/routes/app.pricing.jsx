@@ -233,7 +233,7 @@ function PlanCard({ planKey, plan, usageInfo, isSubmitting, onSubscribe }) {
 
 export const loader = async ({ request }) => {
     const { authenticate } = await import("../shopify.server");
-    const { getUsageInfo, confirmSubscription } = await import("../billing.server");
+    const { getUsageInfo, confirmSubscription, isBillingTestMode } = await import("../billing.server");
 
     const url = new URL(request.url);
     const host = url.searchParams.get("host");
@@ -245,7 +245,7 @@ export const loader = async ({ request }) => {
 
     try {
         const billingCheck = await billing.check({
-            isTest: process.env.NODE_ENV !== "production",
+            isTest: isBillingTestMode(),
             plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
         });
 
@@ -281,7 +281,7 @@ export const loader = async ({ request }) => {
 
 export const action = async ({ request }) => {
     const { authenticate } = await import("../shopify.server");
-    const { cancelSubscription } = await import("../billing.server");
+    const { cancelSubscription, isBillingTestMode } = await import("../billing.server");
 
     const { admin, session } = await authenticate.admin(request);
     const formData = await request.formData();
@@ -325,7 +325,7 @@ export const action = async ({ request }) => {
             `, {
                 variables: {
                     name: planKey,
-                    test: process.env.NODE_ENV !== "production",
+                    test: isBillingTestMode(),
                     returnUrl: returnUrl,
                     lineItems: [{
                         plan: {

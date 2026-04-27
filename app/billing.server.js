@@ -1,6 +1,16 @@
 import prisma from "./db.server";
 import { PLANS } from "./billing.config";
 
+export function isBillingTestMode() {
+    const rawValue = process.env.SHOPIFY_BILLING_TEST ?? process.env.BILLING_TEST;
+
+    if (rawValue === undefined) {
+        return true;
+    }
+
+    return !["0", "false", "no", "off"].includes(String(rawValue).trim().toLowerCase());
+}
+
 /**
  * Get or create shop record
  */
@@ -157,7 +167,7 @@ export async function createSubscription(admin, planKey, shopDomain) {
                 },
             ],
             returnUrl: `${process.env.SHOPIFY_APP_URL}/app/pricing?shop=${shopDomain}&plan=${planKey}`,
-            test: process.env.NODE_ENV !== "production",
+            test: isBillingTestMode(),
         },
     });
 
