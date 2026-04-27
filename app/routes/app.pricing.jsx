@@ -3,7 +3,6 @@ import { json } from "@remix-run/node";
 import { useLoaderData, useSubmit, useNavigation, useSearchParams, useActionData } from "@remix-run/react";
 import {
     Page,
-    Layout,
     Card,
     BlockStack,
     Text,
@@ -13,15 +12,222 @@ import {
     ProgressBar,
     Button,
     InlineStack,
+    InlineGrid,
+    Icon,
 } from "@shopify/polaris";
+import {
+    CashDollarIcon,
+    ChartDonutIcon,
+    CheckIcon,
+    CreditCardIcon,
+    ProductListIcon,
+    StarFilledIcon,
+} from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { PLANS } from "../billing.config";
+
+const PLAN_ORDER = ["free", "basic", "advanced", "premium"];
+
+const PLAN_DETAILS = {
+    free: {
+        eyebrow: "For first setup",
+        description: "Validate linked product groups with every storefront display style included.",
+        features: [
+            "1 product group",
+            "Product page options",
+            "Product card options",
+            "All swatch and button styles",
+        ],
+    },
+    basic: {
+        eyebrow: "For growing catalogs",
+        description: "Create more groups and manage bulk setup with CSV import and export.",
+        features: [
+            "100 product groups",
+            "CSV import and export",
+            "Basic automation rules",
+            "Automatic metafield sync",
+        ],
+    },
+    advanced: {
+        eyebrow: "Recommended",
+        description: "Scale larger catalogs with stronger automation and priority sync.",
+        features: [
+            "500 product groups",
+            "Batch automation with detection rules",
+            "Priority data synchronization",
+            "Priority developer support",
+        ],
+    },
+    premium: {
+        eyebrow: "For high-volume stores",
+        description: "Remove group limits and unlock the highest support tier for larger teams.",
+        features: [
+            "Unlimited product groups",
+            "Hot-swap product switching",
+            "Custom CSS support",
+            "Live chat support dashboard",
+        ],
+    },
+};
+
+function getPlanName(plan) {
+    return plan.name.replace(" Plan", "");
+}
+
+function isUnlimitedLimit(limit, planKey) {
+    return limit === Infinity || (limit == null && planKey === "premium");
+}
+
+function getLimitLabel(planKey, limit) {
+    if (isUnlimitedLimit(limit, planKey)) return "Unlimited";
+    return `${limit} ${limit === 1 ? "group" : "groups"}`;
+}
+
+function getUsageProgress(usageInfo) {
+    if (isUnlimitedLimit(usageInfo.limit, usageInfo.plan)) return 0;
+    if (!usageInfo.limit) return 0;
+    return Math.min(100, Math.max(0, usageInfo.percentage || 0));
+}
+
+function FeatureItem({ children }) {
+    return (
+        <InlineStack gap="200" blockAlign="start" wrap={false}>
+            <div style={{
+                width: "20px",
+                height: "20px",
+                borderRadius: "6px",
+                backgroundColor: "#EAF8F0",
+                color: "#008060",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                marginTop: "1px",
+            }}>
+                <Icon source={CheckIcon} tone="success" />
+            </div>
+            <Text as="p" variant="bodyMd">{children}</Text>
+        </InlineStack>
+    );
+}
+
+function MetricCard({ icon, label, value, helpText, tone = "#2C6ECB" }) {
+    return (
+        <Card padding="400">
+            <BlockStack gap="300">
+                <InlineStack align="space-between" blockAlign="center" wrap={false}>
+                    <Text as="p" variant="bodySm" tone="subdued">{label}</Text>
+                    <div style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        backgroundColor: "#F4F6F8",
+                        color: tone,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}>
+                        <Icon source={icon} tone="inherit" />
+                    </div>
+                </InlineStack>
+                <BlockStack gap="100">
+                    <Text as="p" variant="headingLg">{value}</Text>
+                    <Text as="p" variant="bodySm" tone="subdued">{helpText}</Text>
+                </BlockStack>
+            </BlockStack>
+        </Card>
+    );
+}
+
+function PlanCard({ planKey, plan, usageInfo, isSubmitting, onSubscribe }) {
+    const currentPlanIndex = PLAN_ORDER.indexOf(usageInfo.plan);
+    const targetPlanIndex = PLAN_ORDER.indexOf(planKey);
+    const isCurrent = usageInfo.plan === planKey;
+    const isPopular = planKey === "advanced";
+    const planName = getPlanName(plan);
+    const isDowngrade = targetPlanIndex < currentPlanIndex;
+    const buttonLabel = isCurrent
+        ? "Current plan"
+        : planKey === "free"
+            ? "Downgrade to free"
+            : isDowngrade
+                ? `Switch to ${planName}`
+                : `Upgrade to ${planName}`;
+
+    return (
+        <div style={{ height: "100%", display: "flex" }}>
+            <Card padding="500">
+                <div style={{ height: "100%", display: "flex", flexDirection: "column", gap: "18px" }}>
+                    <BlockStack gap="300">
+                        <InlineStack align="space-between" blockAlign="start" wrap={false}>
+                            <BlockStack gap="100">
+                                <Text as="h2" variant="headingLg">{planName}</Text>
+                                <Text as="p" variant="bodySm" tone="subdued">{PLAN_DETAILS[planKey].eyebrow}</Text>
+                            </BlockStack>
+                            {isCurrent ? (
+                                <Badge tone="success">Current</Badge>
+                            ) : isPopular ? (
+                                <Badge tone="info">Popular</Badge>
+                            ) : null}
+                        </InlineStack>
+
+                        <BlockStack gap="100">
+                            <InlineStack gap="100" blockAlign="end">
+                                <Text as="p" variant="heading2xl">${plan.price}</Text>
+                                {plan.price > 0 && <Text as="p" tone="subdued">/ month</Text>}
+                            </InlineStack>
+                            <Text as="p" variant="bodySm" tone="subdued">
+                                {plan.price === 0 ? "Forever free" : "Billed every 30 days"}
+                            </Text>
+                        </BlockStack>
+
+                        <Text as="p" variant="bodyMd" tone="subdued">
+                            {PLAN_DETAILS[planKey].description}
+                        </Text>
+                    </BlockStack>
+
+                    <div style={{
+                        border: "1px solid #E3E3E3",
+                        borderRadius: "10px",
+                        padding: "12px",
+                        backgroundColor: isPopular ? "#F1F8FF" : "#FAFAFA",
+                    }}>
+                        <BlockStack gap="100">
+                            <Text as="p" variant="bodySm" tone="subdued">Group capacity</Text>
+                            <Text as="p" variant="headingMd">{getLimitLabel(planKey, plan.groupLimit)}</Text>
+                        </BlockStack>
+                    </div>
+
+                    <Divider />
+
+                    <BlockStack gap="300">
+                        {PLAN_DETAILS[planKey].features.map((feature) => (
+                            <FeatureItem key={feature}>{feature}</FeatureItem>
+                        ))}
+                    </BlockStack>
+
+                    <div style={{ marginTop: "auto", paddingTop: "4px" }}>
+                        <Button
+                            fullWidth
+                            variant={isCurrent ? undefined : "primary"}
+                            disabled={isCurrent}
+                            loading={isSubmitting}
+                            onClick={() => onSubscribe(planKey)}
+                        >
+                            {buttonLabel}
+                        </Button>
+                    </div>
+                </div>
+            </Card>
+        </div>
+    );
+}
 
 export const loader = async ({ request }) => {
     const { authenticate } = await import("../shopify.server");
     const { getUsageInfo, confirmSubscription } = await import("../billing.server");
 
-    // Important: Get host from URL in loader since it's present on initial load
     const url = new URL(request.url);
     const host = url.searchParams.get("host");
 
@@ -36,12 +242,12 @@ export const loader = async ({ request }) => {
             plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
         });
 
-        const currentKnownPlan = usageInfo.plan || 'free';
+        const currentKnownPlan = usageInfo.plan || "free";
 
         if (billingCheck.hasActivePayment) {
             const activeSub = billingCheck.appSubscriptions[0];
             let planKey = "free";
-            
+
             const subName = activeSub.name;
             if (subName.includes("Premium") || subName === PLANS.premium.key) planKey = "premium";
             else if (subName.includes("Advanced") || subName === PLANS.advanced.key) planKey = "advanced";
@@ -51,8 +257,8 @@ export const loader = async ({ request }) => {
                 await confirmSubscription(admin, shop, planKey, activeSub);
                 usageInfo = await getUsageInfo(shop);
             }
-        } else if (currentKnownPlan !== 'free') {
-            await confirmSubscription(admin, shop, 'free', null);
+        } else if (currentKnownPlan !== "free") {
+            await confirmSubscription(admin, shop, "free", null);
             usageInfo = await getUsageInfo(shop);
         }
     } catch (billingError) {
@@ -61,9 +267,8 @@ export const loader = async ({ request }) => {
 
     return json({
         shop,
-        host, // Return host to frontend
+        host,
         usageInfo,
-        plans: PLANS,
     });
 };
 
@@ -83,7 +288,6 @@ export const action = async ({ request }) => {
     if (actionValue === "subscribe") {
         if (plan === "free") {
             try {
-                const { cancelSubscription } = await import("../billing.server");
                 await cancelSubscription(admin, shop);
                 return json({ success: true, message: "Changed to Free plan successfully." });
             } catch (error) {
@@ -96,10 +300,9 @@ export const action = async ({ request }) => {
 
         try {
             const url = new URL(request.url);
-            const origin = url.origin.replace('http://', 'https://');
-            // Explicitly use the host and shop from formData to ensure it's never null
+            const origin = url.origin.replace("http://", "https://");
             const returnUrl = `${origin}/app/pricing?plan=${plan}&shop=${shop}&host=${host}`;
-            
+
             console.log(`[Pricing] Requesting billing. ReturnUrl: ${returnUrl}`);
 
             const response = await admin.graphql(`
@@ -122,19 +325,19 @@ export const action = async ({ request }) => {
                             appRecurringPricingDetails: {
                                 price: {
                                     amount: requestedPlan.price,
-                                    currencyCode: 'USD'
+                                    currencyCode: "USD",
                                 },
-                                interval: 'EVERY_30_DAYS'
-                            }
-                        }
-                    }]
-                }
+                                interval: "EVERY_30_DAYS",
+                            },
+                        },
+                    }],
+                },
             });
 
             const responseJson = await response.json();
-            
+
             if (responseJson.data?.appSubscriptionCreate?.userErrors?.length > 0) {
-                const errorMsg = responseJson.data.appSubscriptionCreate.userErrors.map(e => e.message).join(", ");
+                const errorMsg = responseJson.data.appSubscriptionCreate.userErrors.map((e) => e.message).join(", ");
                 return json({ error: `Shopify Error: ${errorMsg}` }, { status: 400 });
             }
 
@@ -170,247 +373,222 @@ export default function PricingPage() {
     const navigation = useNavigation();
     const [searchParams] = useSearchParams();
     const isSubmitting = navigation.state !== "idle" && navigation.formData?.get("action") === "subscribe";
+    const isCancelling = navigation.state !== "idle" && navigation.formData?.get("action") === "cancel";
     const justUpgraded = searchParams.get("upgraded") === "true";
- 
+
     useEffect(() => {
         if (actionData?.confirmationUrl) {
             if (typeof window !== "undefined") {
-              if (window.shopify && window.shopify.navigation) {
-                  window.shopify.navigation.utils.open(actionData.confirmationUrl, { target: "top" });
-              } else {
-                  window.top.location.href = actionData.confirmationUrl;
-              }
+                if (window.shopify && window.shopify.navigation) {
+                    window.shopify.navigation.utils.open(actionData.confirmationUrl, { target: "top" });
+                } else {
+                    window.top.location.href = actionData.confirmationUrl;
+                }
             }
         }
     }, [actionData]);
+
+    const getIdTokenHeaders = async () => {
+        try {
+            if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
+                const idToken = await window.shopify.idToken();
+                return { Authorization: `Bearer ${idToken}` };
+            }
+        } catch (error) {
+            console.warn("[Pricing] Unable to attach ID token:", error?.message);
+        }
+
+        return {};
+    };
+
+    const getCurrentHost = () => {
+        let currentHost = host || searchParams.get("host");
+        if (!currentHost && typeof window !== "undefined" && window.shopify?.config?.host) {
+            currentHost = window.shopify.config.host;
+        }
+        return currentHost || "";
+    };
 
     const handleSubscribe = async (planKey) => {
         const formData = new FormData();
         formData.append("action", "subscribe");
         formData.append("plan", planKey);
         formData.append("shop", shop);
-        
-        // Robust host detection
-        let currentHost = host || searchParams.get("host");
-        if (!currentHost && typeof window !== "undefined" && window.shopify?.config?.host) {
-            currentHost = window.shopify.config.host;
-        }
-        formData.append("host", currentHost || ""); 
-        
-        let headers = {};
-        try {
-          if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
-            const idToken = await window.shopify.idToken();
-            headers = { Authorization: `Bearer ${idToken}` };
-          }
-        } catch (e) {}
+        formData.append("host", getCurrentHost());
 
-        submit(formData, { 
-          method: "POST", 
-          action: `?${searchParams.toString()}`,
-          headers: headers
+        submit(formData, {
+            method: "POST",
+            action: `?${searchParams.toString()}`,
+            headers: await getIdTokenHeaders(),
         });
     };
- 
+
     const handleCancel = async () => {
         if (confirm("Are you sure you want to cancel your subscription?")) {
             const formData = new FormData();
             formData.append("action", "cancel");
             formData.append("shop", shop);
-            
-            let currentHost = host || searchParams.get("host");
-            if (!currentHost && typeof window !== "undefined" && window.shopify?.config?.host) {
-                currentHost = window.shopify.config.host;
-            }
-            formData.append("host", currentHost || "");
+            formData.append("host", getCurrentHost());
 
-            let headers = {};
-            try {
-              if (typeof window !== "undefined" && window.shopify && window.shopify.idToken) {
-                const idToken = await window.shopify.idToken();
-                headers = { Authorization: `Bearer ${idToken}` };
-              }
-            } catch (e) {}
-
-            submit(formData, { 
-              method: "POST", 
-              action: `?${searchParams.toString()}`,
-              headers: headers
+            submit(formData, {
+                method: "POST",
+                action: `?${searchParams.toString()}`,
+                headers: await getIdTokenHeaders(),
             });
         }
     };
 
-
+    const currentPlan = PLANS[usageInfo.plan] || PLANS.free;
+    const currentPlanName = getPlanName(currentPlan);
+    const usageProgress = getUsageProgress(usageInfo);
+    const isUnlimited = isUnlimitedLimit(usageInfo.limit, usageInfo.plan);
+    const usageLimitLabel = getLimitLabel(usageInfo.plan, usageInfo.limit);
+    const remainingGroups = isUnlimited ? "Unlimited" : Math.max(0, (usageInfo.limit || 0) - (usageInfo.used || 0));
+    const isLimitReached = !isUnlimited && (usageInfo.used || 0) >= (usageInfo.limit || 0);
+    const usageTone = isLimitReached ? "critical" : usageProgress >= 80 ? "warning" : "primary";
 
     return (
-        <Page>
-            <TitleBar title="Pricing Plans" />
+        <Page fullWidth>
+            <TitleBar title="Billing" />
 
-            <Layout>
-                <Layout.Section>
-                    <BlockStack gap="400">
-                        {actionData?.error && <Banner tone="critical"><p>{actionData.error}</p></Banner>}
-                        {(actionData?.message || justUpgraded) && (
-                            <Banner tone="success"><p>{actionData?.message || "Your plan has been activated successfully!"}</p></Banner>
-                        )}
+            <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "18px 0 40px" }}>
+                <BlockStack gap="500">
+                    {actionData?.error && <Banner tone="critical"><p>{actionData.error}</p></Banner>}
+                    {(actionData?.message || justUpgraded) && (
+                        <Banner tone="success"><p>{actionData?.message || "Your plan has been activated successfully!"}</p></Banner>
+                    )}
 
-                        <Card>
+                    <div style={{
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #E3E3E3",
+                        borderRadius: "14px",
+                        padding: "24px",
+                        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.04)",
+                    }}>
+                        <InlineStack align="space-between" blockAlign="start" gap="500">
                             <BlockStack gap="300">
-                                <Text variant="headingMd">Current Usage</Text>
-                                <InlineStack gap="200" align="space-between">
-                                    <Text>
-                                        <Text as="span" fontWeight="bold">{usageInfo.used}</Text>
-                                        {usageInfo.limit === Infinity ? (
-                                            <Text as="span" tone="subdued"> groups used (Unlimited)</Text>
-                                        ) : (
-                                            <Text as="span" tone="subdued"> / {usageInfo.limit} groups</Text>
-                                        )}
+                                <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap", alignSelf: "flex-start" }}>
+                                    <Badge tone="info">{currentPlanName} plan</Badge>
+                                    {isLimitReached && <Badge tone="critical">Limit reached</Badge>}
+                                </div>
+                                <BlockStack gap="150">
+                                    <Text variant="heading2xl" as="h1">Billing and plans</Text>
+                                    <Text variant="bodyMd" tone="subdued">
+                                        Choose how many linked product groups your store can keep active.
                                     </Text>
-                                    <Badge tone={usageInfo.plan === "premium" ? "success" : "info"}>
-                                        {usageInfo.planName.includes("Plan") ? usageInfo.planName : `${usageInfo.planName} Plan`}
-                                    </Badge>
+                                </BlockStack>
+                            </BlockStack>
+                            <InlineStack gap="300" wrap={false}>
+                                <Button url="/app/groups">Manage groups</Button>
+                                <Button variant="primary" url="/app/support">Contact support</Button>
+                            </InlineStack>
+                        </InlineStack>
+                    </div>
+
+                    <InlineGrid columns={{ xs: 1, sm: 2, md: 3 }} gap="400">
+                        <MetricCard
+                            icon={CreditCardIcon}
+                            label="Current plan"
+                            value={currentPlanName}
+                            helpText={currentPlan.price === 0 ? "Free plan active" : `$${currentPlan.price} every 30 days`}
+                            tone="#2C6ECB"
+                        />
+                        <MetricCard
+                            icon={ProductListIcon}
+                            label="Group usage"
+                            value={`${usageInfo.used || 0} / ${usageLimitLabel}`}
+                            helpText={isLimitReached ? "Plan limit reached" : "Active product groups"}
+                            tone={isLimitReached ? "#D82C0D" : "#008060"}
+                        />
+                        <MetricCard
+                            icon={ChartDonutIcon}
+                            label="Remaining"
+                            value={isUnlimited ? "Unlimited" : `${remainingGroups}`}
+                            helpText={isUnlimited ? "No group cap on this plan" : `${remainingGroups} groups available`}
+                            tone="#8A6116"
+                        />
+                    </InlineGrid>
+
+                    <Card padding="500">
+                        <BlockStack gap="300">
+                            <InlineStack align="space-between" blockAlign="center">
+                                <BlockStack gap="100">
+                                    <Text variant="headingMd" as="h2">Usage overview</Text>
+                                    <Text variant="bodySm" tone="subdued">
+                                        Product groups beyond your plan limit are paused on the storefront until you upgrade or reduce usage.
+                                    </Text>
+                                </BlockStack>
+                                <Badge tone={isLimitReached ? "critical" : "success"}>
+                                    {isLimitReached ? "Action needed" : "Within limit"}
+                                </Badge>
+                            </InlineStack>
+                            {!isUnlimited && (
+                                <ProgressBar
+                                    progress={usageProgress}
+                                    tone={usageTone}
+                                    size="small"
+                                />
+                            )}
+                        </BlockStack>
+                    </Card>
+
+                    <BlockStack gap="300">
+                        <InlineStack align="space-between" blockAlign="end">
+                            <BlockStack gap="100">
+                                <Text variant="headingLg" as="h2">Plans</Text>
+                                <Text variant="bodySm" tone="subdued">
+                                    Upgrade when your catalog needs more active linked product groups.
+                                </Text>
+                            </BlockStack>
+                            <InlineStack gap="100" blockAlign="center">
+                                <Icon source={CashDollarIcon} tone="subdued" />
+                                <Text variant="bodySm" tone="subdued">Monthly billing in USD</Text>
+                            </InlineStack>
+                        </InlineStack>
+
+                        <InlineGrid columns={{ xs: 1, sm: 2, md: 4 }} gap="400">
+                            {PLAN_ORDER.map((planKey) => (
+                                <PlanCard
+                                    key={planKey}
+                                    planKey={planKey}
+                                    plan={PLANS[planKey]}
+                                    usageInfo={usageInfo}
+                                    isSubmitting={isSubmitting}
+                                    onSubscribe={handleSubscribe}
+                                />
+                            ))}
+                        </InlineGrid>
+                    </BlockStack>
+
+                    <InlineGrid columns={{ xs: 1, md: usageInfo.plan !== "free" ? 2 : 1 }} gap="400">
+                        <Card padding="500">
+                            <BlockStack gap="300">
+                                <InlineStack gap="200" blockAlign="center">
+                                    <Icon source={StarFilledIcon} tone="success" />
+                                    <Text variant="headingMd" as="h2">All plans include storefront styling</Text>
                                 </InlineStack>
-                                {usageInfo.limit !== Infinity && (
-                                    <ProgressBar
-                                        progress={usageInfo.percentage}
-                                        tone={usageInfo.percentage >= 90 ? "critical" : "primary"}
-                                    />
-                                )}
+                                <Text variant="bodyMd" tone="subdued">
+                                    Color swatches, image swatches, dropdowns, buttons, product page settings, and product card settings remain available on every plan.
+                                </Text>
                             </BlockStack>
                         </Card>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', alignItems: 'stretch' }}>
-                            {/* Free */}
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <Card height="100%">
-                                    <BlockStack gap="400" flex="1">
-                                        <BlockStack gap="100">
-                                            <Text variant="headingLg">Free</Text>
-                                            <Text variant="heading2xl">$0</Text>
-                                            <Text tone="subdued">Forever free</Text>
-                                        </BlockStack>
-                                        <Divider />
-                                        <BlockStack gap="200" flex="1">
-                                            <Text>✓ 1 product group limit</Text>
-                                            <Text>✓ Single-option grouping</Text>
-                                            <div style={{ paddingLeft: '12px' }}>
-                                                <Text variant="bodySm" tone="subdued">• All Styles (Swatch, image, etc.)</Text>
-                                                <Text variant="bodySm" tone="subdued">• All Layouts (Grid, List, etc.)</Text>
-                                            </div>
-                                            <Text>✓ Product card display</Text>
-                                            <Text>✓ Custom storefront labels</Text>
-                                        </BlockStack>
-                                        <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
-                                            <Button fullWidth disabled={usageInfo.plan === "free"} onClick={() => handleSubscribe("free")} loading={isSubmitting}>
-                                                {usageInfo.plan === "free" ? "Current Plan" : "Downgrade"}
-                                            </Button>
-                                        </div>
-                                    </BlockStack>
-                                </Card>
-                            </div>
-
-                            {/* Basic */}
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <Card height="100%">
-                                    <BlockStack gap="400" flex="1">
-                                        <BlockStack gap="100">
-                                            <Text variant="headingLg">Basic</Text>
-                                            <Text variant="heading2xl">$6.99</Text>
-                                            <Text tone="subdued">per month</Text>
-                                        </BlockStack>
-                                        <Divider />
-                                        <BlockStack gap="200" flex="1">
-                                            <Text>✓ 100 product groups limit</Text>
-                                            <Text>✓ CSV Import & Export</Text>
-                                            <Text>✓ Basic Automation (Title/SKU)</Text>
-                                            <Text>✓ Automatic Metafield Sync</Text>
-                                            <Text fontWeight="bold" tone="info">✓ Includes all Free features</Text>
-                                        </BlockStack>
-                                        <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
-                                            <Button fullWidth variant="primary" onClick={() => handleSubscribe("basic")} loading={isSubmitting} disabled={usageInfo.plan === "basic"}>
-                                                {usageInfo.plan === "basic" ? "Current Plan" : "Select Plan"}
-                                            </Button>
-                                        </div>
-                                    </BlockStack>
-                                </Card>
-                            </div>
-
-                            {/* Advanced */}
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <Card height="100%">
-                                    <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                        <div style={{ position: 'absolute', top: '-15px', right: '0' }}>
-                                            <Badge tone="success">Most Popular</Badge>
-                                        </div>
-                                        <BlockStack gap="400" flex="1">
-                                            <BlockStack gap="100">
-                                                <Text variant="headingLg">Advanced</Text>
-                                                <Text variant="heading2xl">$14.99</Text>
-                                                <Text tone="subdued">per month</Text>
-                                            </BlockStack>
-                                            <Divider />
-                                            <BlockStack gap="200" flex="1">
-                                                <Text>✓ 500 product groups limit</Text>
-                                                <Text>✓ Batch Automation (Regex/Detect)</Text>
-                                                <Text>✓ Priority data synchronization</Text>
-                                                <Text>✓ Priority developer support</Text>
-                                                <Text fontWeight="bold" tone="info">✓ Includes all Basic features</Text>
-                                            </BlockStack>
-                                            <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
-                                                <Button fullWidth variant="primary" onClick={() => handleSubscribe("advanced")} loading={isSubmitting} disabled={usageInfo.plan === "advanced"}>
-                                                    {usageInfo.plan === "advanced" ? "Current Plan" : "Select Plan"}
-                                                </Button>
-                                            </div>
-                                        </BlockStack>
-                                    </div>
-                                </Card>
-                            </div>
-
-                            {/* Premium */}
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <Card height="100%">
-                                    <BlockStack gap="400" flex="1">
-                                        <BlockStack gap="100">
-                                            <Text variant="headingLg">Premium</Text>
-                                            <Text variant="heading2xl">$34.99</Text>
-                                            <Text tone="subdued">per month</Text>
-                                        </BlockStack>
-                                        <Divider />
-                                        <BlockStack gap="200" flex="1">
-                                            <Text fontWeight="bold">✓ Unlimited product groups</Text>
-                                            <Text>✓ Hot-swap product switching</Text>
-                                            <Text>✓ Custom CSS support (SEO Friendly)</Text>
-                                            <Text>✓ Live chat support dashboard</Text>
-                                            <Text fontWeight="bold" tone="success">✓ Includes all Advanced features</Text>
-                                        </BlockStack>
-                                        <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
-                                            <Button 
-                                                fullWidth 
-                                                variant="primary" 
-                                                size="large"
-                                                onClick={() => handleSubscribe("premium")} 
-                                                loading={isSubmitting} 
-                                                disabled={usageInfo.plan === "premium"}
-                                            >
-                                                {usageInfo.plan === "premium" ? "Current Plan" : "Select Premium"}
-                                            </Button>
-                                        </div>
-                                    </BlockStack>
-                                </Card>
-                            </div>
-                        </div>
-
                         {usageInfo.plan !== "free" && (
-                            <Card>
-                                <InlineStack align="space-between">
-                                    <Text>Need to downgrade? You can return to the Free plan anytime.</Text>
-                                    <Button tone="critical" onClick={handleCancel}>Cancel Plan</Button>
+                            <Card padding="500">
+                                <InlineStack align="space-between" blockAlign="center" gap="400">
+                                    <BlockStack gap="100">
+                                        <Text variant="headingMd" as="h2">Need to downgrade?</Text>
+                                        <Text variant="bodyMd" tone="subdued">
+                                            You can return to the Free plan anytime. Your groups remain in admin, but only the free limit stays active.
+                                        </Text>
+                                    </BlockStack>
+                                    <Button tone="critical" onClick={handleCancel} loading={isCancelling}>Cancel plan</Button>
                                 </InlineStack>
                             </Card>
                         )}
-                    </BlockStack>
-                </Layout.Section>
-            </Layout>
+                    </InlineGrid>
+                </BlockStack>
+            </div>
         </Page>
     );
 }
