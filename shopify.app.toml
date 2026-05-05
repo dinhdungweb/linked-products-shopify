@@ -34,3 +34,8 @@ redirect_urls = [
   "https://linked-products.bluepeaks.top/auth/shopify/callback",
   "https://linked-products.bluepeaks.top/api/auth/callback"
 ]
+
+[webhooks.privacy_compliance]
+customer_deletion_url = "https://linked-products.bluepeaks.top/webhooks/customers/redact"
+customer_data_request_url = "https://linked-products.bluepeaks.top/webhooks/customers/data_request"
+shop_deletion_url = "https://linked-products.bluepeaks.top/webhooks/shop/redact"
