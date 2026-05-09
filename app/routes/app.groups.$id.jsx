@@ -542,6 +542,16 @@ export async function action({ request, params }) {
             targetGroupId = newGroup.id;
         }
 
+        const selectedProductIds = [...new Set(products.map((product) => product.id).filter(Boolean))];
+        const existingItems = await prisma.productGroupItem.findMany({
+            where: {
+                groupId: targetGroupId,
+                productId: { in: selectedProductIds },
+            },
+            select: { productId: true },
+        });
+        const existingProductIds = new Set(existingItems.map((item) => item.productId));
+
         const maxPosition = await prisma.productGroupItem.aggregate({ where: { groupId: targetGroupId }, _max: { position: true } });
         let position = (maxPosition._max.position || 0);
 
@@ -564,13 +574,24 @@ export async function action({ request, params }) {
                 });
             }
 
+            if (existingProductIds.has(product.id)) {
+                const updated = await prisma.productGroupItem.updateMany({
+                    where: { groupId: targetGroupId, productId: product.id },
+                    data: {
+                        productHandle: product.handle,
+                        optionValue: product.title,
+                    },
+                });
+
+                if (updated.count > 0) continue;
+            }
+
             position++;
             await prisma.productGroupItem.upsert({
                 where: { groupId_productId: { groupId: targetGroupId, productId: product.id } },
                 update: {
                     productHandle: product.handle,
                     optionValue: product.title,
-                    position,
                 },
                 create: {
                     groupId: targetGroupId,
@@ -582,6 +603,7 @@ export async function action({ request, params }) {
                     customColor: "#FFFFFF"
                 },
             });
+            existingProductIds.add(product.id);
         }
 
         // Re-sync groups that lost a product
@@ -819,9 +841,25 @@ export default function GroupDetail() {
 
     const handleOpenResourcePicker = useCallback(async () => {
         try {
-            const selection = await shopify.resourcePicker({ type: "product", multiple: true, action: "select" });
+            const selectionIds = localProducts.map((product) => ({ id: product.productId }));
+            const selection = await shopify.resourcePicker({
+                type: "product",
+                multiple: true,
+                action: "select",
+                selectionIds,
+                filter: { variants: false },
+            });
             if (selection && selection.length > 0) {
-                const selectedProducts = selection.map(p => ({ id: p.id, handle: p.handle, title: p.title }));
+                const selectedProducts = Array.from(
+                    new Map(
+                        selection
+                            .filter((product) => product?.id)
+                            .map((product) => [
+                                product.id,
+                                { id: product.id, handle: product.handle, title: product.title },
+                            ]),
+                    ).values(),
+                );
                 
                 // Check for conflicts
                 const foundConflicts = selectedProducts.filter(p => usedProductsMap[p.id]);
@@ -839,7 +877,7 @@ export default function GroupDetail() {
                 }
             }
         } catch (error) { console.error("Picker error:", error); }
-    }, [shopify, submit, usedProductsMap]);
+    }, [localProducts, shopify, submit, usedProductsMap]);
 
     const handleResolveConflict = async (forceMove) => {
         const formData = new FormData();
