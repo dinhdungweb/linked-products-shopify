@@ -35,7 +35,7 @@ import {
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { ImportCsvModalContent } from "../components/ImportCsvModalContent";
 import { PLANS } from "../billing.config";
-import { syncGroupMetafields, syncShopActiveHandles } from "../sync.server";
+import { enqueueGroupSync, enqueueMetafieldCleanup } from "../sync-jobs.server";
 import {
   buildThemeEditorUrl,
   getAppEmbedActionLabel,
@@ -178,18 +178,9 @@ export async function action({ request }) {
       });
     }
 
-    // Auto-sync metafields
-    try {
-      await syncGroupMetafields(admin, prisma, newGroup.id);
+    await enqueueGroupSync(prisma, session.shop, newGroup.id);
 
-      return json({ success: true, message: `Group "${name}" created with ${products.length} products and synced successfully!` });
-    } catch (error) {
-      await prisma.productGroup.update({
-        where: { id: newGroup.id },
-        data: { syncStatus: "error" },
-      });
-      return json({ success: true, message: `Group created but sync error: ${error.message}` });
-    }
+    return json({ success: true, message: `Group "${name}" created with ${products.length} products. Storefront sync queued.` });
   }
 
   if (actionType === "delete") {
@@ -209,57 +200,17 @@ export async function action({ request }) {
       return json({ error: "Group not found" }, { status: 400 });
     }
 
-    // Xóa metafield trên Shopify cho từng sản phẩm
-    try {
-      for (const product of group.products) {
-        // Lấy metafield IDs của sản phẩm
-        const metafieldQuery = await admin.graphql(`
-          query GetProductMetafields($productId: ID!) {
-            product(id: $productId) {
-              metafields(first: 10, namespace: "linked_products") {
-                nodes {
-                  id
-                  key
-                }
-              }
-            }
-          }
-        `, { variables: { productId: product.productId } });
-
-        const metafieldResult = await metafieldQuery.json();
-        const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
-
-        if (metafieldNodes.length > 0) {
-          const metafieldsToDelete = metafieldNodes.map(m => ({
-            namespace: "linked_products",
-            key: m.key,
-            ownerId: product.productId
-          }));
-
-          await admin.graphql(`
-            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-              metafieldsDelete(metafields: $metafields) {
-                deletedMetafields { ownerId }
-                userErrors { field message }
-              }
-            }
-          `, {
-            variables: {
-              metafields: metafieldsToDelete,
-            },
-          });
-        }
-      }
-    } catch (error) {
-      console.warn("Warning: Could not clean up metafields:", error.message);
-      // Không throw error - vẫn cho phép xóa nhóm trong DB
-    }
     await prisma.productGroup.delete({
       where: { id: groupId },
     });
-    await syncShopActiveHandles(admin, prisma, session.shop);
+    await enqueueMetafieldCleanup(
+      prisma,
+      session.shop,
+      group.products.map((product) => product.productId),
+      { reason: "group_deleted" },
+    );
 
-    return json({ success: true, message: "Group and metafields deleted successfully" });
+    return json({ success: true, message: "Group deleted. Storefront cleanup queued." });
   }
 
   if (actionType === "importCSV") {
@@ -378,14 +329,8 @@ export async function action({ request }) {
           });
         }
 
-        // AUTO-SYNC to Shopify using centralized logic
-        try {
-          await syncGroupMetafields(admin, prisma, newGroup.id);
-          groupsCreated++;
-        } catch (e) {
-          console.warn(`Group "${groupName}" created but sync failed:`, e.message);
-          groupsCreated++;
-        }
+        await enqueueGroupSync(prisma, session.shop, newGroup.id);
+        groupsCreated++;
       }
 
       const message = `Import completed: ${groupsCreated} groups created.` +

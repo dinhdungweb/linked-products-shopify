@@ -32,13 +32,13 @@ import {
   ThemeEditIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
-import { syncShopSettingsMetafieldsSafely } from "../settings-sync.server";
+import { enqueueShopSettingsSync } from "../sync-jobs.server";
 import { buildThemeEditorUrl } from "../utils/app-embed-status";
 
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { session, admin } = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const shop = session.shop;
 
   let settings = await prisma.appSetting.findUnique({
@@ -54,7 +54,7 @@ export const loader = async ({ request }) => {
   }
 
   if (isFirstInstall) {
-    await syncShopSettingsMetafieldsSafely(admin, prisma, shop, settings);
+    await enqueueShopSettingsSync(prisma, shop);
   }
 
   return json({ settings, shop, apiKey: process.env.SHOPIFY_API_KEY || "" });
@@ -63,7 +63,7 @@ export const loader = async ({ request }) => {
 export const action = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { session, admin } = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const shop = session.shop;
   const formData = await request.formData();
   const data = Object.fromEntries(formData);
@@ -88,12 +88,12 @@ export const action = async ({ request }) => {
     create: { shop, ...settingsData },
   });
 
-  const syncResult = await syncShopSettingsMetafieldsSafely(admin, prisma, shop, updatedSettings);
+  await enqueueShopSettingsSync(prisma, shop);
 
   return json({
     success: true,
     settings: updatedSettings,
-    syncWarning: syncResult.ok ? null : syncResult.error,
+    syncWarning: null,
   });
 };
 

@@ -76,6 +76,54 @@ export async function syncShopActiveHandles(admin, prisma, shop) {
     return { success: true, handles };
 }
 
+export async function deleteLinkedProductMetafields(admin, productIds) {
+    const ids = [...new Set((productIds || []).filter(Boolean))];
+    if (ids.length === 0) return { success: true, deleted: 0 };
+
+    let deleted = 0;
+
+    for (const productId of ids) {
+        const metafieldQuery = await admin.graphql(`
+            query GetProductMetafields($productId: ID!) {
+                product(id: $productId) {
+                    metafields(first: 50, namespace: "linked_products") {
+                        nodes { key }
+                    }
+                }
+            }
+        `, { variables: { productId } });
+
+        const metafieldResult = await metafieldQuery.json();
+        const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
+        if (metafieldNodes.length === 0) continue;
+
+        const metafieldsToDelete = metafieldNodes.map((metafield) => ({
+            namespace: "linked_products",
+            key: metafield.key,
+            ownerId: productId,
+        }));
+
+        const response = await admin.graphql(`
+            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
+                metafieldsDelete(metafields: $metafields) {
+                    deletedMetafields { ownerId }
+                    userErrors { field message }
+                }
+            }
+        `, { variables: { metafields: metafieldsToDelete } });
+
+        const result = await response.json();
+        const errors = result.data?.metafieldsDelete?.userErrors || [];
+        if (errors.length > 0) {
+            throw new Error(errors.map((error) => error.message).join(", "));
+        }
+
+        deleted += metafieldsToDelete.length;
+    }
+
+    return { success: true, deleted };
+}
+
 export async function syncGroupMetafields(admin, prisma, gId) {
     const group = await prisma.productGroup.findUnique({
         where: { id: gId },

@@ -51,6 +51,27 @@ model ProductGroup {
   @@index([shop])
 }
 
+model SyncJob {
+  id          String    @id @default(cuid())
+  shop        String
+  type        String
+  targetId    String?
+  dedupeKey   String    @unique
+  payload     Json?
+  status      String    @default("pending") // pending, processing, completed, failed
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  runAt       DateTime  @default(now())
+  lockedAt    DateTime?
+  completedAt DateTime?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, runAt])
+  @@index([shop, type])
+}
+
 // Product Group Item - Sản phẩm trong nhóm
 model ProductGroupItem {
   id             String    @id @default(cuid())

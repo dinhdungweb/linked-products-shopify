@@ -51,14 +51,17 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { syncGroupMetafields, syncShopActiveHandles } from "../sync.server";
+import {
+    enqueueGroupSync,
+    enqueueMetafieldCleanup,
+    enqueueShopSettingsSync,
+} from "../sync-jobs.server";
 import { 
     BASE_SETTINGS, 
     DEFAULT_SETTINGS_BY_STYLE, 
     PreviewRenderer 
 } from "../utils/style-utils";
 import { normalizeProductCardStyle } from "../utils/style-mapping";
-import { syncShopSettingsMetafields } from "../settings-sync.server";
 
 const STYLE_OPTIONS = [
     { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch', category: 'Image Swatch' },
@@ -100,11 +103,11 @@ function getErrorMessage(error) {
     return error instanceof Error ? error.message : String(error);
 }
 
-async function syncShopSettingsMetafieldsSafely(admin, prisma, shop, settings) {
+async function enqueueShopSettingsSyncSafely(prisma, shop) {
     try {
-        await syncShopSettingsMetafields(admin, prisma, shop, settings);
+        await enqueueShopSettingsSync(prisma, shop);
     } catch (error) {
-        console.warn("[Groups] Could not sync shop settings metafields:", getErrorMessage(error));
+        console.warn("[Groups] Could not enqueue shop settings sync:", getErrorMessage(error));
     }
 }
 
@@ -369,11 +372,11 @@ export async function loader({ request, params }) {
         
         if (!isValidCardStyle) {
             currentCardStyle = "image_swatch_card";
-            const updatedSettings = await prisma.appSetting.update({
+            await prisma.appSetting.update({
                 where: { shop: session.shop },
                 data: { defaultProductCardStyle: currentCardStyle }
             });
-            await syncShopSettingsMetafieldsSafely(admin, prisma, shop, updatedSettings);
+            await enqueueShopSettingsSyncSafely(prisma, shop);
         }
 
         // Fetch all products in other active groups to detect conflicts
@@ -493,7 +496,7 @@ export async function loader({ request, params }) {
 export async function action({ request, params }) {
     const { authenticate } = await import("../shopify.server");
     const { default: prisma } = await import("../db.server");
-    const { session, admin } = await authenticate.admin(request);
+    const { session } = await authenticate.admin(request);
     const { id: groupId } = params;
     const formData = await request.formData();
     const actionType = formData.get("action");
@@ -583,58 +586,25 @@ export async function action({ request, params }) {
 
         // Re-sync groups that lost a product
         for (const aid of affectedGroupIds) {
-            await syncGroupMetafields(admin, prisma, aid);
+            await enqueueGroupSync(prisma, session.shop, aid);
         }
 
-        await syncGroupMetafields(admin, prisma, targetGroupId);
+        await enqueueGroupSync(prisma, session.shop, targetGroupId);
         
         if (groupId === "new") {
             const { redirect } = await import("@remix-run/node");
             return redirect(`/app/groups/${targetGroupId}`);
         }
         
-        return json({ success: true, message: "Products added and synced!" });
+        return json({ success: true, message: "Products added. Storefront sync queued." });
     }
 
     if (actionType === "removeProduct") {
         const productId = formData.get("productId");
         
-        try {
-            // Clean up Shopify metafields for this specific product
-            const metafieldQuery = await admin.graphql(`
-                query GetProductMetafields($productId: ID!) {
-                    product(id: $productId) {
-                        metafields(first: 10, namespace: "linked_products") {
-                            nodes { id key }
-                        }
-                    }
-                }
-            `, { variables: { productId } });
-
-            const metafieldResult = await metafieldQuery.json();
-            const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
-
-            if (metafieldNodes.length > 0) {
-                const metafieldsToDelete = metafieldNodes.map(m => ({
-                    namespace: "linked_products",
-                    key: m.key,
-                    ownerId: productId
-                }));
-
-                await admin.graphql(`
-                    mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-                        metafieldsDelete(metafields: $metafields) {
-                            deletedMetafields { ownerId }
-                        }
-                    }
-                `, { variables: { metafields: metafieldsToDelete } });
-            }
-        } catch (error) {
-            console.warn("Cleanup metafields failed during product removal:", error.message);
-        }
-
         await prisma.productGroupItem.delete({ where: { groupId_productId: { groupId, productId } } });
-        await syncGroupMetafields(admin, prisma, groupId);
+        await enqueueMetafieldCleanup(prisma, session.shop, [productId], { reason: "product_removed" });
+        await enqueueGroupSync(prisma, session.shop, groupId);
         return json({ success: true, message: "Product removed!" });
     }
 
@@ -655,7 +625,7 @@ export async function action({ request, params }) {
         if (status !== null) updateData.status = status;
 
         await prisma.productGroup.update({ where: { id: groupId }, data: updateData });
-        await syncGroupMetafields(admin, prisma, groupId);
+        await enqueueGroupSync(prisma, session.shop, groupId);
         return json({ success: true });
     }
 
@@ -665,47 +635,13 @@ export async function action({ request, params }) {
             include: { products: true }
         });
 
-        if (group && group.products.length > 0) {
-            try {
-                for (const product of group.products) {
-                    // Fetch existing metafields to get their IDs
-                    const metafieldQuery = await admin.graphql(`
-                        query GetProductMetafields($productId: ID!) {
-                            product(id: $productId) {
-                                metafields(first: 10, namespace: "linked_products") {
-                                    nodes { id key }
-                                }
-                            }
-                        }
-                    `, { variables: { productId: product.productId } });
-
-                    const metafieldResult = await metafieldQuery.json();
-                    const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
-
-                    if (metafieldNodes.length > 0) {
-                        const metafieldsToDelete = metafieldNodes.map(m => ({
-                            namespace: "linked_products",
-                            key: m.key,
-                            ownerId: product.productId
-                        }));
-
-                        await admin.graphql(`
-                            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-                                metafieldsDelete(metafields: $metafields) {
-                                    deletedMetafields { ownerId }
-                                    userErrors { field message }
-                                }
-                            }
-                        `, { variables: { metafields: metafieldsToDelete } });
-                    }
-                }
-            } catch (error) {
-                console.warn("Cleanup metafields failed during group deletion:", error.message);
-            }
-        }
-
         await prisma.productGroup.delete({ where: { id: groupId } });
-        await syncShopActiveHandles(admin, prisma, session.shop);
+        await enqueueMetafieldCleanup(
+            prisma,
+            session.shop,
+            group?.products?.map((product) => product.productId) || [],
+            { reason: "group_deleted" },
+        );
         const { redirect } = await import("@remix-run/node");
         return redirect("/app/groups");
     }
@@ -720,7 +656,7 @@ export async function action({ request, params }) {
                 });
             }
         }
-        await syncGroupMetafields(admin, prisma, groupId);
+        await enqueueGroupSync(prisma, session.shop, groupId);
         return json({ success: true, message: "Option values auto-filled!" });
     }
 
@@ -760,8 +696,8 @@ export async function action({ request, params }) {
             }
         });
 
-        await syncGroupMetafields(admin, prisma, groupId);
-        return json({ success: true, message: "All changes saved and synced!" });
+        await enqueueGroupSync(prisma, session.shop, groupId);
+        return json({ success: true, message: "All changes saved. Storefront sync queued." });
     }
 
     return json({ error: "Invalid action" }, { status: 400 });

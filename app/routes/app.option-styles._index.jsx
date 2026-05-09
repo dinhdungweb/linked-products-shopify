@@ -27,7 +27,7 @@ import {
 } from "../utils/style-utils";
 import prisma from "../db.server";
 import { authenticate } from "../shopify.server";
-import { syncShopSettingsMetafieldsSafely } from "../settings-sync.server";
+import { enqueueShopSettingsSync } from "../sync-jobs.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -91,7 +91,7 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const shop = session.shop;
   const formData = await request.formData();
   const actionType = formData.get("action");
@@ -100,7 +100,7 @@ export const action = async ({ request }) => {
     const styleId = formData.get("styleId");
     const isCard = formData.get("isCard") === "true";
 
-    const updatedSettings = await prisma.appSetting.upsert({
+    await prisma.appSetting.upsert({
       where: { shop },
       update: isCard
         ? { defaultProductCardStyle: styleId }
@@ -113,12 +113,12 @@ export const action = async ({ request }) => {
       },
     });
 
-    const syncResult = await syncShopSettingsMetafieldsSafely(admin, prisma, shop, updatedSettings);
+    await enqueueShopSettingsSync(prisma, shop);
 
     return json({
       success: true,
       message: "Default style updated",
-      syncWarning: syncResult.ok ? null : syncResult.error,
+      syncWarning: null,
     });
   }
 

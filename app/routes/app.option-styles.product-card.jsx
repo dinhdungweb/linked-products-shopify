@@ -31,8 +31,7 @@ import {
   DEFAULT_SETTINGS_BY_STYLE, 
   PreviewRenderer
 } from "../utils/style-utils";
-import { PRODUCT_PAGE_STYLE_IDS } from "../utils/style-mapping";
-import { syncShopSettingsMetafieldsSafely } from "../settings-sync.server";
+import { enqueueShopSettingsSync, enqueueStyleCustomizationsSync } from "../sync-jobs.server";
 
 const normalizeCardSettings = (settings) => {
   const twoColorMap = { "L/R": "L_R", "LT/RB": "LT_RB", "T/B": "T_B", "LB/RT": "LB_RT" };
@@ -219,7 +218,7 @@ export const loader = async ({ request }) => {
 export const action = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { session, admin } = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const shop = session.shop;
   const formData = await request.formData();
   
@@ -228,7 +227,7 @@ export const action = async ({ request }) => {
     const styleSettings = JSON.parse(formData.get("styleSettings"));
 
     // Save AppSetting
-    const updatedAppSettings = await prisma.appSetting.update({
+    await prisma.appSetting.update({
       where: { shop },
       data: {
         cardAlign: appSettings.cardAlign,
@@ -254,67 +253,13 @@ export const action = async ({ request }) => {
       styleSettings[styleId] = normalizedSettings;
     }
 
-    // Sync to metafields (Simplified for demo)
-    const shopData = await admin.graphql(`{ shop { id } }`);
-    const shopJson = await shopData.json();
-    const shopId = shopJson.data.shop.id;
-
-    // Get existing style_customizations
-    const metafieldQuery = await admin.graphql(`query { shop { metafield(namespace: "linked_products", key: "style_customizations") { value } } }`);
-    const metafieldResult = await metafieldQuery.json();
-    let allStyles = JSON.parse(metafieldResult.data.shop.metafield?.value || "{}");
-    
-    // Merge new card styles
-    Object.assign(allStyles, styleSettings);
-
-    const productPageStyles = await prisma.optionStyleSetting.findMany({
-      where: { shop, styleId: { in: PRODUCT_PAGE_STYLE_IDS } },
-    });
-    const restoredPageStyleIds = new Set();
-    for (const style of productPageStyles) {
-      allStyles[style.styleId] = style.settings;
-      restoredPageStyleIds.add(style.styleId);
-    }
-
-    for (const styleId of PRODUCT_PAGE_STYLE_IDS) {
-      if (!restoredPageStyleIds.has(styleId) && allStyles[styleId]?.basic?.limitDesktop !== undefined) {
-        delete allStyles[styleId];
-      }
-    }
-
-    delete allStyles.swatch;
-    delete allStyles.pill;
-
-    const metafieldsResponse = await admin.graphql(`
-      mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafields) { userErrors { field message } }
-      }
-    `, {
-      variables: {
-        metafields: [
-          {
-            namespace: "linked_products",
-            key: "style_customizations",
-            type: "json",
-            ownerId: shopId,
-            value: JSON.stringify(allStyles)
-          }
-        ]
-      }
-    });
-
-    const metafieldsResult = await metafieldsResponse.json();
-    const metafieldsErrors = metafieldsResult.data?.metafieldsSet?.userErrors || [];
-    if (metafieldsErrors.length > 0) {
-      throw new Error(metafieldsErrors.map((error) => error.message).join(", "));
-    }
-
-    const syncResult = await syncShopSettingsMetafieldsSafely(admin, prisma, shop, updatedAppSettings);
+    await enqueueStyleCustomizationsSync(prisma, shop);
+    await enqueueShopSettingsSync(prisma, shop);
 
     return json({
       success: true,
       message: "Settings saved successfully",
-      syncWarning: syncResult.ok ? null : syncResult.error,
+      syncWarning: null,
     });
   } catch (error) {
     console.error("Save card settings error:", error);

@@ -48,7 +48,10 @@ import {
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { ImportCsvModalContent } from "../components/ImportCsvModalContent";
-import { syncGroupMetafields, syncShopActiveHandles } from "../sync.server";
+import {
+  enqueueGroupSync,
+  enqueueMetafieldCleanup,
+} from "../sync-jobs.server";
 import {
   buildThemeEditorUrl,
   getAppEmbedActionLabel,
@@ -146,43 +149,13 @@ export async function action({ request }) {
 
     if (!group) return json({ error: "Group not found" }, { status: 400 });
 
-    try {
-      for (const product of group.products) {
-        const metafieldQuery = await admin.graphql(`
-          query GetProductMetafields($productId: ID!) {
-            product(id: $productId) {
-              metafields(first: 10, namespace: "linked_products") {
-                nodes { id key }
-              }
-            }
-          }
-        `, { variables: { productId: product.productId } });
-
-        const metafieldResult = await metafieldQuery.json();
-        const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
-
-        if (metafieldNodes.length > 0) {
-          const metafieldsToDelete = metafieldNodes.map(m => ({
-            namespace: "linked_products",
-            key: m.key,
-            ownerId: product.productId
-          }));
-
-          await admin.graphql(`
-            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-              metafieldsDelete(metafields: $metafields) {
-                deletedMetafields { ownerId }
-              }
-            }
-          `, { variables: { metafields: metafieldsToDelete } });
-        }
-      }
-    } catch (error) {
-      console.warn("Clean up metafields failed:", error.message);
-    }
-
     await prisma.productGroup.delete({ where: { id: groupId } });
-    await syncShopActiveHandles(admin, prisma, session.shop);
+    await enqueueMetafieldCleanup(
+      prisma,
+      session.shop,
+      group.products.map((product) => product.productId),
+      { reason: "group_deleted" },
+    );
     return json({ success: true, message: "Group deleted successfully" });
   }
 
@@ -196,14 +169,14 @@ export async function action({ request }) {
       data: { status: newStatus }
     });
 
-    await syncGroupMetafields(admin, prisma, groupId);
+    await enqueueGroupSync(prisma, session.shop, groupId);
     return json({ success: true, message: `Group set to ${newStatus}` });
   }
 
   if (actionType === "sync") {
     const groupId = formData.get("groupId");
-    await syncGroupMetafields(admin, prisma, groupId);
-    return json({ success: true, message: "Synced successfully" });
+    await enqueueGroupSync(prisma, session.shop, groupId);
+    return json({ success: true, message: "Sync queued successfully" });
   }
 
   if (actionType === "importCSV") {
@@ -315,12 +288,8 @@ export async function action({ request }) {
           });
         }
 
-        try {
-          await syncGroupMetafields(admin, prisma, newGroup.id);
-          groupsCreated++;
-        } catch (e) {
-          groupsCreated++;
-        }
+        await enqueueGroupSync(prisma, session.shop, newGroup.id);
+        groupsCreated++;
       }
 
       const message = `Import completed: ${groupsCreated} groups created.` + (errors.length > 0 ? `\n${errors.join("\n")}` : "");
@@ -339,6 +308,7 @@ export async function action({ request }) {
 
     try {
       if (bulkType === "delete") {
+        const productIdsToClean = [];
         for (const groupId of selectedIds) {
           const group = await prisma.productGroup.findUnique({
             where: { id: groupId },
@@ -346,40 +316,11 @@ export async function action({ request }) {
           });
 
           if (group) {
-            for (const product of group.products) {
-              const metafieldQuery = await admin.graphql(`
-                query GetProductMetafields($productId: ID!) {
-                  product(id: $productId) {
-                    metafields(first: 10, namespace: "linked_products") {
-                      nodes { id key }
-                    }
-                  }
-                }
-              `, { variables: { productId: product.productId } });
-
-              const metafieldResult = await metafieldQuery.json();
-              const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
-
-              if (metafieldNodes.length > 0) {
-                const metafieldsToDelete = metafieldNodes.map(m => ({
-                  namespace: "linked_products",
-                  key: m.key,
-                  ownerId: product.productId
-                }));
-
-                await admin.graphql(`
-                  mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-                    metafieldsDelete(metafields: $metafields) {
-                      deletedMetafields { ownerId }
-                    }
-                  }
-                `, { variables: { metafields: metafieldsToDelete } });
-              }
-            }
+            productIdsToClean.push(...group.products.map((product) => product.productId));
             await prisma.productGroup.delete({ where: { id: groupId } });
           }
         }
-        await syncShopActiveHandles(admin, prisma, session.shop);
+        await enqueueMetafieldCleanup(prisma, session.shop, productIdsToClean, { reason: "bulk_group_deleted" });
         return json({ success: true, message: `Successfully deleted ${selectedIds.length} groups` });
       }
 
@@ -390,7 +331,7 @@ export async function action({ request }) {
             where: { id: groupId },
             data: { status: newStatus }
           });
-          await syncGroupMetafields(admin, prisma, groupId);
+          await enqueueGroupSync(prisma, session.shop, groupId);
         }
         return json({ success: true, message: `Successfully set ${selectedIds.length} groups to ${newStatus}` });
       }

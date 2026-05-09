@@ -27,6 +27,7 @@ import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { DeleteIcon, PlayIcon, PauseCircleIcon, EditIcon } from "@shopify/polaris-icons";
 import { runAutomationRule } from "../models/automation.server";
 import { PLANS } from "../billing.config";
+import { enqueueGroupSync } from "../sync-jobs.server";
 
 // Loader
 export async function loader({ request }) {
@@ -145,11 +146,13 @@ export async function action({ request }) {
   if (actionType === "runRule") {
     const ruleId = formData.get("ruleId");
     try {
-      const groupsCreated = await runAutomationRule(admin, prisma, ruleId, shop, canAddLinks);
+      const groupsCreated = await runAutomationRule(admin, prisma, ruleId, shop, canAddLinks, {
+        syncGroup: (groupId) => enqueueGroupSync(prisma, shop, groupId),
+      });
       return json({
         success: true,
         message: groupsCreated > 0
-          ? `Automation completed! Created ${groupsCreated} new groups.`
+          ? `Automation completed! Created ${groupsCreated} new groups and queued storefront sync.`
           : "No new groups were created. Products may already be grouped or the pattern didn't match enough products."
       });
     } catch (error) {

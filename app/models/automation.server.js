@@ -8,7 +8,8 @@ import { syncGroupMetafields } from "../sync.server";
 /**
  * Chạy một quy tắc automation cụ thể (Manual Run)
  */
-export async function runAutomationRule(admin, prisma, ruleId, shop, canAddLinks) {
+export async function runAutomationRule(admin, prisma, ruleId, shop, canAddLinks, options = {}) {
+  const syncGroup = options.syncGroup || ((groupId) => syncGroupMetafields(admin, prisma, groupId));
   const rule = await prisma.automationRule.findUnique({ where: { id: ruleId } });
   if (!rule) throw new Error("Rule not found");
 
@@ -145,7 +146,7 @@ export async function runAutomationRule(admin, prisma, ruleId, shop, canAddLinks
     }
 
     // Đồng bộ Metafields
-    await syncGroupMetafields(admin, prisma, newGroup.id);
+    await syncGroup(newGroup.id);
     groupsCreated++;
   }
 
@@ -163,7 +164,8 @@ export async function runAutomationRule(admin, prisma, ruleId, shop, canAddLinks
 /**
  * Xử lý Automation cho một sản phẩm cụ thể (Dùng cho Webhook)
  */
-export async function processAutomationsForProduct(admin, prisma, productId, shop, canAddLinks) {
+export async function processAutomationsForProduct(admin, prisma, productId, shop, canAddLinks, options = {}) {
+  const syncGroup = options.syncGroup || ((groupId) => syncGroupMetafields(admin, prisma, groupId));
   // 1. Lấy thông tin sản phẩm đầy đủ từ Shopify
   const response = await admin.graphql(`
     query ($id: ID!) {
@@ -243,7 +245,7 @@ export async function processAutomationsForProduct(admin, prisma, productId, sho
             position: group._count.products + 1,
           },
         });
-        await syncGroupMetafields(admin, prisma, group.id);
+        await syncGroup(group.id);
         break; // Khớp 1 Rule là đủ (Thứ tự ưu tiên)
       } else {
         // Nếu chưa có nhóm, thử xem có sản phẩm nào khác cùng pattern để tạo nhóm mới không
@@ -294,7 +296,7 @@ export async function processAutomationsForProduct(admin, prisma, productId, sho
                   },
                 });
               }
-              await syncGroupMetafields(admin, prisma, newGroup.id);
+              await syncGroup(newGroup.id);
               break;
             }
           }
