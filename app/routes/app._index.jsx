@@ -36,6 +36,7 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { ImportCsvModalContent } from "../components/ImportCsvModalContent";
 import { PLANS } from "../billing.config";
 import { enqueueGroupSync, enqueueMetafieldCleanup } from "../sync-jobs.server";
+import { openCrispChat } from "../utils/crisp-chat";
 import {
   buildThemeEditorUrl,
   getAppEmbedActionLabel,
@@ -681,7 +682,7 @@ export default function Index() {
             <Text variant="headingSm" as="h3">Live Chat</Text>
           </InlineStack>
           <Text variant="bodySm" tone="subdued">Chat with us for instant help.</Text>
-          <Button variant="plain">Start chat</Button>
+          <Button variant="plain" onClick={openCrispChat}>Start chat</Button>
         </BlockStack>
       </Card>
     </BlockStack>
