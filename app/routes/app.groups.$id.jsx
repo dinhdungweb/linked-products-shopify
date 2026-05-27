@@ -51,12 +51,17 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import { syncGroupMetafields } from "../sync.server";
+import {
+    enqueueGroupSync,
+    enqueueMetafieldCleanup,
+    enqueueShopSettingsSync,
+} from "../sync-jobs.server";
 import { 
     BASE_SETTINGS, 
     DEFAULT_SETTINGS_BY_STYLE, 
     PreviewRenderer 
 } from "../utils/style-utils";
+import { normalizeProductCardStyle } from "../utils/style-mapping";
 
 const STYLE_OPTIONS = [
     { id: 'image_swatch', label: 'Image swatch', type: 'Image Swatch', category: 'Image Swatch' },
@@ -93,6 +98,78 @@ const PREVIEW_IMAGES = [
 ];
 
 const PREVIEW_COLORS = ['#f5f5dc', '#a020f0', '#ffa500', '#008000', '#ffb6c1', '#adff2f', '#ff0000', 'linear-gradient(45deg, #f06, #9f6)'];
+
+function getErrorMessage(error) {
+    return error instanceof Error ? error.message : String(error);
+}
+
+function buildOptionValueFromHandle(handle) {
+    return (handle || "")
+        .split("-")
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+}
+
+function getDefaultProductItemStyle(selectorStyle) {
+    return selectorStyle?.includes("image") || selectorStyle?.includes("slide") || selectorStyle?.includes("polaroid")
+        ? "image"
+        : "one";
+}
+
+function shouldAutoFillOptionValue(currentValue, productTitle) {
+    const value = (currentValue || "").trim();
+    if (!value) return true;
+    return Boolean(productTitle) && value === productTitle;
+}
+
+async function enqueueShopSettingsSyncSafely(prisma, shop) {
+    try {
+        await enqueueShopSettingsSync(prisma, shop);
+    } catch (error) {
+        console.warn("[Groups] Could not enqueue shop settings sync:", getErrorMessage(error));
+    }
+}
+
+async function fetchShopCurrencyCode(admin) {
+    try {
+        const shopResponse = await admin.graphql(`{ shop { currencyCode } }`);
+        const shopData = await shopResponse.json();
+        return shopData.data?.shop?.currencyCode || "USD";
+    } catch (error) {
+        console.warn("[Groups] Could not fetch shop currency code:", getErrorMessage(error));
+        return "USD";
+    }
+}
+
+async function fetchShopifyProducts(admin, productIds) {
+    if (productIds.length === 0) return [];
+
+    try {
+        const response = await admin.graphql(`
+      query GetProducts($ids: [ID!]!) {
+        nodes(ids: $ids) {
+          ... on Product {
+            id
+            title
+            handle
+            featuredImage { url }
+            status
+            totalInventory
+            images(first: 10) { nodes { url } }
+            variants(first: 5) { nodes { id title price availableForSale image { url } } }
+          }
+        }
+      }
+    `, { variables: { ids: productIds } });
+
+        const result = await response.json();
+        return result.data?.nodes || [];
+    } catch (error) {
+        console.warn("[Groups] Could not fetch product details:", getErrorMessage(error));
+        return [];
+    }
+}
 
 // Color conversion helpers
 function hexToHsb(hex) {
@@ -260,10 +337,22 @@ const SortableItem = ({ product, idx, isLast, shop, handleRemoveProduct, handleU
                     <div style={{ minWidth: '80px' }}>
                         <InlineStack gap="100" align="end" blockAlign="center">
                             <Tooltip content="Preview product">
-                                <Button icon={ViewIcon} variant="tertiary" url={`https://${shop}/products/${product.handle}`} target="_blank" />
+                                <Button
+                                    icon={ViewIcon}
+                                    variant="tertiary"
+                                    size="slim"
+                                    url={`https://${shop}/products/${product.handle}`}
+                                    target="_blank"
+                                />
                             </Tooltip>
                             <Tooltip content="Remove">
-                                <Button icon={DeleteIcon} tone="critical" onClick={() => handleRemoveProduct(product.productId)} />
+                                <Button
+                                    icon={DeleteIcon}
+                                    variant="tertiary"
+                                    tone="critical"
+                                    size="slim"
+                                    onClick={() => handleRemoveProduct(product.productId)}
+                                />
                             </Tooltip>
                         </InlineStack>
                     </div>
@@ -306,10 +395,10 @@ export async function loader({ request, params }) {
     }, {});
 
     if (groupId === "new") {
-        let currentCardStyle = appSettings.defaultProductCardStyle || "image_swatch_card";
-        if (currentCardStyle.endsWith("_on_card")) {
-            currentCardStyle = currentCardStyle.replace("_on_card", "_card");
-        }
+        let currentCardStyle = normalizeProductCardStyle(
+            appSettings.defaultProductCardStyle,
+            appSettings.defaultProductPageStyle || "image_swatch",
+        );
         
         const isValidCardStyle = STYLE_OPTIONS.some(s => s.id === currentCardStyle && s.category === "Product Card");
         
@@ -319,6 +408,7 @@ export async function loader({ request, params }) {
                 where: { shop: session.shop },
                 data: { defaultProductCardStyle: currentCardStyle }
             });
+            await enqueueShopSettingsSyncSafely(prisma, shop);
         }
 
         // Fetch all products in other active groups to detect conflicts
@@ -369,10 +459,7 @@ export async function loader({ request, params }) {
 
     let productDetails = [];
     
-    // Fetch shop info for currency
-    const shopResponse = await admin.graphql(`{ shop { currencyCode } }`);
-    const shopData = await shopResponse.json();
-    const currencyCode = shopData.data?.shop?.currencyCode || "USD";
+    const currencyCode = await fetchShopCurrencyCode(admin);
     
     // Formatter for currency
     const priceFormatter = new Intl.NumberFormat('en-US', {
@@ -382,25 +469,7 @@ export async function loader({ request, params }) {
     
     if (group.products.length > 0) {
         const productIds = group.products.map((p) => p.productId);
-        const response = await admin.graphql(`
-      query GetProducts($ids: [ID!]!) {
-        nodes(ids: $ids) {
-          ... on Product {
-            id
-            title
-            handle
-            featuredImage { url }
-            status
-            totalInventory
-            images(first: 10) { nodes { url } }
-            variants(first: 5) { nodes { id title price availableForSale image { url } } }
-          }
-        }
-      }
-    `, { variables: { ids: productIds } });
-
-        const result = await response.json();
-        const shopifyProducts = result.data?.nodes || [];
+        const shopifyProducts = await fetchShopifyProducts(admin, productIds);
 
         productDetails = group.products.map((item) => {
             const shopifyProduct = shopifyProducts.find((p) => p?.id === item.productId);
@@ -459,7 +528,7 @@ export async function loader({ request, params }) {
 export async function action({ request, params }) {
     const { authenticate } = await import("../shopify.server");
     const { default: prisma } = await import("../db.server");
-    const { session, admin } = await authenticate.admin(request);
+    const { session } = await authenticate.admin(request);
     const { id: groupId } = params;
     const formData = await request.formData();
     const actionType = formData.get("action");
@@ -470,43 +539,52 @@ export async function action({ request, params }) {
         const forceMove = formData.get("forceMove") === "true";
         if (!productsJson) return json({ error: "No products selected" }, { status: 400 });
         const products = JSON.parse(productsJson);
+        const submittedGroupName = formData.get("groupName");
+        const submittedOptionName = formData.get("optionName");
+        const submittedSelectorStyle = formData.get("selectorStyle");
+        const submittedCardSelectorStyle = formData.get("cardSelectorStyle");
+        const submittedInventoryBehavior = formData.get("inventoryBehavior");
+        const submittedStatus = formData.get("status");
         
         let targetGroupId = groupId;
         if (groupId === "new") {
-            const { canAddLinks } = await import("../billing.server");
-            const canAdd = await canAddLinks(session.shop, 1);
-            if (!canAdd) {
-                return json({ 
-                    error: "You have reached your plan's group limit. Please upgrade to create more product groups.",
-                    limitReached: true 
-                }, { status: 400 });
-            }
-
-            const appSettings = await prisma.appSetting.findUnique({ where: { shop: session.shop } });
-            
-            // Clean up card style if it inherited a page style
-            let cardStyle = appSettings?.defaultProductCardStyle || "image_swatch_card";
-            const isValidCard = STYLE_OPTIONS.some(s => s.id === cardStyle && s.category === "Product Card");
-            if (!isValidCard) cardStyle = "image_swatch_card";
-
-            const newGroup = await prisma.productGroup.create({
+            return json({ success: true, products });
+        } else if (
+            submittedGroupName !== null ||
+            submittedOptionName !== null ||
+            submittedSelectorStyle !== null ||
+            submittedCardSelectorStyle !== null ||
+            submittedInventoryBehavior !== null ||
+            submittedStatus !== null
+        ) {
+            await prisma.productGroup.update({
+                where: { id: targetGroupId },
                 data: {
-                    shop: session.shop,
-                    name: "Untitled Group",
-                    optionName: "Color",
-                    selectorStyle: appSettings?.defaultProductPageStyle || "image_swatch",
-                    cardSelectorStyle: cardStyle,
-                    status: "active",
-                }
+                    ...(submittedGroupName !== null ? { name: submittedGroupName || "Untitled Group" } : {}),
+                    ...(submittedOptionName !== null ? { optionName: submittedOptionName || "Color" } : {}),
+                    ...(submittedSelectorStyle !== null ? { selectorStyle: submittedSelectorStyle } : {}),
+                    ...(submittedCardSelectorStyle !== null ? { cardSelectorStyle: submittedCardSelectorStyle } : {}),
+                    ...(submittedInventoryBehavior !== null ? { inventoryBehavior: submittedInventoryBehavior } : {}),
+                    ...(submittedStatus !== null ? { status: submittedStatus } : {}),
+                },
             });
-            targetGroupId = newGroup.id;
         }
+
+        const selectedProductIds = [...new Set(products.map((product) => product.id).filter(Boolean))];
+        const existingItems = await prisma.productGroupItem.findMany({
+            where: {
+                groupId: targetGroupId,
+                productId: { in: selectedProductIds },
+            },
+            select: { productId: true },
+        });
+        const existingProductIds = new Set(existingItems.map((item) => item.productId));
 
         const maxPosition = await prisma.productGroupItem.aggregate({ where: { groupId: targetGroupId }, _max: { position: true } });
         let position = (maxPosition._max.position || 0);
 
         const group = await prisma.productGroup.findUnique({ where: { id: targetGroupId } });
-        const defaultStyle = (group?.selectorStyle?.includes('image') || group?.selectorStyle?.includes('slide') || group?.selectorStyle?.includes('polaroid')) ? 'image' : 'one';
+        const defaultStyle = getDefaultProductItemStyle(group?.selectorStyle);
 
         const affectedGroupIds = new Set();
 
@@ -524,13 +602,24 @@ export async function action({ request, params }) {
                 });
             }
 
+            if (existingProductIds.has(product.id)) {
+                const updated = await prisma.productGroupItem.updateMany({
+                    where: { groupId: targetGroupId, productId: product.id },
+                    data: {
+                        productHandle: product.handle,
+                        optionValue: product.title,
+                    },
+                });
+
+                if (updated.count > 0) continue;
+            }
+
             position++;
             await prisma.productGroupItem.upsert({
                 where: { groupId_productId: { groupId: targetGroupId, productId: product.id } },
                 update: {
                     productHandle: product.handle,
                     optionValue: product.title,
-                    position,
                 },
                 create: {
                     groupId: targetGroupId,
@@ -542,62 +631,25 @@ export async function action({ request, params }) {
                     customColor: "#FFFFFF"
                 },
             });
+            existingProductIds.add(product.id);
         }
 
         // Re-sync groups that lost a product
         for (const aid of affectedGroupIds) {
-            await syncGroupMetafields(admin, prisma, aid);
+            await enqueueGroupSync(prisma, session.shop, aid);
         }
 
-        await syncGroupMetafields(admin, prisma, targetGroupId);
+        await enqueueGroupSync(prisma, session.shop, targetGroupId);
         
-        if (groupId === "new") {
-            const { redirect } = await import("@remix-run/node");
-            return redirect(`/app/groups/${targetGroupId}`);
-        }
-        
-        return json({ success: true, message: "Products added and synced!" });
+        return json({ success: true, message: "Products added. Storefront sync queued." });
     }
 
     if (actionType === "removeProduct") {
         const productId = formData.get("productId");
         
-        try {
-            // Clean up Shopify metafields for this specific product
-            const metafieldQuery = await admin.graphql(`
-                query GetProductMetafields($productId: ID!) {
-                    product(id: $productId) {
-                        metafields(first: 10, namespace: "linked_products") {
-                            nodes { id key }
-                        }
-                    }
-                }
-            `, { variables: { productId } });
-
-            const metafieldResult = await metafieldQuery.json();
-            const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
-
-            if (metafieldNodes.length > 0) {
-                const metafieldsToDelete = metafieldNodes.map(m => ({
-                    namespace: "linked_products",
-                    key: m.key,
-                    ownerId: productId
-                }));
-
-                await admin.graphql(`
-                    mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-                        metafieldsDelete(metafields: $metafields) {
-                            deletedMetafields { ownerId }
-                        }
-                    }
-                `, { variables: { metafields: metafieldsToDelete } });
-            }
-        } catch (error) {
-            console.warn("Cleanup metafields failed during product removal:", error.message);
-        }
-
         await prisma.productGroupItem.delete({ where: { groupId_productId: { groupId, productId } } });
-        await syncGroupMetafields(admin, prisma, groupId);
+        await enqueueMetafieldCleanup(prisma, session.shop, [productId], { reason: "product_removed" });
+        await enqueueGroupSync(prisma, session.shop, groupId);
         return json({ success: true, message: "Product removed!" });
     }
 
@@ -618,7 +670,7 @@ export async function action({ request, params }) {
         if (status !== null) updateData.status = status;
 
         await prisma.productGroup.update({ where: { id: groupId }, data: updateData });
-        await syncGroupMetafields(admin, prisma, groupId);
+        await enqueueGroupSync(prisma, session.shop, groupId);
         return json({ success: true });
     }
 
@@ -628,62 +680,91 @@ export async function action({ request, params }) {
             include: { products: true }
         });
 
-        if (group && group.products.length > 0) {
-            try {
-                for (const product of group.products) {
-                    // Fetch existing metafields to get their IDs
-                    const metafieldQuery = await admin.graphql(`
-                        query GetProductMetafields($productId: ID!) {
-                            product(id: $productId) {
-                                metafields(first: 10, namespace: "linked_products") {
-                                    nodes { id key }
-                                }
-                            }
-                        }
-                    `, { variables: { productId: product.productId } });
-
-                    const metafieldResult = await metafieldQuery.json();
-                    const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
-
-                    if (metafieldNodes.length > 0) {
-                        const metafieldsToDelete = metafieldNodes.map(m => ({
-                            namespace: "linked_products",
-                            key: m.key,
-                            ownerId: product.productId
-                        }));
-
-                        await admin.graphql(`
-                            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-                                metafieldsDelete(metafields: $metafields) {
-                                    deletedMetafields { ownerId }
-                                    userErrors { field message }
-                                }
-                            }
-                        `, { variables: { metafields: metafieldsToDelete } });
-                    }
-                }
-            } catch (error) {
-                console.warn("Cleanup metafields failed during group deletion:", error.message);
-            }
-        }
-
         await prisma.productGroup.delete({ where: { id: groupId } });
+        await enqueueMetafieldCleanup(
+            prisma,
+            session.shop,
+            group?.products?.map((product) => product.productId) || [],
+            { reason: "group_deleted" },
+        );
         const { redirect } = await import("@remix-run/node");
         return redirect("/app/groups");
     }
 
     if (actionType === "autoFill") {
-        const group = await prisma.productGroup.findUnique({ where: { id: groupId }, include: { products: true } });
-        for (const item of group.products) {
-            if (!item.optionValue) {
-                await prisma.productGroupItem.update({
-                    where: { id: item.id },
-                    data: { optionValue: item.productHandle.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") }
+        const groupName = formData.get("groupName");
+        const optionName = formData.get("optionName");
+        const selectorStyle = formData.get("selectorStyle");
+        const cardSelectorStyle = formData.get("cardSelectorStyle");
+        const inventoryBehavior = formData.get("inventoryBehavior");
+        const status = formData.get("status");
+        const productsJson = formData.get("products");
+        const submittedProducts = productsJson ? JSON.parse(productsJson) : [];
+        const submittedByProductId = new Map(
+            submittedProducts.map((product) => [product.productId, product]),
+        );
+
+        const group = await prisma.productGroup.findUnique({
+            where: { id: groupId },
+            include: { products: { orderBy: { position: "asc" } } },
+        });
+        await prisma.productGroup.update({
+            where: { id: groupId },
+            data: {
+                ...(groupName !== null ? { name: groupName || "Untitled Group" } : {}),
+                ...(optionName !== null ? { optionName: optionName || "Color" } : {}),
+                ...(selectorStyle !== null ? { selectorStyle } : {}),
+                ...(cardSelectorStyle !== null ? { cardSelectorStyle } : {}),
+                ...(inventoryBehavior !== null ? { inventoryBehavior } : {}),
+                ...(status !== null ? { status } : {}),
+            },
+        });
+
+        const orderedProducts = submittedProducts.length > 0
+            ? submittedProducts
+                .map((submitted) => group.products.find((item) => item.productId === submitted.productId))
+                .filter(Boolean)
+            : group.products;
+
+        for (let index = 0; index < orderedProducts.length; index++) {
+            const item = orderedProducts[index];
+            const submitted = submittedByProductId.get(item.productId);
+            const submittedOptionValue = submitted?.optionValue?.trim();
+            const nextOptionValue = submitted
+                ? shouldAutoFillOptionValue(submittedOptionValue, submitted.title)
+                    ? buildOptionValueFromHandle(item.productHandle)
+                    : submittedOptionValue
+                : item.optionValue || buildOptionValueFromHandle(item.productHandle);
+
+            await prisma.productGroupItem.update({
+                where: { id: item.id },
+                data: {
+                    optionValue: nextOptionValue,
+                    customImageUrl: submitted?.customImageUrl || item.customImageUrl || null,
+                    customColor: submitted?.customColor || item.customColor,
+                    customColor2: submitted?.customColor2 || item.customColor2,
+                    style: submitted?.style || item.style || "one",
+                    position: index + 1,
+                }
+            });
+        }
+
+        for (const submitted of submittedProducts) {
+            if (!group.products.some((item) => item.productId === submitted.productId)) {
+                await prisma.productGroupItem.updateMany({
+                    where: { groupId, productId: submitted.productId },
+                    data: {
+                        optionValue: submitted.optionValue?.trim() || buildOptionValueFromHandle(submitted.productHandle || submitted.handle),
+                        customImageUrl: submitted.customImageUrl || null,
+                        customColor: submitted.customColor || null,
+                        customColor2: submitted.customColor2 || null,
+                        style: submitted.style || "one",
+                    },
                 });
             }
         }
-        await syncGroupMetafields(admin, prisma, groupId);
-        return json({ success: true, message: "Option values auto-filled!" });
+        await enqueueGroupSync(prisma, session.shop, groupId);
+        return json({ success: true, message: "Blank option values auto-filled!" });
     }
 
     if (actionType === "saveAll") {
@@ -694,6 +775,45 @@ export async function action({ request, params }) {
         const inventoryBehavior = formData.get("inventoryBehavior");
         const status = formData.get("status");
         const productsJson = formData.get("products");
+        const products = productsJson ? JSON.parse(productsJson) : [];
+
+        if (groupId === "new") {
+            const { canAddLinks } = await import("../billing.server");
+            const canAdd = await canAddLinks(session.shop, 1);
+            if (!canAdd) {
+                return json({
+                    error: "You have reached your plan's group limit. Please upgrade to create more product groups.",
+                    limitReached: true,
+                }, { status: 400 });
+            }
+
+            const newGroup = await prisma.productGroup.create({
+                data: {
+                    shop: session.shop,
+                    name: groupName || "Untitled Group",
+                    optionName: optionName || "Color",
+                    selectorStyle: selectorStyle || "image_swatch",
+                    cardSelectorStyle: cardSelectorStyle || "image_swatch_card",
+                    inventoryBehavior: inventoryBehavior || "show",
+                    status: status || "active",
+                    products: {
+                        create: products.map((item, index) => ({
+                            productId: item.productId,
+                            productHandle: item.productHandle || item.handle,
+                            optionValue: item.optionValue || item.title || buildOptionValueFromHandle(item.productHandle || item.handle),
+                            customImageUrl: item.customImageUrl || null,
+                            customColor: item.customColor || (item.style === "one" ? "#FFFFFF" : null),
+                            customColor2: item.customColor2 || (item.style === "two" ? "#F5F5F5" : null),
+                            style: item.style || getDefaultProductItemStyle(selectorStyle),
+                            position: index + 1,
+                        })),
+                    },
+                },
+            });
+
+            await enqueueGroupSync(prisma, session.shop, newGroup.id);
+            return redirect(`/app/groups/${newGroup.id}`);
+        }
 
         await prisma.$transaction(async (tx) => {
             await tx.productGroup.update({
@@ -703,8 +823,7 @@ export async function action({ request, params }) {
                 }
             });
 
-            if (productsJson) {
-                const products = JSON.parse(productsJson);
+            if (products.length > 0) {
                 for (let i = 0; i < products.length; i++) {
                     const item = products[i];
                     await tx.productGroupItem.update({
@@ -722,8 +841,8 @@ export async function action({ request, params }) {
             }
         });
 
-        await syncGroupMetafields(admin, prisma, groupId);
-        return json({ success: true, message: "All changes saved and synced!" });
+        await enqueueGroupSync(prisma, session.shop, groupId);
+        return json({ success: true, message: "All changes saved. Storefront sync queued." });
     }
 
     return json({ error: "Invalid action" }, { status: 400 });
@@ -812,6 +931,7 @@ export default function GroupDetail() {
     const [localOptionName, setLocalOptionName] = useState(group.optionName || "Color");
     const [localSelectorStyle, setLocalSelectorStyle] = useState(group.selectorStyle || "image_swatch");
     const [localCardSelectorStyle, setLocalCardSelectorStyle] = useState(group.cardSelectorStyle || "image_swatch_card");
+    const effectiveCardPreviewStyle = normalizeProductCardStyle(localCardSelectorStyle, localSelectorStyle);
     const [localInventoryBehavior, setLocalInventoryBehavior] = useState(group.inventoryBehavior || "show");
     const [localStatus, setLocalStatus] = useState(group.status || "active");
     const [localProducts, setLocalProducts] = useState(group.products || []);
@@ -830,6 +950,7 @@ export default function GroupDetail() {
         if (actionData?.success && actionData?.message) shopify.toast.show(actionData.message, { duration: 3000 });
     }, [actionData, shopify]);
 
+    const isNewGroup = !group.id;
     const isLoading = navigation.state !== "idle";
 
     const fetchIdToken = async () => {
@@ -842,11 +963,100 @@ export default function GroupDetail() {
         return {};
     };
 
+    const appendGroupFormState = useCallback((formData) => {
+        formData.append("groupName", localGroupName);
+        formData.append("optionName", localOptionName);
+        formData.append("selectorStyle", localSelectorStyle);
+        formData.append("cardSelectorStyle", localCardSelectorStyle);
+        formData.append("inventoryBehavior", localInventoryBehavior);
+        formData.append("status", localStatus);
+    }, [
+        localCardSelectorStyle,
+        localGroupName,
+        localInventoryBehavior,
+        localOptionName,
+        localSelectorStyle,
+        localStatus,
+    ]);
+
+    const getPickerProductImage = useCallback((product) => {
+        return product?.featuredImage?.url
+            || product?.image?.url
+            || product?.images?.[0]?.url
+            || product?.images?.[0]?.originalSrc
+            || null;
+    }, []);
+
+    const toProductPayload = useCallback((product) => ({
+        id: product.id || product.productId,
+        handle: product.handle || product.productHandle,
+        title: product.title,
+    }), []);
+
+    const mergeLocalProducts = useCallback((products) => {
+        const defaultStyle = getDefaultProductItemStyle(localSelectorStyle);
+
+        setLocalProducts((current) => {
+            const next = [...current];
+            const indexById = new Map(next.map((product, index) => [product.productId, index]));
+
+            for (const product of products) {
+                const productId = product.id || product.productId;
+                if (!productId) continue;
+
+                const productHandle = product.handle || product.productHandle;
+                const image = getPickerProductImage(product);
+                const existingIndex = indexById.get(productId);
+
+                if (existingIndex !== undefined) {
+                    next[existingIndex] = {
+                        ...next[existingIndex],
+                        title: product.title || next[existingIndex].title,
+                        handle: productHandle || next[existingIndex].handle,
+                        productHandle: productHandle || next[existingIndex].productHandle,
+                        image: image || next[existingIndex].image,
+                    };
+                    continue;
+                }
+
+                next.push({
+                    id: `local-${productId}`,
+                    productId,
+                    productHandle,
+                    handle: productHandle,
+                    title: product.title || productHandle || "Selected product",
+                    optionValue: product.title || buildOptionValueFromHandle(productHandle),
+                    image,
+                    status: product.status || "ACTIVE",
+                    isUnavailable: false,
+                    allImages: image ? [image] : [],
+                    customImageUrl: null,
+                    customColor: "#FFFFFF",
+                    customColor2: null,
+                    style: defaultStyle,
+                    position: next.length + 1,
+                });
+                indexById.set(productId, next.length - 1);
+            }
+
+            return next;
+        });
+    }, [getPickerProductImage, localSelectorStyle]);
+
     const handleOpenResourcePicker = useCallback(async () => {
         try {
-            const selection = await shopify.resourcePicker({ type: "product", multiple: true, action: "select" });
+            const selectionIds = localProducts.map((product) => ({ id: product.productId }));
+            const selection = await shopify.resourcePicker({
+                type: "product",
+                multiple: true,
+                action: "select",
+                selectionIds,
+                filter: { variants: false },
+            });
             if (selection && selection.length > 0) {
-                const selectedProducts = selection.map(p => ({ id: p.id, handle: p.handle, title: p.title }));
+                const selectedProducts = Array.from(
+                    new Map(selection.filter((product) => product?.id).map((product) => [product.id, product])).values(),
+                );
                 
                 // Check for conflicts
                 const foundConflicts = selectedProducts.filter(p => usedProductsMap[p.id]);
@@ -856,15 +1066,21 @@ export default function GroupDetail() {
                     setPendingSelection(selectedProducts);
                     setShowConflictModal(true);
                 } else {
+                    if (isNewGroup) {
+                        mergeLocalProducts(selectedProducts);
+                        return;
+                    }
+
                     const formData = new FormData();
                     formData.append("action", "addProducts");
-                    formData.append("products", JSON.stringify(selectedProducts));
+                    formData.append("products", JSON.stringify(selectedProducts.map(toProductPayload)));
+                    appendGroupFormState(formData);
                     const headers = await fetchIdToken();
                     submit(formData, { method: "POST", headers });
                 }
             }
         } catch (error) { console.error("Picker error:", error); }
-    }, [shopify, submit, usedProductsMap]);
+    }, [appendGroupFormState, isNewGroup, localProducts, mergeLocalProducts, shopify, submit, toProductPayload, usedProductsMap]);
 
     const handleResolveConflict = async (forceMove) => {
         const formData = new FormData();
@@ -877,8 +1093,17 @@ export default function GroupDetail() {
         }
 
         if (productsToAdd.length > 0) {
-            formData.append("products", JSON.stringify(productsToAdd));
+            if (isNewGroup) {
+                mergeLocalProducts(productsToAdd);
+                setShowConflictModal(false);
+                setConflicts([]);
+                setPendingSelection([]);
+                return;
+            }
+
+            formData.append("products", JSON.stringify(productsToAdd.map(toProductPayload)));
             if (forceMove) formData.append("forceMove", "true");
+            appendGroupFormState(formData);
             const headers = await fetchIdToken();
             submit(formData, { method: "POST", headers });
         }
@@ -890,6 +1115,11 @@ export default function GroupDetail() {
 
     const handleRemoveProduct = async (productId) => {
         if (!confirm("Remove this product?")) return;
+        if (isNewGroup) {
+            setLocalProducts((current) => current.filter((product) => product.productId !== productId));
+            return;
+        }
+
         const formData = new FormData();
         formData.append("action", "removeProduct");
         formData.append("productId", productId);
@@ -902,8 +1132,30 @@ export default function GroupDetail() {
     };
 
     const handleAutoFill = async () => {
+        if (isNewGroup) {
+            setLocalProducts((current) => current.map((product) => ({
+                ...product,
+                optionValue: shouldAutoFillOptionValue(product.optionValue, product.title)
+                    ? buildOptionValueFromHandle(product.productHandle || product.handle)
+                    : product.optionValue,
+            })));
+            return;
+        }
+
         const formData = new FormData();
         formData.append("action", "autoFill");
+        appendGroupFormState(formData);
+        formData.append("products", JSON.stringify(localProducts.map(p => ({
+            productId: p.productId,
+            productHandle: p.productHandle || p.handle,
+            handle: p.handle || p.productHandle,
+            title: p.title,
+            optionValue: p.optionValue,
+            customImageUrl: p.customImageUrl,
+            customColor: p.customColor,
+            customColor2: p.customColor2,
+            style: p.style,
+        }))));
         const headers = await fetchIdToken();
         submit(formData, { method: "POST", headers });
     };
@@ -918,8 +1170,15 @@ export default function GroupDetail() {
         formData.append("inventoryBehavior", localInventoryBehavior);
         formData.append("status", localStatus);
         const productsToSave = localProducts.map(p => ({
-            productId: p.productId, optionValue: p.optionValue, customImageUrl: p.customImageUrl,
-            customColor: p.customColor, customColor2: p.customColor2, style: p.style
+            productId: p.productId,
+            productHandle: p.productHandle || p.handle,
+            handle: p.handle || p.productHandle,
+            title: p.title,
+            optionValue: p.optionValue,
+            customImageUrl: p.customImageUrl,
+            customColor: p.customColor,
+            customColor2: p.customColor2,
+            style: p.style,
         }));
         formData.append("products", JSON.stringify(productsToSave));
         const headers = await fetchIdToken();
@@ -1016,10 +1275,13 @@ export default function GroupDetail() {
             </Modal>
             
             <Box paddingBlockEnd="400">
-                <BlockStack gap="200">
-                    <InlineStack gap="200" align="start" blockAlign="center"><Button icon={ChevronLeftIcon} variant="tertiary" url="/app/groups" /><Text variant="headingLg">{group.id ? "Edit product group" : "New product group"}</Text></InlineStack>
-                    <Box paddingInlineStart="1000"><Text variant="bodyMd" tone="subdued">Combine multiple products into a single option</Text></Box>
-                </BlockStack>
+                <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                    <Button icon={ChevronLeftIcon} variant="tertiary" url="/app/groups" />
+                    <BlockStack gap="100">
+                        <Text variant="headingLg">{group.id ? "Edit product group" : "New product group"}</Text>
+                        <Text variant="bodyMd" tone="subdued">Combine multiple products into a single option</Text>
+                    </BlockStack>
+                </InlineStack>
             </Box>
 
             <Layout>
@@ -1035,7 +1297,7 @@ export default function GroupDetail() {
                         <Card padding="0">
                             <Box padding="400"><InlineStack align="space-between" blockAlign="center"><Text variant="headingMd">Products</Text><InlineStack gap="200"><Button icon={MagicIcon} onClick={handleAutoFill} variant="tertiary" disabled={localProducts.length === 0} size="slim">Auto-fill</Button><Button icon={PlusCircleIcon} onClick={handleOpenResourcePicker} size="slim">Add products</Button><Button icon={OrderIcon} variant="tertiary" size="slim" /></InlineStack></InlineStack></Box>
                             <Divider />
-                            {localProducts.length === 0 ? <Box padding="1000"><BlockStack gap="200" align="center"><Text variant="bodyMd" tone="subdued">No products added yet.</Text><Button onClick={handleOpenResourcePicker} size="slim">Add products</Button></BlockStack></Box> : (
+                            {localProducts.length === 0 ? <Box padding="1000"><div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}><BlockStack gap="200" align="center" inlineAlign="center"><Text variant="bodyMd" tone="subdued" alignment="center">No products added yet.</Text><Button onClick={handleOpenResourcePicker} size="slim">Add products</Button></BlockStack></div></Box> : (
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
                                     <SortableContext items={localProducts.map(p => p.productId)} strategy={verticalListSortingStrategy}>
                                         <BlockStack>{localProducts.map((p, idx) => <SortableItem key={p.productId} product={p} idx={idx} isLast={idx === localProducts.length - 1} shop={shop} handleRemoveProduct={handleRemoveProduct} handleUpdateField={handleUpdateField} getBorderRadius={getBorderRadius} localSelectorStyle={localSelectorStyle} />)}</BlockStack>
@@ -1106,8 +1368,8 @@ export default function GroupDetail() {
                                                         <Text variant="bodyXs" tone="subdued">$49.00 USD</Text>
                                                         <div style={{ marginTop: '8px' }}>
                                                             <PreviewRenderer 
-                                                                styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} 
-                                                                settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} 
+                                                                styleId={effectiveCardPreviewStyle}
+                                                                settings={styleSettings[effectiveCardPreviewStyle] || DEFAULT_SETTINGS_BY_STYLE[effectiveCardPreviewStyle] || BASE_SETTINGS}
                                                                 products={localProducts} 
                                                                 appSettings={appSettings}
                                                                 isCard={true}
@@ -1118,8 +1380,8 @@ export default function GroupDetail() {
                                                 </Box>
                                             ) : (
                                                 <PreviewRenderer 
-                                                    styleId={localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle} 
-                                                    settings={styleSettings[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localCardSelectorStyle === 'same' ? localSelectorStyle : localCardSelectorStyle] || BASE_SETTINGS} 
+                                                    styleId={effectiveCardPreviewStyle}
+                                                    settings={styleSettings[effectiveCardPreviewStyle] || DEFAULT_SETTINGS_BY_STYLE[effectiveCardPreviewStyle] || BASE_SETTINGS}
                                                     products={localProducts} 
                                                     appSettings={appSettings}
                                                     isCard={true}

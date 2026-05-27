@@ -27,8 +27,6 @@ import {
   ButtonGroup,
   Tooltip,
   Modal,
-  Thumbnail,
-  DropZone,
   Spinner,
   useIndexResourceState,
 } from "@shopify/polaris";
@@ -47,10 +45,19 @@ import {
   MenuHorizontalIcon,
   RefreshIcon,
   CheckIcon,
-  NoteIcon,
 } from "@shopify/polaris-icons";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
-import { syncGroupMetafields } from "../sync.server";
+import { ImportCsvModalContent } from "../components/ImportCsvModalContent";
+import {
+  enqueueGroupSync,
+  enqueueMetafieldCleanup,
+} from "../sync-jobs.server";
+import {
+  buildThemeEditorUrl,
+  getAppEmbedActionLabel,
+  getAppEmbedTone,
+  useAppEmbedStatus,
+} from "../utils/app-embed-status";
 
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
@@ -108,53 +115,19 @@ export async function loader({ request }) {
     }
   }
 
-  // Fetch App Embed Status
-  let isAppEmbedEnabled = false;
-  try {
-    const themeResponse = await admin.graphql(`
-      query getThemeId {
-        themes(first: 1, roles: [MAIN]) {
-          nodes {
-            id
-          }
-        }
-      }
-    `);
-    const themeData = await themeResponse.json();
-    const themeId = themeData.data?.themes?.nodes?.[0]?.id.split('/').pop();
-
-    if (themeId) {
-      const restUrl = `https://${shop}/admin/api/2024-04/themes/${themeId}/assets.json?asset[key]=config/settings_data.json`;
-      const assetResponse = await fetch(restUrl, {
-        headers: {
-          "X-Shopify-Access-Token": session.accessToken,
-        },
-      });
-
-      if (assetResponse.ok) {
-        const assetData = await assetResponse.json();
-        const settingsValue = assetData.asset?.value;
-        if (settingsValue) {
-          const settings = JSON.parse(settingsValue);
-          const blocks = settings.current?.blocks || {};
-
-          isAppEmbedEnabled = Object.values(blocks).some(block =>
-            (block.type?.includes('linked-products') || block.type?.includes('app-card-injector')) &&
-            block.disabled === false
-          );
-        }
-      }
-    }
-  } catch (e) {
-    isAppEmbedEnabled = true; // Safety default
-  }
-
   const enrichedGroups = groups.map(group => ({
     ...group,
     isPlanDisabled: allowedIds !== null && !allowedIds.includes(group.id)
   }));
 
-  return json({ groups: enrichedGroups, shop: shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled });
+  return json({
+    groups: enrichedGroups,
+    shop,
+    usageInfo,
+    totalProducts,
+    productImages,
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+  });
 }
 
 export async function action({ request }) {
@@ -176,42 +149,13 @@ export async function action({ request }) {
 
     if (!group) return json({ error: "Group not found" }, { status: 400 });
 
-    try {
-      for (const product of group.products) {
-        const metafieldQuery = await admin.graphql(`
-          query GetProductMetafields($productId: ID!) {
-            product(id: $productId) {
-              metafields(first: 10, namespace: "linked_products") {
-                nodes { id key }
-              }
-            }
-          }
-        `, { variables: { productId: product.productId } });
-
-        const metafieldResult = await metafieldQuery.json();
-        const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
-
-        if (metafieldNodes.length > 0) {
-          const metafieldsToDelete = metafieldNodes.map(m => ({
-            namespace: "linked_products",
-            key: m.key,
-            ownerId: product.productId
-          }));
-
-          await admin.graphql(`
-            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-              metafieldsDelete(metafields: $metafields) {
-                deletedMetafields { ownerId }
-              }
-            }
-          `, { variables: { metafields: metafieldsToDelete } });
-        }
-      }
-    } catch (error) {
-      console.warn("Clean up metafields failed:", error.message);
-    }
-
     await prisma.productGroup.delete({ where: { id: groupId } });
+    await enqueueMetafieldCleanup(
+      prisma,
+      session.shop,
+      group.products.map((product) => product.productId),
+      { reason: "group_deleted" },
+    );
     return json({ success: true, message: "Group deleted successfully" });
   }
 
@@ -225,14 +169,14 @@ export async function action({ request }) {
       data: { status: newStatus }
     });
 
-    await syncGroupMetafields(admin, prisma, groupId);
+    await enqueueGroupSync(prisma, session.shop, groupId);
     return json({ success: true, message: `Group set to ${newStatus}` });
   }
 
   if (actionType === "sync") {
     const groupId = formData.get("groupId");
-    await syncGroupMetafields(admin, prisma, groupId);
-    return json({ success: true, message: "Synced successfully" });
+    await enqueueGroupSync(prisma, session.shop, groupId);
+    return json({ success: true, message: "Sync queued successfully" });
   }
 
   if (actionType === "importCSV") {
@@ -344,12 +288,8 @@ export async function action({ request }) {
           });
         }
 
-        try {
-          await syncGroupMetafields(admin, prisma, newGroup.id);
-          groupsCreated++;
-        } catch (e) {
-          groupsCreated++;
-        }
+        await enqueueGroupSync(prisma, session.shop, newGroup.id);
+        groupsCreated++;
       }
 
       const message = `Import completed: ${groupsCreated} groups created.` + (errors.length > 0 ? `\n${errors.join("\n")}` : "");
@@ -368,6 +308,7 @@ export async function action({ request }) {
 
     try {
       if (bulkType === "delete") {
+        const productIdsToClean = [];
         for (const groupId of selectedIds) {
           const group = await prisma.productGroup.findUnique({
             where: { id: groupId },
@@ -375,39 +316,11 @@ export async function action({ request }) {
           });
 
           if (group) {
-            for (const product of group.products) {
-              const metafieldQuery = await admin.graphql(`
-                query GetProductMetafields($productId: ID!) {
-                  product(id: $productId) {
-                    metafields(first: 10, namespace: "linked_products") {
-                      nodes { id key }
-                    }
-                  }
-                }
-              `, { variables: { productId: product.productId } });
-
-              const metafieldResult = await metafieldQuery.json();
-              const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
-
-              if (metafieldNodes.length > 0) {
-                const metafieldsToDelete = metafieldNodes.map(m => ({
-                  namespace: "linked_products",
-                  key: m.key,
-                  ownerId: product.productId
-                }));
-
-                await admin.graphql(`
-                  mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-                    metafieldsDelete(metafields: $metafields) {
-                      deletedMetafields { ownerId }
-                    }
-                  }
-                `, { variables: { metafields: metafieldsToDelete } });
-              }
-            }
+            productIdsToClean.push(...group.products.map((product) => product.productId));
             await prisma.productGroup.delete({ where: { id: groupId } });
           }
         }
+        await enqueueMetafieldCleanup(prisma, session.shop, productIdsToClean, { reason: "bulk_group_deleted" });
         return json({ success: true, message: `Successfully deleted ${selectedIds.length} groups` });
       }
 
@@ -418,7 +331,7 @@ export async function action({ request }) {
             where: { id: groupId },
             data: { status: newStatus }
           });
-          await syncGroupMetafields(admin, prisma, groupId);
+          await enqueueGroupSync(prisma, session.shop, groupId);
         }
         return json({ success: true, message: `Successfully set ${selectedIds.length} groups to ${newStatus}` });
       }
@@ -432,11 +345,14 @@ export async function action({ request }) {
 }
 
 export default function GroupsPage() {
-  const { groups, shop, usageInfo, totalProducts, productImages, isAppEmbedEnabled } = useLoaderData();
+  const { groups, shop, usageInfo, totalProducts, productImages, apiKey } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
   const shopify = useAppBridge();
+  const appEmbedStatus = useAppEmbedStatus(shopify);
+  const shouldShowEmbedBanner = appEmbedStatus.status !== "checking" && appEmbedStatus.status !== "active";
+  const themeEditorUrl = buildThemeEditorUrl(shop, apiKey);
 
   const [selectedTab, setSelectedTab] = useState(0);
   const handleTabChange = useCallback((selectedTabIndex) => setSelectedTab(selectedTabIndex), []);
@@ -471,6 +387,7 @@ export default function GroupsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvData, setCsvData] = useState("");
   const [file, setFile] = useState(null);
+  const [showCsvPreview, setShowCsvPreview] = useState(false);
   const [activeBulkAction, setActiveBulkAction] = useState(null);
   const [syncingId, setSyncingId] = useState(null);
   const [statusLoadingId, setStatusLoadingId] = useState(null);
@@ -543,6 +460,7 @@ export default function GroupsPage() {
       if (acceptedFiles.length > 0) {
         const file = acceptedFiles[0];
         setFile(file);
+        setShowCsvPreview(false);
         const reader = new FileReader();
         reader.onload = (e) => {
           setCsvData(e.target.result);
@@ -573,6 +491,7 @@ export default function GroupsPage() {
       setShowImportModal(false);
       setFile(null);
       setCsvData("");
+      setShowCsvPreview(false);
     }
   }, [actionData, showImportModal]);
 
@@ -784,19 +703,18 @@ export default function GroupsPage() {
                 </InlineStack>
               </InlineStack>
 
-              {!isAppEmbedEnabled && (
+              {shouldShowEmbedBanner && (
                 <Banner
-                  title="App embed is disabled"
-                  tone="warning"
+                  title="Theme integration needs review"
+                  tone={getAppEmbedTone(appEmbedStatus.status)}
                   action={{
-                    content: 'Enable in Theme',
+                    content: getAppEmbedActionLabel(appEmbedStatus.status),
                     onAction: () => {
-                      const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
-                      window.open(url, '_blank');
+                      window.open(themeEditorUrl, '_blank');
                     }
                   }}
                 >
-                  <p>Please enable the app embed to show product swatches on your storefront.</p>
+                  <p>{appEmbedStatus.description}</p>
                 </Banner>
               )}
 
@@ -1025,11 +943,12 @@ export default function GroupsPage() {
             setShowImportModal(false);
             setCsvData("");
             setFile(null);
+            setShowCsvPreview(false);
           }}
-          title="Import Groups from CSV"
+          title="Import product groups by CSV"
           primaryAction={{
-            content: isImporting ? "Importing..." : "Import",
-            onAction: handleImportFile,
+            content: isImporting ? "Importing..." : (showCsvPreview ? "Import groups" : "Upload and preview"),
+            onAction: showCsvPreview ? handleImportFile : () => setShowCsvPreview(true),
             loading: isImporting,
             disabled: !csvData.trim() || isImporting,
           }}
@@ -1039,72 +958,24 @@ export default function GroupsPage() {
               setShowImportModal(false);
               setCsvData("");
               setFile(null);
+              setShowCsvPreview(false);
             },
             disabled: isImporting,
           }]}
         >
           <Modal.Section>
-            <BlockStack gap="400">
-              {isImporting ? (
-                <Box padding="800">
-                  <BlockStack gap="400" align="center">
-                    <Spinner size="large" />
-                    <Text variant="headingMd" as="h2">Importing and syncing your products...</Text>
-                    <Text variant="bodyMd" tone="subdued">This may take a moment depending on the number of groups.</Text>
-                  </BlockStack>
-                </Box>
-              ) : (
-                <>
-                  <Banner tone="info">
-                    <BlockStack gap="200">
-                      <p><strong>CSV Format:</strong> Each line creates one group.</p>
-                      <p><code>Group Name, product-handle-1, product-handle-2, ...</code></p>
-                      <p><strong>Example:</strong></p>
-                      <p><code>T-Shirt Colors, red-tshirt, blue-tshirt, green-tshirt</code></p>
-                    </BlockStack>
-                  </Banner>
-
-                  <Box paddingBlock="200">
-                    <DropZone onDrop={handleDrop} allowMultiple={false} accept=".csv, text/csv">
-                      {file ? (
-                        <Box padding="400">
-                          <InlineStack gap="300" blockAlign="center">
-                            <Thumbnail
-                              size="small"
-                              alt="CSV File"
-                              source={NoteIcon}
-                            />
-                            <BlockStack gap="100">
-                              <Text variant="bodyMd" fontWeight="bold">
-                                {file.name}
-                              </Text>
-                              <Text variant="bodySm" tone="subdued">
-                                {Math.round(file.size / 1024)} KB
-                              </Text>
-                            </BlockStack>
-                            <Button variant="plain" tone="critical" onClick={(e) => { e.stopPropagation(); setFile(null); setCsvData(""); }}>
-                              Remove
-                            </Button>
-                          </InlineStack>
-                        </Box>
-                      ) : (
-                        <DropZone.FileUpload actionHint="Accepts .csv files" />
-                      )}
-                    </DropZone>
-                  </Box>
-
-                  <TextField
-                    label="Or paste CSV Data here"
-                    value={csvData}
-                    onChange={setCsvData}
-                    multiline={4}
-                    placeholder={"Group Name, product-handle-1, product-handle-2"}
-                    autoComplete="off"
-                    helpText="Each line = one new group."
-                  />
-                </>
-              )}
-            </BlockStack>
+            <ImportCsvModalContent
+              isImporting={isImporting}
+              file={file}
+              csvData={csvData}
+              showPreview={showCsvPreview}
+              onDrop={handleDrop}
+              onFileRemove={() => {
+                setFile(null);
+                setCsvData("");
+                setShowCsvPreview(false);
+              }}
+            />
           </Modal.Section>
         </Modal>
       </Page>

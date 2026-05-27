@@ -51,6 +51,27 @@ model ProductGroup {
   @@index([shop])
 }
 
+model SyncJob {
+  id          String    @id @default(cuid())
+  shop        String
+  type        String
+  targetId    String?
+  dedupeKey   String    @unique
+  payload     Json?
+  status      String    @default("pending") // pending, processing, completed, failed
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  runAt       DateTime  @default(now())
+  lockedAt    DateTime?
+  completedAt DateTime?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, runAt])
+  @@index([shop, type])
+}
+
 // Product Group Item - Sản phẩm trong nhóm
 model ProductGroupItem {
   id             String    @id @default(cuid())
@@ -108,30 +129,10 @@ model AppSetting {
   applyToCollection     Boolean   @default(true)
   applyToSearch         Boolean   @default(true)
   applyToHome           Boolean   @default(false)
-  hideMultiOptionOnCards Boolean  @default(true)
-  hideInaccessible      Boolean   @default(true)
-  removeArchived        Boolean   @default(false)
-  seamlessSwitching     Boolean   @default(false)
-  autoScroll            Boolean   @default(false)
-  enableAutosuggestion  Boolean   @default(true)
-  notificationEmail     String?
   selectOptionLabel     String    @default("{option}")
   soldOutLabel          String    @default("Sold out")
   unavailableLabel      String    @default("Unavailable")
-  swatchSize            Int       @default(50)
-  itemsGap              Int       @default(8)
-  borderRadius          Int       @default(8)
-  borderWidth           Int       @default(1)
-  borderColor           String    @default("#e5e5e5")
-  selectedBorderColor   String    @default("#000000")
   showOptionName        Boolean   @default(true)
-  blockPaddingX         Int       @default(12)
-  blockPaddingY         Int       @default(8)
-  blockFontSize         Int       @default(14)
-  blockBgColor          String    @default("#ffffff")
-  blockTextColor        String    @default("#000000")
-  selectedBgColor       String    @default("#dddddd")
-  selectedTextColor     String    @default("#000000")
   customCssProduct      String    @default("")
   customCssCollection   String    @default("")
   defaultProductPageStyle String    @default("image_swatch")

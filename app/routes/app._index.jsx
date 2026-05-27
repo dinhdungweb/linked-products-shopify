@@ -8,31 +8,18 @@ import {
   Button,
   BlockStack,
   Text,
-  IndexTable,
   Badge,
-  EmptyState,
   Modal,
-  FormLayout,
-  TextField,
   InlineStack,
   Banner,
-  Thumbnail,
   Box,
-  Divider,
-  Tooltip,
   ProgressBar,
   Icon,
-  Tabs,
-  Grid,
   InlineGrid,
-  DropZone,
-  Spinner,
 } from "@shopify/polaris";
 import {
   XIcon,
-  SearchIcon,
   ViewIcon,
-  DeleteIcon,
   ImportIcon,
   PlayCircleIcon,
   ClipboardChecklistIcon,
@@ -41,24 +28,27 @@ import {
   QuestionCircleIcon,
   PlusCircleIcon,
   AutomationIcon,
-  InfoIcon,
   PlusIcon,
   CheckIcon,
-  RefreshIcon,
-  MenuHorizontalIcon,
-  MenuVerticalIcon,
   ExternalIcon,
-  NoteIcon,
-  CheckCircleIcon
 } from "@shopify/polaris-icons";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { useAppBridge } from "@shopify/app-bridge-react";
+import { ImportCsvModalContent } from "../components/ImportCsvModalContent";
 import { PLANS } from "../billing.config";
+import { enqueueGroupSync, enqueueMetafieldCleanup } from "../sync-jobs.server";
+import { openCrispChat } from "../utils/crisp-chat";
+import {
+  buildThemeEditorUrl,
+  getAppEmbedActionLabel,
+  getAppEmbedTone,
+  useAppEmbedStatus,
+} from "../utils/app-embed-status";
 
 // Loader - Get product groups list
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { getUsageInfo, confirmSubscription } = await import("../billing.server");
+  const { getUsageInfo, confirmSubscription, isBillingTestMode } = await import("../billing.server");
 
   const { admin, session, billing } = await authenticate.admin(request);
   const shop = session.shop;
@@ -67,7 +57,7 @@ export async function loader({ request }) {
 
   try {
     const billingCheck = await billing.check({
-      isTest: true,
+      isTest: isBillingTestMode(),
       plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
     });
 
@@ -106,44 +96,13 @@ export async function loader({ request }) {
     where: { group: { shop: shop } }
   });
 
-  // Fetch App Embed Status via direct REST fetch (most stable method)
-  let isAppEmbedEnabled = false;
-  try {
-    const themeResponse = await admin.graphql(`
-      query getThemeId {
-        themes(first: 1, roles: [MAIN]) {
-          nodes { id }
-        }
-      }
-    `);
-    const themeData = await themeResponse.json();
-    const themeId = themeData.data?.themes?.nodes?.[0]?.id.split('/').pop();
-
-    if (themeId) {
-      const restUrl = `https://${shop}/admin/api/2024-04/themes/${themeId}/assets.json?asset[key]=config/settings_data.json`;
-      const assetResponse = await fetch(restUrl, {
-        headers: { "X-Shopify-Access-Token": session.accessToken },
-      });
-
-      if (assetResponse.ok) {
-        const assetData = await assetResponse.json();
-        const settingsValue = assetData.asset?.value;
-        if (settingsValue) {
-          const settings = JSON.parse(settingsValue);
-          const blocks = settings.current?.blocks || {};
-          isAppEmbedEnabled = Object.values(blocks).some(block =>
-            (block.type?.includes('linked-products') || block.type?.includes('app-card-injector')) &&
-            block.disabled === false
-          );
-        }
-      }
-    }
-  } catch (e) {
-    console.warn("Skipping app embed check:", e.message);
-    isAppEmbedEnabled = true; // Safety default
-  }
-
-  return json({ groups, shop: shop, usageInfo, totalProducts, isAppEmbedEnabled });
+  return json({
+    groups,
+    shop,
+    usageInfo,
+    totalProducts,
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+  });
 }
 
 // Action - Create group, add products, and sync
@@ -220,83 +179,9 @@ export async function action({ request }) {
       });
     }
 
-    // Auto-sync metafields
-    try {
-      const metafields = [];
-      const metafieldValue = products.map((p) => ({
-        handle: p.handle,
-        title: p.title || "",
-        image: p.image || "",
-        color: ""
-      }));
+    await enqueueGroupSync(prisma, session.shop, newGroup.id);
 
-      for (const product of products) {
-        // 1. linked_list metafield
-        metafields.push({
-          ownerId: product.id,
-          namespace: "linked_products",
-          key: "linked_list",
-          value: JSON.stringify(metafieldValue),
-          type: "json",
-        });
-        // 2. option_value metafield
-        metafields.push({
-          ownerId: product.id,
-          namespace: "linked_products",
-          key: "option_value",
-          value: product.title || "",
-          type: "single_line_text_field",
-        });
-        // 3. inventory_behavior (default show during creation)
-        metafields.push({
-          ownerId: product.id,
-          namespace: "linked_products",
-          key: "inventory_behavior",
-          value: "show",
-          type: "single_line_text_field",
-        });
-      }
-
-      // Batching: Shopify limits metafieldsSet to 25 items per call
-      const BATCH_SIZE = 25;
-      const batches = [];
-      for (let i = 0; i < metafields.length; i += BATCH_SIZE) {
-        batches.push(metafields.slice(i, i + BATCH_SIZE));
-      }
-
-      // Sequential processing: More stable than Promise.all for metafieldsSet
-      for (const batch of batches) {
-        const metafieldMutation = await admin.graphql(`
-          mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
-            metafieldsSet(metafields: $metafields) {
-              metafields { id }
-              userErrors { field message }
-            }
-          }
-        `, {
-          variables: { metafields: batch },
-        });
-
-        const result = await metafieldMutation.json();
-        if (result.data?.metafieldsSet?.userErrors?.length > 0) {
-          throw new Error(result.data.metafieldsSet.userErrors[0].message);
-        }
-      }
-
-      // Mark as synced
-      await prisma.productGroup.update({
-        where: { id: newGroup.id },
-        data: { syncStatus: "synced" },
-      });
-
-      return json({ success: true, message: `Group "${name}" created with ${products.length} products and synced successfully!` });
-    } catch (error) {
-      await prisma.productGroup.update({
-        where: { id: newGroup.id },
-        data: { syncStatus: "error" },
-      });
-      return json({ success: true, message: `Group created but sync error: ${error.message}` });
-    }
+    return json({ success: true, message: `Group "${name}" created with ${products.length} products. Storefront sync queued.` });
   }
 
   if (actionType === "delete") {
@@ -316,72 +201,24 @@ export async function action({ request }) {
       return json({ error: "Group not found" }, { status: 400 });
     }
 
-    // Xóa metafield trên Shopify cho từng sản phẩm
-    try {
-      const metafieldKeys = [
-        "linked_products.linked_list",
-        "linked_products.option_value",
-        "linked_products.inventory_behavior",
-        "linked_products.option_name",
-        "linked_products.selector_style",
-      ];
-
-      for (const product of group.products) {
-        // Lấy metafield IDs của sản phẩm
-        const metafieldQuery = await admin.graphql(`
-          query GetProductMetafields($productId: ID!) {
-            product(id: $productId) {
-              metafields(first: 10, namespace: "linked_products") {
-                nodes {
-                  id
-                  key
-                }
-              }
-            }
-          }
-        `, { variables: { productId: product.productId } });
-
-        const metafieldResult = await metafieldQuery.json();
-        const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
-
-        if (metafieldNodes.length > 0) {
-          const metafieldsToDelete = metafieldNodes.map(m => ({
-            namespace: "linked_products",
-            key: m.key,
-            ownerId: product.productId
-          }));
-
-          await admin.graphql(`
-            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-              metafieldsDelete(metafields: $metafields) {
-                deletedMetafields { ownerId }
-                userErrors { field message }
-              }
-            }
-          `, {
-            variables: {
-              metafields: metafieldsToDelete,
-            },
-          });
-        }
-      }
-    } catch (error) {
-      console.warn("Warning: Could not clean up metafields:", error.message);
-      // Không throw error - vẫn cho phép xóa nhóm trong DB
-    }
     await prisma.productGroup.delete({
       where: { id: groupId },
     });
+    await enqueueMetafieldCleanup(
+      prisma,
+      session.shop,
+      group.products.map((product) => product.productId),
+      { reason: "group_deleted" },
+    );
 
-    return json({ success: true, message: "Group and metafields deleted successfully" });
+    return json({ success: true, message: "Group deleted. Storefront cleanup queued." });
   }
 
   if (actionType === "importCSV") {
     const csvData = formData.get("csvData");
     if (!csvData) return json({ error: "No CSV data provided" }, { status: 400 });
 
-    const { canAddLinks, getUsageInfo } = await import("../billing.server");
-    const usageInfo = await getUsageInfo(session.shop);
+    const { canAddLinks } = await import("../billing.server");
 
     // Fetch global settings for fallback
     const settings = await prisma.appSetting.findUnique({
@@ -493,14 +330,8 @@ export async function action({ request }) {
           });
         }
 
-        // AUTO-SYNC to Shopify using centralized logic
-        try {
-          await syncGroupMetafields(admin, prisma, newGroup.id);
-          groupsCreated++;
-        } catch (e) {
-          console.warn(`Group "${groupName}" created but sync failed:`, e.message);
-          groupsCreated++;
-        }
+        await enqueueGroupSync(prisma, session.shop, newGroup.id);
+        groupsCreated++;
       }
 
       const message = `Import completed: ${groupsCreated} groups created.` +
@@ -515,47 +346,160 @@ export async function action({ request }) {
 }
 
 export default function Index() {
-  const { groups, usageInfo, totalProducts, isAppEmbedEnabled, shop } = useLoaderData();
+  const { groups, usageInfo, totalProducts, shop, apiKey } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
   const shopify = useAppBridge();
+  const appEmbedStatus = useAppEmbedStatus(shopify);
+  const isAppEmbedActive = appEmbedStatus.status === "active";
+  const isCheckingAppEmbed = appEmbedStatus.status === "checking";
+  const isAppEmbedStepComplete = isAppEmbedActive;
+  const shouldShowEmbedBanner = !isCheckingAppEmbed && !isAppEmbedActive;
+  const displayedAppEmbedStatus = appEmbedStatus;
+  const appEmbedActionLabel = getAppEmbedActionLabel(appEmbedStatus.status);
+  const appEmbedStepIcon = isCheckingAppEmbed ? AutomationIcon : (isAppEmbedActive ? CheckIcon : XIcon);
+  const appEmbedStepColor = isCheckingAppEmbed ? '#8c9196' : (isAppEmbedActive ? '#008060' : '#D82C0D');
+  const themeEditorUrl = buildThemeEditorUrl(shop, apiKey);
 
   const isLimitReached = usageInfo?.used >= usageInfo?.limit;
+  const completedSteps = (groups.length > 0 ? 1 : 0) + (isAppEmbedStepComplete ? 1 : 0);
+  const setupProgress = completedSteps * 50;
+  const usageLimitLabel = usageInfo?.limit === Infinity ? "Unlimited" : usageInfo?.limit;
+  const usageUnitLabel = usageInfo?.limit === 1 ? "group" : "groups";
+  const usageProgress = usageInfo?.limit === Infinity
+    ? 0
+    : Math.min(100, ((usageInfo?.used || 0) / usageInfo?.limit) * 100);
+
+  useEffect(() => {
+    if (actionData?.success) {
+      const message = actionData.message?.split("\n")[0] || "Action completed";
+      shopify.toast.show(message);
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
+    }
+  }, [actionData, shopify]);
 
   const StatsCard = ({ title, value, icon, color, progress, subtitle }) => (
-    <div style={{ 
-      height: '100%', 
-      backgroundColor: '#FFFFFF', 
-      borderRadius: '12px', 
-      padding: '16px', 
-      boxShadow: 'var(--p-shadow-bevel-100)',
+    <div style={{
+      height: '100%',
+      backgroundColor: '#FFFFFF',
+      border: '1px solid #E3E3E3',
+      borderRadius: '12px',
+      padding: '18px',
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
+      gap: '16px',
+      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
     }}>
-      <BlockStack gap="300">
-        <InlineStack align="space-between" blockAlign="center">
-          <BlockStack gap="100">
-            <Text variant="bodySm" fontWeight="bold" tone="subdued">{title}</Text>
-            <Text variant="headingLg" as="h2">{value}</Text>
-          </BlockStack>
-          <div style={{ backgroundColor: '#F1F1F1', padding: '12px', borderRadius: '12px', color: '#5C5F62', display: 'flex' }}>
+      <InlineStack align="space-between" blockAlign="start">
+        <BlockStack gap="100">
+          <Text variant="bodySm" fontWeight="semibold" tone="subdued">{title}</Text>
+          <Text variant="headingLg" as="h2">{value}</Text>
+        </BlockStack>
+        <div style={{
+          width: '42px',
+          height: '42px',
+          borderRadius: '10px',
+          backgroundColor: `${color}14`,
+          color,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{ display: 'flex' }}>
             <Icon source={icon} tone="inherit" />
           </div>
-        </InlineStack>
-      </BlockStack>
+        </div>
+      </InlineStack>
 
-      <Box paddingBlockStart="300">
-        {progress !== undefined ? (
-          <BlockStack gap="100">
-            <ProgressBar progress={progress} tone={progress > 90 ? "critical" : "primary"} size="small" />
-            <Text variant="bodyXs" tone="subdued">{subtitle}</Text>
+      {progress !== undefined ? (
+        <BlockStack gap="150">
+          <ProgressBar progress={progress} tone={progress >= 90 ? "critical" : "primary"} size="small" />
+          <Text variant="bodyXs" tone="subdued">{subtitle}</Text>
+        </BlockStack>
+      ) : (
+        subtitle && <Text variant="bodySm" tone="subdued">{subtitle}</Text>
+      )}
+    </div>
+  );
+
+  const SetupStep = ({ complete, icon, title, description, actionLabel, actionUrl, onAction, disabled }) => (
+    <div style={{
+      border: `1px solid ${complete ? '#B7E4C7' : '#E3E3E3'}`,
+      borderRadius: '12px',
+      backgroundColor: complete ? '#F6FFF9' : '#FFFFFF',
+      padding: '16px'
+    }}>
+      <InlineStack align="space-between" blockAlign="center" gap="400" wrap={false}>
+        <InlineStack gap="300" blockAlign="center" wrap={false}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            backgroundColor: complete ? '#E3FCEF' : '#F6F6F7',
+            color: complete ? '#008060' : '#6D7175',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <div style={{ display: 'flex' }}>
+              <Icon source={complete ? CheckIcon : icon} tone="inherit" />
+            </div>
+          </div>
+          <BlockStack gap="050">
+            <Text variant="bodyMd" fontWeight="semibold">{title}</Text>
+            <Text variant="bodySm" tone="subdued">{description}</Text>
           </BlockStack>
-        ) : (
-          subtitle && <Text variant="bodySm" tone="subdued">{subtitle}</Text>
-        )}
-      </Box>
+        </InlineStack>
+        <Button
+          variant={complete ? "tertiary" : "primary"}
+          url={actionUrl}
+          onClick={onAction}
+          disabled={disabled}
+        >
+          {actionLabel}
+        </Button>
+      </InlineStack>
+    </div>
+  );
+
+  const QuickAction = ({ icon, title, description, actionLabel = "Open", url, onClick, disabled }) => (
+    <div style={{
+      border: '1px solid #E3E3E3',
+      borderRadius: '12px',
+      padding: '14px',
+      backgroundColor: disabled ? '#F6F6F7' : '#FFFFFF',
+      opacity: disabled ? 0.72 : 1
+    }}>
+      <BlockStack gap="300">
+        <InlineStack gap="300" blockAlign="start" wrap={false}>
+          <div style={{
+            width: '34px',
+            height: '34px',
+            borderRadius: '9px',
+            backgroundColor: '#F1F4F9',
+            color: '#2C6ECB',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <div style={{ display: 'flex' }}>
+              <Icon source={icon} tone="inherit" />
+            </div>
+          </div>
+          <BlockStack gap="050">
+            <Text variant="bodyMd" fontWeight="semibold">{title}</Text>
+            <Text variant="bodySm" tone="subdued">{description}</Text>
+          </BlockStack>
+        </InlineStack>
+        <Button fullWidth url={url} onClick={onClick} disabled={disabled}>
+          {actionLabel}
+        </Button>
+      </BlockStack>
     </div>
   );
 
@@ -644,163 +588,120 @@ export default function Index() {
 
   const TutorialCard = () => (
     <div style={{
-      display: 'flex',
       backgroundColor: '#FFFFFF',
-      borderRadius: '16px',
+      borderRadius: '12px',
       overflow: 'hidden',
-      border: '1px solid #E1E1E1',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-      minHeight: '170px'
+      border: '1px solid #E3E3E3',
+      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
     }}>
-      {/* Left Banner Section */}
       <div style={{
-        width: '35%',
-        background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
         padding: '20px',
-        color: 'white',
-        overflow: 'hidden'
+        display: 'flex',
+        gap: '20px',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap'
       }}>
-        {/* Background Illustration Overlay */}
-        <img
-          src="file:///C:/Users/DUNG/.gemini/antigravity/brain/c3a366c7-9ba6-4d32-a9f2-7f65b53514d3/tutorial_banner_illustration_1775666504320.png"
-          alt=""
-          style={{
+        <div style={{
+          width: '240px',
+          aspectRatio: '16 / 9',
+          borderRadius: '14px',
+          backgroundColor: '#F1F4F9',
+          color: '#2C6ECB',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          flexShrink: 0,
+          overflow: 'hidden'
+        }}>
+          <div style={{ width: '40px', height: '40px', display: 'flex' }}>
+            <Icon source={PlayCircleIcon} tone="inherit" />
+          </div>
+          <div style={{
             position: 'absolute',
-            bottom: '-10%',
-            right: '-10%',
-            width: '120%',
-            opacity: '0.25',
-            pointerEvents: 'none',
-            filter: 'brightness(2)'
-          }}
-        />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <Box paddingBlockEnd="150">
+            left: '12px',
+            bottom: '10px',
+            padding: '3px 8px',
+            borderRadius: '100px',
+            backgroundColor: 'rgba(32, 34, 35, 0.78)',
+            color: '#FFFFFF',
+            fontSize: '12px',
+            fontWeight: 600
+          }}>
+            7:31
+          </div>
+        </div>
+        <div style={{ flex: '1 1 280px', minWidth: 0 }}>
+          <BlockStack gap="200">
+            <InlineStack gap="200" blockAlign="center">
             <div style={{
-              display: 'inline-block',
-              padding: '2px 10px',
+              padding: '2px 8px',
               borderRadius: '100px',
-              background: 'rgba(255, 255, 255, 0.25)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255, 255, 255, 0.4)',
+              backgroundColor: '#EEF4FF',
+              color: '#2C6ECB',
               fontSize: '11px',
               fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              color: 'white'
+              textTransform: 'uppercase'
             }}>
               Tutorial
             </div>
-          </Box>
-          <div style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-            <Text variant="headingMd" as="h2" tone="inherit">
-              Learn how to use our app
-            </Text>
-          </div>
-        </div>
-
-        <div style={{
-          position: 'relative',
-          alignSelf: 'flex-start',
-          padding: '4px 10px',
-          background: 'rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(4px)',
-          borderRadius: '100px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '12px',
-          fontWeight: '600',
-          color: 'white',
-          zIndex: 2,
-          marginTop: 'auto'
-        }}>
-          <div style={{ display: 'flex' }}>
-            <Icon source={PlayCircleIcon} tone="inherit" />
-          </div>
-          5:18
-        </div>
-      </div>
-
-      {/* Right Content Section */}
-      <div style={{ width: '65%', padding: '24px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <BlockStack gap="400">
-          <BlockStack gap="100">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text variant="headingMd" as="h3">How to use the app</Text>
-              <div style={{ display: 'flex', cursor: 'pointer', color: '#8C9196' }}>
-                <Icon source={MenuVerticalIcon} tone="inherit" />
-              </div>
-            </div>
+            </InlineStack>
+            <Text variant="headingMd" as="h2">How to use the app</Text>
             <Text variant="bodyMd" tone="subdued">
               Watch a quick walkthrough to get set up faster and avoid common mistakes in product linking.
             </Text>
           </BlockStack>
-
-          <InlineStack gap="300">
-            <Button variant="primary" icon={PlayCircleIcon} onClick={() => window.open('https://www.youtube.com/watch?v=jO2yBhXzruE', '_blank')}>Watch video</Button>
-            <Button variant="secondary" icon={ExternalIcon} url="/app/help">Learn more</Button>
-          </InlineStack>
-        </BlockStack>
+        </div>
+        <div style={{ width: '140px', marginLeft: 'auto' }}>
+          <BlockStack gap="200">
+            <Button fullWidth variant="primary" icon={PlayCircleIcon} onClick={() => window.open('https://www.youtube.com/watch?v=jO2yBhXzruE', '_blank')}>Watch video</Button>
+            <Button fullWidth variant="secondary" icon={ExternalIcon} url="/app/help">Help center</Button>
+          </BlockStack>
+        </div>
       </div>
     </div>
   );
 
   const SupportSideList = () => (
     <BlockStack gap="300">
-      <Card padding="400">
+      <Card padding="400" background="bg-surface-secondary">
         <BlockStack gap="300">
           <InlineStack gap="200" blockAlign="center">
-            <div style={{ backgroundColor: '#F1F1F1', padding: '8px', borderRadius: '8px', color: '#5C5F62', display: 'flex' }}><Icon source={EmailIcon} tone="inherit" /></div>
+            <div style={{ backgroundColor: '#FFFFFF', padding: '8px', borderRadius: '8px', color: '#5C5F62', display: 'flex' }}><Icon source={EmailIcon} tone="inherit" /></div>
             <Text variant="headingSm" as="h3">Email Support</Text>
           </InlineStack>
           <Text variant="bodySm" tone="subdued">Response time: <Text fontWeight="bold" as="span">Under 24h</Text></Text>
           <Button variant="plain" url="mailto:support@example.com">Contact us</Button>
         </BlockStack>
       </Card>
-      <Card padding="400">
+      <Card padding="400" background="bg-surface-secondary">
         <BlockStack gap="300">
           <InlineStack gap="200" blockAlign="center">
-            <div style={{ backgroundColor: '#F1F1F1', padding: '8px', borderRadius: '8px', color: '#5C5F62', display: 'flex' }}><Icon source={ChatIcon} tone="inherit" /></div>
+            <div style={{ backgroundColor: '#FFFFFF', padding: '8px', borderRadius: '8px', color: '#5C5F62', display: 'flex' }}><Icon source={ChatIcon} tone="inherit" /></div>
             <Text variant="headingSm" as="h3">Live Chat</Text>
           </InlineStack>
           <Text variant="bodySm" tone="subdued">Chat with us for instant help.</Text>
-          <Button variant="plain">Start chat</Button>
+          <Button variant="plain" onClick={openCrispChat}>Start chat</Button>
         </BlockStack>
       </Card>
     </BlockStack>
   );
 
-  const [actionBannerVisible, setActionBannerVisible] = useState(true);
-
-  // Reset banner visibility when actionData changes
-  useEffect(() => {
-    if (actionData) {
-      setActionBannerVisible(true);
-    }
-  }, [actionData]);
-  const [openFaq, setOpenFaq] = useState(null);
-  const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvData, setCsvData] = useState("");
   const [file, setFile] = useState(null);
+  const [showCsvPreview, setShowCsvPreview] = useState(false);
 
   const isLoading = navigation.state === "submitting" || navigation.state === "loading";
   const isImporting = isLoading && navigation.formData?.get("action") === "importCSV";
-  const isSyncing = navigation.state !== "idle" && (
-    navigation.formData?.get("action") === "createWithProducts"
-  );
 
   const handleDrop = useCallback(
     (_droppedFiles, acceptedFiles, _rejectedFiles) => {
       if (acceptedFiles.length > 0) {
         const file = acceptedFiles[0];
         setFile(file);
+        setShowCsvPreview(false);
         
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -829,6 +730,7 @@ export default function Index() {
       setShowImportModal(false);
       setFile(null);
       setCsvData("");
+      setShowCsvPreview(false);
     }
   }, [actionData, showImportModal]);
 
@@ -842,101 +744,85 @@ export default function Index() {
     return {};
   };
 
-
-
-  const handleDeleteGroup = useCallback(async (groupId) => {
-    if (confirm("Are you sure you want to delete this group?")) {
-      const formData = new FormData();
-      formData.append("action", "delete");
-      formData.append("groupId", groupId);
-      const headers = await fetchIdToken();
-      submit(formData, { method: "POST", headers });
-    }
-  }, [submit]);
-
-  const getSyncStatusBadge = (status) => {
-    switch (status) {
-      case "synced":
-        return <Badge tone="success">Synced</Badge>;
-      case "error":
-        return <Badge tone="critical">Error</Badge>;
-      default:
-        return <Badge>Not synced</Badge>;
-    }
-  };
-
   return (
-    <Page>
-      <div style={{ padding: "10px 0" }}>
+    <Page fullWidth>
+      <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "18px 0 40px" }}>
         <BlockStack gap="500">
-          {/* Welcome Section */}
-          <Box paddingBlock="200">
-            <InlineStack align="space-between" blockAlign="center">
-              <BlockStack gap="100">
-                <Text variant="headingXl">Welcome 🚀</Text>
-                <Text variant="bodyMd" tone="subdued">
-                  Link and manage products as SEO-friendly variants with unique URLs, titles, and descriptions.
-                </Text>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E3E3E3',
+            borderRadius: '14px',
+            padding: '24px',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
+          }}>
+            <InlineStack align="space-between" blockAlign="start" gap="500">
+              <BlockStack gap="300">
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', alignSelf: 'flex-start' }}>
+                  <Badge tone="info">{usageInfo.planName} plan</Badge>
+                  {isLimitReached && <Badge tone="critical">Limit reached</Badge>}
+                </div>
+                <BlockStack gap="150">
+                  <Text variant="heading2xl" as="h1">Welcome to Linkify: Product Variants</Text>
+                  <Text variant="bodyMd" tone="subdued">
+                    Manage linked product groups, storefront visibility, and product-card options from one place.
+                  </Text>
+                </BlockStack>
               </BlockStack>
-              <Button 
-                variant="primary" 
-                icon={PlusCircleIcon} 
-                url="/app/groups/new"
-                disabled={isLimitReached}
-              >
-                {isLimitReached ? "Limit reached" : "Create new group"}
-              </Button>
+              <InlineStack gap="300" wrap={false}>
+                <Button icon={ViewIcon} url="/app/groups">Manage groups</Button>
+                <Button
+                  variant="primary"
+                  icon={PlusCircleIcon}
+                  url={isLimitReached ? undefined : "/app/groups/new"}
+                  disabled={isLimitReached}
+                >
+                  {isLimitReached ? "Limit reached" : "Create group"}
+                </Button>
+              </InlineStack>
             </InlineStack>
-          </Box>
+          </div>
 
           <Layout>
             <Layout.Section>
               <BlockStack gap="500">
-                {actionData?.success && actionBannerVisible && (
-                  <Banner tone="success" onDismiss={() => setActionBannerVisible(false)}>
-                    <p>{actionData.message}</p>
-                  </Banner>
-                )}
-
                 {/* Dynamic Alerts */}
-                {!isAppEmbedEnabled && (
+                {shouldShowEmbedBanner && (
                   <Banner
                     title="Theme integration required"
-                    tone="warning"
+                    tone={getAppEmbedTone(appEmbedStatus.status)}
                     action={{
-                      content: 'Enable in Theme',
+                      content: getAppEmbedActionLabel(appEmbedStatus.status),
                       onAction: () => {
-                        const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
-                        window.open(url, '_blank');
+                        window.open(themeEditorUrl, '_blank');
                       }
                     }}
                   >
-                    <p>App embed is disabled. Enable it to show swatches on your storefront.</p>
+                    <p>{appEmbedStatus.description}</p>
                   </Banner>
                 )}
 
                 {/* Stats Cards Row */}
-                <InlineGrid columns={{ xs: 1, md: 3 }} gap="400">
+                <InlineGrid columns={{ xs: 1, sm: 2, md: 3 }} gap="400">
                   <StatsCard
-                    title="Plan Usage"
-                    value={`${usageInfo?.used || 0} / ${usageInfo?.limit === Infinity ? "∞" : usageInfo?.limit}`}
+                    title="Plan usage"
+                    value={`${usageInfo?.used || 0} / ${usageLimitLabel ?? 0}`}
                     icon={CheckIcon}
-                    color="#008060"
-                    progress={usageInfo?.limit === Infinity ? 0 : ((usageInfo?.used || 0) / usageInfo?.limit) * 100}
+                    color={isLimitReached ? "#D82C0D" : "#008060"}
+                    progress={usageProgress}
                     subtitle={isLimitReached ? "Limit reached" : "Group capacity"}
                   />
                   <StatsCard
-                    title="Linked Products"
+                    title="Linked products"
                     value={totalProducts}
                     icon={PlusIcon}
                     color="#2C6ECB"
-                    subtitle="Across all groups"
+                    subtitle={`${groups.length} product ${groups.length === 1 ? "group" : "groups"}`}
                   />
                   <StatsCard
-                    title="App Status"
-                    value={isAppEmbedEnabled ? "Active" : "Disabled"}
-                    icon={isAppEmbedEnabled ? CheckIcon : XIcon}
-                    color={isAppEmbedEnabled ? "#008060" : "#D82C0D"}
+                    title="App status"
+                    value={displayedAppEmbedStatus.label}
+                    icon={appEmbedStepIcon}
+                    color={appEmbedStepColor}
                     subtitle="Storefront visibility"
                   />
                 </InlineGrid>
@@ -947,104 +833,60 @@ export default function Index() {
                     <InlineStack align="space-between" blockAlign="center">
                       <BlockStack gap="100">
                         <Text variant="headingMd" as="h2">Setup guide</Text>
-                        <Text variant="bodySm" tone="subdued">Follow these steps to finish your setup.</Text>
+                        <Text variant="bodySm" tone="subdued">Complete the essentials for a stable storefront setup.</Text>
                       </BlockStack>
-                      <Badge tone={groups.length > 0 && isAppEmbedEnabled ? "success" : "attention"}>
-                        {groups.length > 0 && isAppEmbedEnabled ? "2/2 completed" : groups.length > 0 || isAppEmbedEnabled ? "1/2 completed" : "0/2 completed"}
+                      <Badge tone={groups.length > 0 && isAppEmbedStepComplete ? "success" : "attention"}>
+                        {completedSteps}/2 completed
                       </Badge>
                     </InlineStack>
 
                     <ProgressBar
-                      progress={(groups.length > 0 ? 50 : 0) + (isAppEmbedEnabled ? 50 : 0)}
+                      progress={setupProgress}
                       size="small"
                       tone="primary"
                     />
 
                     <BlockStack gap="300">
-                      {/* Step 1: Create Group */}
-                      <div style={{ border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
-                        <Box padding="300" background="bg-surface-secondary">
-                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                              <div style={{
-                                backgroundColor: '#FFFFFF',
-                                padding: '10px',
-                                borderRadius: '12px',
-                                color: groups.length > 0 ? '#008060' : '#8c9196',
-                                display: 'flex',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                              }}>
-                                <Icon source={groups.length > 0 ? CheckIcon : ClipboardChecklistIcon} tone="inherit" />
-                              </div>
-                              <BlockStack gap="050">
-                                <Text variant="bodyMd" fontWeight="bold">Create a product group</Text>
-                                <Text variant="bodySm" tone="subdued">Link products together to show them as options.</Text>
-                              </BlockStack>
-                            </div>
-                            <Button 
-                              variant={groups.length > 0 ? "tertiary" : "primary"} 
-                              url={groups.length > 0 ? "/app/groups" : (isLimitReached ? undefined : "/app/groups/new")}
-                              disabled={groups.length === 0 && isLimitReached}
-                            >
-                              {groups.length > 0 ? "View Groups" : (isLimitReached ? "Limit reached" : "Create Group")}
-                            </Button>
-                          </div>
-                        </Box>
-                      </div>
-
-                      {/* Step 2: Enable App Embed */}
-                      <div style={{ border: '1px solid #ddd', borderRadius: '12px', overflow: 'hidden' }}>
-                        <Box padding="300" background="bg-surface-secondary">
-                          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1 }}>
-                              <div style={{
-                                backgroundColor: '#FFFFFF',
-                                padding: '10px',
-                                borderRadius: '12px',
-                                color: isAppEmbedEnabled ? '#008060' : '#8c9196',
-                                display: 'flex',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                              }}>
-                                <Icon source={isAppEmbedEnabled ? CheckIcon : AutomationIcon} tone="inherit" />
-                              </div>
-                              <BlockStack gap="050">
-                                <Text variant="bodyMd" fontWeight="bold">Enable app embed</Text>
-                                <Text variant="bodySm" tone="subdued">Activate the widget in your theme editor.</Text>
-                              </BlockStack>
-                            </div>
-                            <Button variant={isAppEmbedEnabled ? "tertiary" : "primary"} onClick={() => {
-                              const url = `https://admin.shopify.com/store/${shop.split('.')[0]}/themes/current/editor?context=apps&activateAppId=2dc3da0c1804b6a547c472b2d3b6a6ca/app-card-injector`;
-                              window.open(url, '_blank');
-                            }}>
-                              {isAppEmbedEnabled ? "Review Theme" : "Enable App Embed"}
-                            </Button>
-                          </div>
-                        </Box>
-                      </div>
+                      <SetupStep
+                        complete={groups.length > 0}
+                        icon={ClipboardChecklistIcon}
+                        title="Create a product group"
+                        description="Link related products so shoppers can switch between them as options."
+                        actionLabel={groups.length > 0 ? "View groups" : (isLimitReached ? "Limit reached" : "Create group")}
+                        actionUrl={groups.length > 0 ? "/app/groups" : (isLimitReached ? undefined : "/app/groups/new")}
+                        disabled={groups.length === 0 && isLimitReached}
+                      />
+                      <SetupStep
+                        complete={isAppEmbedStepComplete}
+                        icon={AutomationIcon}
+                        title="Enable app embed"
+                        description={displayedAppEmbedStatus.description}
+                        actionLabel={appEmbedActionLabel}
+                        onAction={() => window.open(themeEditorUrl, '_blank')}
+                      />
                     </BlockStack>
                   </BlockStack>
                 </Card>
 
-                {/* Tutorial Section moved to Main */}
-                <Box paddingBlockStart="200">
-                  <TutorialCard />
-                </Box>
+                <TutorialCard />
 
                 <FAQSection />
               </BlockStack>
             </Layout.Section>
             <Layout.Section variant="oneThird">
               <BlockStack gap="400">
-                {/* Usage Info Card */}
-                <Card background="bg-surface-secondary">
-                  <BlockStack gap="300">
-                    <Text variant="headingMd">Your Plan</Text>
-                    <BlockStack gap="100">
-                      <Text variant="bodyMd" fontWeight="bold">
-                        {usageInfo.planName} Plan
+                <Card padding="500">
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <Text variant="headingMd" as="h2">Current plan</Text>
+                      <Badge tone={isLimitReached ? "critical" : "success"}>{usageInfo.planName}</Badge>
+                    </InlineStack>
+                    <BlockStack gap="150">
+                      <Text variant="headingLg" as="p">
+                        {usageInfo.used} / {usageLimitLabel} {usageUnitLabel}
                       </Text>
                       <Text variant="bodySm" tone="subdued">
-                        {usageInfo.used} / {usageInfo.limit === Infinity ? "Unlimited" : usageInfo.limit} links used
+                        {isLimitReached ? "Upgrade to create more product groups." : "Usage is within your plan limit."}
                       </Text>
                     </BlockStack>
                     {usageInfo.limit !== Infinity && (
@@ -1055,44 +897,55 @@ export default function Index() {
                       />
                     )}
                     <Button url="/app/pricing" variant="primary" fullWidth>
-                      {usageInfo.plan !== "pro" ? "Upgrade Plan" : "Manage Plan"}
+                      {usageInfo.plan === "free" ? "Upgrade plan" : "Manage plan"}
                     </Button>
                   </BlockStack>
                 </Card>
 
-                <Card>
-                  <BlockStack gap="300">
-                    <Text variant="headingMd">Quick Actions</Text>
-                    <Grid>
-                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 11, lg: 6, xl: 6 }}>
-                        <Button 
-                          fullWidth 
-                          textAlign="left" 
-                          icon={PlusCircleIcon} 
-                          url="/app/groups/new"
-                          disabled={isLimitReached}
-                        >
-                          {isLimitReached ? "Create Group (Limit reached)" : "Create Group"}
-                        </Button>
-                      </Grid.Cell>
-                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                        <Button fullWidth textAlign="left" icon={PlusCircleIcon} url="/app/groups">Manage Groups</Button>
-                      </Grid.Cell>
-                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                        <Button fullWidth textAlign="left" icon={AutomationIcon} url="/app/automations">Automations</Button>
-                      </Grid.Cell>
-                      <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                        <Button fullWidth textAlign="left" icon={ImportIcon} onClick={() => setShowImportModal(true)}>Import CSV</Button>
-                      </Grid.Cell>
-                    </Grid>
+                <Card padding="500">
+                  <BlockStack gap="400">
+                    <BlockStack gap="100">
+                      <Text variant="headingMd" as="h2">Quick actions</Text>
+                      <Text variant="bodySm" tone="subdued">Shortcuts for common admin tasks.</Text>
+                    </BlockStack>
+                    <BlockStack gap="300">
+                      <QuickAction
+                        icon={PlusCircleIcon}
+                        title="Create group"
+                        description="Start a new linked product group."
+                        actionLabel={isLimitReached ? "Limit reached" : "Create group"}
+                        url={isLimitReached ? undefined : "/app/groups/new"}
+                        disabled={isLimitReached}
+                      />
+                      <QuickAction
+                        icon={ViewIcon}
+                        title="Manage groups"
+                        description="Review, edit, and sync existing groups."
+                        actionLabel="Open groups"
+                        url="/app/groups"
+                      />
+                      <QuickAction
+                        icon={AutomationIcon}
+                        title="Automations"
+                        description="Create groups automatically from product rules."
+                        actionLabel="Open automations"
+                        url="/app/automations"
+                      />
+                      <QuickAction
+                        icon={ImportIcon}
+                        title="Import CSV"
+                        description="Bulk create groups from product handles."
+                        actionLabel="Import CSV"
+                        onClick={() => setShowImportModal(true)}
+                      />
+                    </BlockStack>
                   </BlockStack>
                 </Card>
 
-                {/* Support moved below quick actions */}
-                <Box paddingBlockStart="100">
-                  <Text variant="headingSm" as="h3">Customer Support</Text>
-                </Box>
-                <SupportSideList />
+                <BlockStack gap="300">
+                  <Text variant="headingMd" as="h2">Customer support</Text>
+                  <SupportSideList />
+                </BlockStack>
               </BlockStack>
             </Layout.Section>
           </Layout>
@@ -1107,11 +960,12 @@ export default function Index() {
           setShowImportModal(false);
           setCsvData("");
           setFile(null);
+          setShowCsvPreview(false);
         }}
-        title="Import Groups from CSV"
+        title="Import product groups by CSV"
         primaryAction={{
-          content: isImporting ? "Importing..." : "Import",
-          onAction: handleImportFile,
+          content: isImporting ? "Importing..." : (showCsvPreview ? "Import groups" : "Upload and preview"),
+          onAction: showCsvPreview ? handleImportFile : () => setShowCsvPreview(true),
           loading: isImporting,
           disabled: !csvData.trim() || isImporting,
         }}
@@ -1121,72 +975,24 @@ export default function Index() {
             setShowImportModal(false);
             setCsvData("");
             setFile(null);
+            setShowCsvPreview(false);
           },
           disabled: isImporting,
         }]}
       >
         <Modal.Section>
-          <BlockStack gap="400">
-            {isImporting ? (
-               <Box padding="800">
-                  <BlockStack gap="400" align="center">
-                    <Spinner size="large" />
-                    <Text variant="headingMd" as="h2">Importing and syncing your products...</Text>
-                    <Text variant="bodyMd" tone="subdued">This may take a moment depending on the number of groups.</Text>
-                  </BlockStack>
-               </Box>
-            ) : (
-              <>
-                <Banner tone="info">
-                  <BlockStack gap="200">
-                    <p><strong>CSV Format:</strong> Each line creates one group.</p>
-                    <p><code>Group Name, product-handle-1, product-handle-2, ...</code></p>
-                    <p><strong>Example:</strong></p>
-                    <p><code>T-Shirt Colors, red-tshirt, blue-tshirt, green-tshirt</code></p>
-                  </BlockStack>
-                </Banner>
-                
-                <Box paddingBlock="200">
-                  <DropZone onDrop={handleDrop} allowMultiple={false} accept=".csv, text/csv">
-                    {file ? (
-                      <Box padding="400">
-                        <InlineStack gap="300" blockAlign="center">
-                          <Thumbnail
-                            size="small"
-                            alt="CSV File"
-                            source={NoteIcon}
-                          />
-                          <BlockStack gap="100">
-                            <Text variant="bodyMd" fontWeight="bold">
-                              {file.name}
-                            </Text>
-                            <Text variant="bodySm" tone="subdued">
-                              {Math.round(file.size / 1024)} KB
-                            </Text>
-                          </BlockStack>
-                          <Button variant="plain" tone="critical" onClick={(e) => { e.stopPropagation(); setFile(null); setCsvData(""); }}>
-                            Remove
-                          </Button>
-                        </InlineStack>
-                      </Box>
-                    ) : (
-                      <DropZone.FileUpload actionHint="Accepts .csv files" />
-                    )}
-                  </DropZone>
-                </Box>
-
-                <TextField
-                  label="Or paste CSV Data here"
-                  value={csvData}
-                  onChange={setCsvData}
-                  multiline={4}
-                  placeholder={"Group Name, product-handle-1, product-handle-2"}
-                  autoComplete="off"
-                  helpText="Each line = one new group."
-                />
-              </>
-            )}
-          </BlockStack>
+          <ImportCsvModalContent
+            isImporting={isImporting}
+            file={file}
+            csvData={csvData}
+            showPreview={showCsvPreview}
+            onDrop={handleDrop}
+            onFileRemove={() => {
+              setFile(null);
+              setCsvData("");
+              setShowCsvPreview(false);
+            }}
+          />
         </Modal.Section>
       </Modal>
     </Page>

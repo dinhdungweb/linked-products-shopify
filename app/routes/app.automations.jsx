@@ -23,15 +23,17 @@ import {
   ProgressBar,
   Tabs,
 } from "@shopify/polaris";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { DeleteIcon, PlayIcon, PauseCircleIcon, EditIcon } from "@shopify/polaris-icons";
 import { runAutomationRule } from "../models/automation.server";
+import { PLANS } from "../billing.config";
+import { enqueueGroupSync } from "../sync-jobs.server";
 
 // Loader
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { getUsageInfo, confirmSubscription } = await import("../billing.server");
+  const { getUsageInfo, confirmSubscription, isBillingTestMode } = await import("../billing.server");
 
   const { admin, session, billing } = await authenticate.admin(request);
   const shop = session.shop;
@@ -40,7 +42,7 @@ export async function loader({ request }) {
 
   try {
     const billingCheck = await billing.check({
-      isTest: true,
+      isTest: isBillingTestMode(),
       plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
     });
 
@@ -144,11 +146,13 @@ export async function action({ request }) {
   if (actionType === "runRule") {
     const ruleId = formData.get("ruleId");
     try {
-      const groupsCreated = await runAutomationRule(admin, prisma, ruleId, shop, canAddLinks);
+      const groupsCreated = await runAutomationRule(admin, prisma, ruleId, shop, canAddLinks, {
+        syncGroup: (groupId) => enqueueGroupSync(prisma, shop, groupId),
+      });
       return json({
         success: true,
         message: groupsCreated > 0
-          ? `Automation completed! Created ${groupsCreated} new groups.`
+          ? `Automation completed! Created ${groupsCreated} new groups and queued storefront sync.`
           : "No new groups were created. Products may already be grouped or the pattern didn't match enough products."
       });
     } catch (error) {
@@ -234,6 +238,7 @@ export default function AutomationsPage() {
   const actionData = useActionData();
   const submit = useSubmit();
   const navigation = useNavigation();
+  const shopify = useAppBridge();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState(null);
@@ -246,13 +251,13 @@ export default function AutomationsPage() {
     optionName: "Color",
     selectorStyle: "image_swatch",
   });
-  const [actionBannerVisible, setActionBannerVisible] = useState(true);
-
   useEffect(() => {
-    if (actionData) {
-      setActionBannerVisible(true);
+    if (actionData?.success) {
+      shopify.toast.show(actionData.message || "Action completed");
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
     }
-  }, [actionData]);
+  }, [actionData, shopify]);
 
   const isLoading = navigation.state === "submitting" || navigation.state === "loading";
 
@@ -334,17 +339,6 @@ export default function AutomationsPage() {
       <Layout>
         <Layout.Section>
           <BlockStack gap="400">
-            {actionData?.success && actionBannerVisible && (
-              <Banner tone="success" onDismiss={() => setActionBannerVisible(false)}>
-                <p>{actionData.message}</p>
-              </Banner>
-            )}
-            {actionData?.error && actionBannerVisible && (
-              <Banner tone="critical" onDismiss={() => setActionBannerVisible(false)}>
-                <p>{actionData.error}</p>
-              </Banner>
-            )}
-
             <Banner tone="info">
               <p>
                 Automations help you bulk-create product groups by detecting patterns in your product titles, SKUs, tags, or collections.

@@ -11,7 +11,6 @@ import {
   TextField,
   Checkbox,
   Button,
-  Icon,
   Divider,
   RangeSlider,
   ButtonGroup,
@@ -19,8 +18,9 @@ import {
   Tabs,
   Banner,
   Link,
-  Tooltip,
   Grid,
+  Popover,
+  ColorPicker,
 } from "@shopify/polaris";
 import {
   InfoIcon,
@@ -31,6 +31,148 @@ import {
   DEFAULT_SETTINGS_BY_STYLE, 
   PreviewRenderer
 } from "../utils/style-utils";
+import { enqueueShopSettingsSync, enqueueStyleCustomizationsSync } from "../sync-jobs.server";
+
+const normalizeCardSettings = (settings) => {
+  const twoColorMap = { "L/R": "L_R", "LT/RB": "LT_RB", "T/B": "T_B", "LB/RT": "LB_RT" };
+  const unavailableStyle = settings.unavailable?.style || settings.basic?.unavailableStyle;
+  const blockBg = settings.basic?.blockBg || settings.basic?.buttonColor;
+  const blockBgActive = settings.basic?.blockBgActive || settings.basic?.buttonColorActive;
+  const blockBgHover = settings.basic?.blockBgHover || settings.basic?.buttonColorHover;
+  const labelActiveColor = settings.label?.activeColor || settings.label?.colorActive;
+
+  return {
+    ...settings,
+    basic: {
+      ...settings.basic,
+      ...(settings.basic?.twoColorStyle ? { twoColorStyle: twoColorMap[settings.basic.twoColorStyle] || settings.basic.twoColorStyle } : {}),
+      ...(unavailableStyle ? { unavailableStyle } : {}),
+      ...(blockBg ? { blockBg } : {}),
+      ...(blockBgActive ? { blockBgActive } : {}),
+      ...(blockBgHover ? { blockBgHover } : {}),
+    },
+    label: {
+      ...(settings.label || {}),
+      ...(labelActiveColor ? { activeColor: labelActiveColor } : {}),
+    },
+    unavailable: {
+      ...(settings.unavailable || {}),
+      ...(unavailableStyle ? { style: unavailableStyle } : {}),
+    },
+  };
+};
+
+const normalizeHex = (value, fallback = "#000000") => {
+  const raw = String(value || fallback).trim();
+  const withHash = raw.startsWith("#") ? raw : `#${raw}`;
+
+  if (/^#[0-9a-f]{3}$/i.test(withHash)) {
+    return `#${withHash.slice(1).split("").map((char) => `${char}${char}`).join("")}`.toUpperCase();
+  }
+
+  if (/^#[0-9a-f]{6}$/i.test(withHash)) {
+    return withHash.toUpperCase();
+  }
+
+  return fallback.toUpperCase();
+};
+
+const hexToHsb = (value) => {
+  const hex = normalizeHex(value).slice(1);
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+
+  let hue = 0;
+  if (delta !== 0) {
+    if (max === r) hue = 60 * (((g - b) / delta) % 6);
+    else if (max === g) hue = 60 * ((b - r) / delta + 2);
+    else hue = 60 * ((r - g) / delta + 4);
+  }
+
+  return {
+    hue: hue < 0 ? hue + 360 : hue,
+    saturation: max === 0 ? 0 : delta / max,
+    brightness: max,
+  };
+};
+
+const hsbToHex = ({ hue, saturation, brightness }) => {
+  const chroma = brightness * saturation;
+  const x = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = brightness - chroma;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  if (hue < 60) [r, g, b] = [chroma, x, 0];
+  else if (hue < 120) [r, g, b] = [x, chroma, 0];
+  else if (hue < 180) [r, g, b] = [0, chroma, x];
+  else if (hue < 240) [r, g, b] = [0, x, chroma];
+  else if (hue < 300) [r, g, b] = [x, 0, chroma];
+  else [r, g, b] = [chroma, 0, x];
+
+  return `#${[r, g, b]
+    .map((channel) => Math.round((channel + m) * 255).toString(16).padStart(2, "0"))
+    .join("")}`.toUpperCase();
+};
+
+function ColorField({ label, value, fallback = "#000000", onChange }) {
+  const [active, setActive] = useState(false);
+  const hex = normalizeHex(value, fallback);
+
+  const activator = (
+    <button
+      type="button"
+      onClick={() => setActive((open) => !open)}
+      style={{
+        width: "100%",
+        minHeight: "48px",
+        padding: "8px 10px",
+        border: "1px solid #8c9196",
+        borderRadius: "6px",
+        background: "#ffffff",
+        display: "grid",
+        gridTemplateColumns: "18px minmax(0, 1fr)",
+        alignItems: "center",
+        gap: "8px",
+        cursor: "pointer",
+        textAlign: "left",
+        overflow: "hidden",
+      }}
+    >
+      <span
+        style={{
+          width: "18px",
+          height: "18px",
+          borderRadius: "4px",
+          border: "1px solid rgba(0,0,0,0.2)",
+          background: hex,
+          flexShrink: 0,
+        }}
+      />
+      <span style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+        <span style={{ fontSize: "13px", lineHeight: "16px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {label}
+        </span>
+        <span style={{ fontSize: "11px", lineHeight: "13px", color: "#6d7175", fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {hex}
+        </span>
+      </span>
+    </button>
+  );
+
+  return (
+    <Popover active={active} activator={activator} onClose={() => setActive(false)}>
+      <Box padding="300">
+        <ColorPicker color={hexToHsb(hex)} onChange={(color) => onChange(hsbToHex(color))} />
+      </Box>
+    </Popover>
+  );
+}
 
 export const loader = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
@@ -64,6 +206,7 @@ export const loader = async ({ request }) => {
         basic: { ...settings.basic, padding: settings.swatch.padding },
       };
     }
+    settings = normalizeCardSettings(settings);
     
     acc[id] = settings;
     return acc;
@@ -75,7 +218,7 @@ export const loader = async ({ request }) => {
 export const action = async ({ request }) => {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { session, admin } = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const shop = session.shop;
   const formData = await request.formData();
   
@@ -97,67 +240,27 @@ export const action = async ({ request }) => {
 
     // Save each style
     for (const [styleId, settings] of Object.entries(styleSettings)) {
-      if (settings.basic?.limitDesktop) settings.basic.limitDesktop = parseInt(settings.basic.limitDesktop);
-      if (settings.basic?.limitMobile) settings.basic.limitMobile = parseInt(settings.basic.limitMobile);
+      const normalizedSettings = normalizeCardSettings(settings);
+      if (normalizedSettings.basic?.limitDesktop) normalizedSettings.basic.limitDesktop = parseInt(normalizedSettings.basic.limitDesktop);
+      if (normalizedSettings.basic?.limitMobile) normalizedSettings.basic.limitMobile = parseInt(normalizedSettings.basic.limitMobile);
 
       await prisma.optionStyleSetting.upsert({
         where: { shop_styleId: { shop, styleId } },
-        update: { settings },
-        create: { shop, styleId, settings },
+        update: { settings: normalizedSettings },
+        create: { shop, styleId, settings: normalizedSettings },
       });
+
+      styleSettings[styleId] = normalizedSettings;
     }
 
-    // Sync to metafields (Simplified for demo)
-    const shopData = await admin.graphql(`{ shop { id } }`);
-    const shopJson = await shopData.json();
-    const shopId = shopJson.data.shop.id;
+    await enqueueStyleCustomizationsSync(prisma, shop);
+    await enqueueShopSettingsSync(prisma, shop);
 
-    // Get existing style_customizations
-    const metafieldQuery = await admin.graphql(`query { shop { metafield(namespace: "linked_products", key: "style_customizations") { value } } }`);
-    const metafieldResult = await metafieldQuery.json();
-    let allStyles = JSON.parse(metafieldResult.data.shop.metafield?.value || "{}");
-    
-    // Merge new card styles
-    Object.assign(allStyles, styleSettings);
-    
-    // BACKWARDS COMPATIBILITY SYNC:
-    // Some products might still point to old style names. Update them too.
-    if (styleSettings.image_swatch_card) allStyles.swatch = styleSettings.image_swatch_card;
-    if (styleSettings.button_card) allStyles.pill = styleSettings.button_card;
-    if (styleSettings.color_swatch_card) allStyles.color_swatch = styleSettings.color_swatch_card;
-
-    await admin.graphql(`
-      mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafields) { userErrors { field message } }
-      }
-    `, {
-      variables: {
-        metafields: [
-          {
-            namespace: "linked_products",
-            key: "style_customizations",
-            type: "json",
-            ownerId: shopId,
-            value: JSON.stringify(allStyles)
-          },
-          {
-            namespace: "linked_products",
-            key: "app_settings",
-            type: "json",
-            ownerId: shopId,
-            value: JSON.stringify({
-                cardAlign: appSettings.cardAlign,
-                cardMarginTop: appSettings.cardMarginTop,
-                cardMarginBottom: appSettings.cardMarginBottom,
-                cardDisplayMode: appSettings.cardDisplayMode,
-                cardShowLabel: appSettings.cardShowLabel,
-            })
-          }
-        ]
-      }
+    return json({
+      success: true,
+      message: "Settings saved successfully",
+      syncWarning: null,
     });
-
-    return json({ success: true, message: "Settings saved successfully" });
   } catch (error) {
     console.error("Save card settings error:", error);
     return json({ success: false, error: error.message });
@@ -186,8 +289,13 @@ export default function ProductCardCustomizer() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (actionData?.success) shopify.toast.show(actionData.message);
-    else if (actionData?.error) shopify.toast.show(actionData.error, { isError: true });
+    if (actionData?.syncWarning) {
+      shopify.toast.show("Saved, but storefront sync failed. Try saving again.", { isError: true });
+    } else if (actionData?.success) {
+      shopify.toast.show(actionData.message);
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
+    }
   }, [actionData, shopify]);
 
   const handleTabChange = useCallback((index) => setSelectedTab(index), []);
@@ -204,7 +312,10 @@ export default function ProductCardCustomizer() {
         [section]: {
           ...prev[styleId][section],
           [key]: value
-        }
+        },
+        ...(section === 'basic' && key === 'unavailableStyle'
+          ? { unavailable: { ...(prev[styleId].unavailable || {}), style: value } }
+          : {})
       }
     }));
   };
@@ -286,17 +397,22 @@ export default function ProductCardCustomizer() {
 
         <Text variant="bodyMd" fontWeight="semibold">Border color</Text>
         <Grid>
-            <Grid.Cell columnSpan={{xs: 4}}><TextField label="Normal" value={s.border.color} onChange={(v) => handleStyleUpdate(styleId, 'border', 'color', v)} autoComplete="off" /></Grid.Cell>
-            <Grid.Cell columnSpan={{xs: 4}}><TextField label="Active" value={s.border.activeColor} onChange={(v) => handleStyleUpdate(styleId, 'border', 'activeColor', v)} autoComplete="off" /></Grid.Cell>
-            <Grid.Cell columnSpan={{xs: 4}}><TextField label="Hover" value={s.border.hoverColor || "#5f6772"} onChange={(v) => handleStyleUpdate(styleId, 'border', 'hoverColor', v)} autoComplete="off" /></Grid.Cell>
+            <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Normal" value={s.border.color} fallback="#DBDFE2" onChange={(v) => handleStyleUpdate(styleId, 'border', 'color', v)} /></Grid.Cell>
+            <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Active" value={s.border.activeColor} fallback="#000000" onChange={(v) => handleStyleUpdate(styleId, 'border', 'activeColor', v)} /></Grid.Cell>
+            <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Hover" value={s.border.hoverColor || "#5f6772"} fallback="#5F6772" onChange={(v) => handleStyleUpdate(styleId, 'border', 'hoverColor', v)} /></Grid.Cell>
         </Grid>
 
         {styleId.includes('color') && (
             <BlockStack gap="200">
                 <Text variant="bodyMd">Two color style</Text>
                 <ButtonGroup variant="segmented" fullWidth>
-                    {['L/R', 'LT/RB', 'T/B', 'LB/RT'].map(type => (
-                        <Button key={type} pressed={s.basic.twoColorStyle === type} onClick={() => handleStyleUpdate(styleId, 'basic', 'twoColorStyle', type)}>{type}</Button>
+                    {[
+                        ['L / R', 'L_R'],
+                        ['LT / RB', 'LT_RB'],
+                        ['T / B', 'T_B'],
+                        ['LB / RT', 'LB_RT'],
+                    ].map(([label, value]) => (
+                        <Button key={value} pressed={s.basic.twoColorStyle === value} onClick={() => handleStyleUpdate(styleId, 'basic', 'twoColorStyle', value)}>{label}</Button>
                     ))}
                 </ButtonGroup>
             </BlockStack>
@@ -319,7 +435,7 @@ export default function ProductCardCustomizer() {
                 {label: 'Overlay', value: 'overlay'},
                 {label: 'Cross mark', value: 'cross_mark'}
             ]}
-            value={s.basic.unavailableStyle || "cross_mark"}
+            value={s.unavailable?.style || s.basic.unavailableStyle || "cross_mark"}
             onChange={(v) => handleStyleUpdate(styleId, 'basic', 'unavailableStyle', v)}
         />
       </BlockStack>
@@ -334,18 +450,18 @@ export default function ProductCardCustomizer() {
             
             <Text variant="bodyMd" fontWeight="semibold">Background color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.basic.blockBg || "#FFFFFF"} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'blockBg', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.basic.blockBgActive || "#eee"} onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'blockBgActive', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><ColorField label="Normal" value={s.basic.blockBg || "#FFFFFF"} fallback="#FFFFFF" onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'blockBg', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><ColorField label="Active" value={s.basic.blockBgActive || "#eee"} fallback="#EEEEEE" onChange={(v) => handleStyleUpdate("dropdown_card", 'basic', 'blockBgActive', v)} /></Grid.Cell>
             </Grid>
 
             <Text variant="bodyMd" fontWeight="semibold">Text color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.label.color} onChange={(v) => handleStyleUpdate("dropdown_card", 'label', 'color', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.label.colorActive || "#202020"} onChange={(v) => handleStyleUpdate("dropdown_card", 'label', 'colorActive', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><ColorField label="Normal" value={s.label.color} fallback="#202020" onChange={(v) => handleStyleUpdate("dropdown_card", 'label', 'color', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><ColorField label="Active" value={s.label.colorActive || "#202020"} fallback="#202020" onChange={(v) => handleStyleUpdate("dropdown_card", 'label', 'colorActive', v)} /></Grid.Cell>
             </Grid>
 
             <RangeSlider label={`Border thickness (${s.border.width}px)`} value={s.border.width} onChange={(v) => handleStyleUpdate("dropdown_card", 'border', 'width', v)} min={1} max={4} output />
-            <TextField label="Border color" value={s.border.color} onChange={(v) => handleStyleUpdate("dropdown_card", 'border', 'color', v)} autoComplete="off" />
+            <ColorField label="Border color" value={s.border.color} fallback="#E1E3E5" onChange={(v) => handleStyleUpdate("dropdown_card", 'border', 'color', v)} />
         </BlockStack>
     );
   };
@@ -354,6 +470,11 @@ export default function ProductCardCustomizer() {
     const s = styleSettings["button_card"];
     return (
         <BlockStack gap="400">
+            <Grid>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField type="number" label="Limit (Desktop)" value={s.basic.limitDesktop || 5} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'limitDesktop', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 6}}><TextField type="number" label="Limit (Mobile)" value={s.basic.limitMobile || 5} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'limitMobile', v)} autoComplete="off" /></Grid.Cell>
+            </Grid>
+
             <BlockStack gap="200">
                 <Text variant="bodyMd">Style</Text>
                 <ButtonGroup variant="segmented">
@@ -366,15 +487,23 @@ export default function ProductCardCustomizer() {
             
             <Text variant="bodyMd" fontWeight="semibold">Border color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Normal" value={s.border.color} onChange={(v) => handleStyleUpdate("button_card", 'border', 'color', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Active" value={s.border.activeColor} onChange={(v) => handleStyleUpdate("button_card", 'border', 'activeColor', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 4}}><TextField label="Hover" value={s.border.hoverColor || "#4f5354"} onChange={(v) => handleStyleUpdate("button_card", 'border', 'hoverColor', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Normal" value={s.border.color} fallback="#DBDFE2" onChange={(v) => handleStyleUpdate("button_card", 'border', 'color', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Active" value={s.border.activeColor} fallback="#000000" onChange={(v) => handleStyleUpdate("button_card", 'border', 'activeColor', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Hover" value={s.border.hoverColor || "#4f5354"} fallback="#4F5354" onChange={(v) => handleStyleUpdate("button_card", 'border', 'hoverColor', v)} /></Grid.Cell>
             </Grid>
 
-            <Text variant="bodyMd" fontWeight="semibold">Button color</Text>
+            <Text variant="bodyMd" fontWeight="semibold">Background color</Text>
             <Grid>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Normal" value={s.basic.buttonColor || "#FFFFFF"} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'buttonColor', v)} autoComplete="off" /></Grid.Cell>
-                <Grid.Cell columnSpan={{xs: 6}}><TextField label="Active" value={s.basic.buttonColorActive || "#FFFFFF"} onChange={(v) => handleStyleUpdate("button_card", 'basic', 'buttonColorActive', v)} autoComplete="off" /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Normal" value={s.basic.blockBg || s.basic.buttonColor || "#FFFFFF"} fallback="#FFFFFF" onChange={(v) => handleStyleUpdate("button_card", 'basic', 'blockBg', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Active" value={s.basic.blockBgActive || s.basic.buttonColorActive || "#EEEEEE"} fallback="#EEEEEE" onChange={(v) => handleStyleUpdate("button_card", 'basic', 'blockBgActive', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Hover" value={s.basic.blockBgHover || "#F4F4F4"} fallback="#F4F4F4" onChange={(v) => handleStyleUpdate("button_card", 'basic', 'blockBgHover', v)} /></Grid.Cell>
+            </Grid>
+
+            <Text variant="bodyMd" fontWeight="semibold">Text color</Text>
+            <Grid>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Normal" value={s.label.color || "#000000"} fallback="#000000" onChange={(v) => handleStyleUpdate("button_card", 'label', 'color', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Active" value={s.label.activeColor || "#000000"} fallback="#000000" onChange={(v) => handleStyleUpdate("button_card", 'label', 'activeColor', v)} /></Grid.Cell>
+                <Grid.Cell columnSpan={{xs: 4}}><ColorField label="Hover" value={s.label.hoverColor || "#000000"} fallback="#000000" onChange={(v) => handleStyleUpdate("button_card", 'label', 'hoverColor', v)} /></Grid.Cell>
             </Grid>
         </BlockStack>
     );

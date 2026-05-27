@@ -5,12 +5,22 @@
 
 {%- assign linked_handles_raw = product.metafields.linked_products.linked_list.value -%}
 {%- assign group_status = product.metafields.linked_products.status.value | default: 'active' -%}
+{%- assign active_handles = shop.metafields.linked_products.active_handles.value -%}
+{%- assign registry_allows_product = true -%}
+{%- if active_handles != blank -%}
+  {%- assign registry_allows_product = false -%}
+  {%- if active_handles contains product.handle -%}
+    {%- assign registry_allows_product = true -%}
+  {%- endif -%}
+{%- endif -%}
 
-{%- if linked_handles_raw != blank and linked_handles_raw.size > 0 and group_status == 'active' -%}
+{%- if registry_allows_product and linked_handles_raw != blank and linked_handles_raw.size > 0 and group_status == 'active' -%}
   
   {%- assign inventory_behavior = product.metafields.linked_products.inventory_behavior.value | default: 'show' -%}
   {%- assign app_settings = shop.metafields.linked_products.settings.value -%}
   {%- assign style_customizations = shop.metafields.linked_products.style_customizations.value -%}
+  {%- assign lp_sold_out_label = app_settings.soldOutLabel | default: 'Sold out' -%}
+  {%- assign lp_unavailable_label = app_settings.unavailableLabel | default: 'Unavailable' -%}
   
   {%- if app_settings.appEnabled != false -%}
   
@@ -20,15 +30,15 @@
   {%- assign active_selector_style = meta_selector_style | default: 'block' -%}
   {%- assign active_option_name = meta_option_name| default: 'Color' -%}
 
-  {%- comment -%}Auto-migrate legacy style ID or Handle _card suffix{%- endcomment -%}
-  {%- if active_selector_style == 'image_swatch_on_card' -%}
-    {%- assign active_selector_style = 'image_swatch_card' -%}
-  {%- elsif active_selector_style == 'color_swatch_on_card' -%}
-    {%- assign active_selector_style = 'color_swatch_card' -%}
-  {%- elsif active_selector_style == 'button_on_card' -%}
-    {%- assign active_selector_style = 'button_card' -%}
-  {%- elsif active_selector_style == 'dropdown_on_card' -%}
-    {%- assign active_selector_style = 'dropdown_card' -%}
+  {%- comment -%}Normalize legacy/card IDs back to product-page style IDs{%- endcomment -%}
+  {%- if active_selector_style == 'swatch' or active_selector_style == 'image_swatch_on_card' or active_selector_style == 'image_swatch_card' -%}
+    {%- assign active_selector_style = 'image_swatch' -%}
+  {%- elsif active_selector_style == 'color_swatch_on_card' or active_selector_style == 'color_swatch_card' -%}
+    {%- assign active_selector_style = 'color_swatch' -%}
+  {%- elsif active_selector_style == 'button_on_card' or active_selector_style == 'button_card' or active_selector_style == 'pill' -%}
+    {%- assign active_selector_style = 'button' -%}
+  {%- elsif active_selector_style == 'dropdown_on_card' or active_selector_style == 'dropdown_card' -%}
+    {%- assign active_selector_style = 'dropdown' -%}
   {%- endif -%}
 
   {%- assign active_style_settings = style_customizations[active_selector_style] -%}
@@ -101,7 +111,9 @@
   {%- assign lp_max_swatches = active_style_settings.layout.maxSwatches | default: 100 -%}
 
   {%- assign lp_show_label = true -%}
-  {%- if active_style_settings.label.show == false -%}
+  {%- if app_settings.showOptionName == false -%}
+    {%- assign lp_show_label = false -%}
+  {%- elsif active_style_settings.label.show == false -%}
     {%- assign lp_show_label = false -%}
   {%- endif -%}
 
@@ -133,6 +145,7 @@
   {%- endcase -%}
   
   {%- assign lp_hover_effect = active_style_settings.basic.hoverEffect | default: 'none' -%}
+  {%- assign lp_unavailable_style = active_style_settings.unavailable.style | default: active_style_settings.basic.unavailableStyle | default: 'cross_mark' -%}
 
   {%- assign lp_variant_font_size = active_style_settings.variantName.fontSize | default: 12 -%}
   {%- assign raw_variant_weight = active_style_settings.variantName.fontWeight | default: 'semibold' -%}
@@ -171,6 +184,10 @@
   {%- assign lp_badge_size = active_style_settings.badge.fontSize | default: 10 -%}
   {%- assign lp_badge_color = active_style_settings.badge.color | default: '#ffffff' -%}
   {%- assign lp_badge_bg = active_style_settings.badge.bgColor | default: '#000000' -%}
+  {%- assign lp_button_padding = active_style_settings.basic.padding | default: 8 -%}
+  {%- assign lp_button_padding_x = lp_button_padding | times: 1.5 -%}
+  {%- assign lp_block_bg = active_style_settings.basic.blockBg | default: '#ffffff' -%}
+  {%- assign lp_selected_bg = active_style_settings.basic.blockBgActive | default: '#f4f6f8' -%}
 
   {%- assign lp_layout_type = active_style_settings.layout.type | default: 'stack' -%}
   {%- assign lp_is_scroll = false -%}
@@ -180,6 +197,23 @@
     {%- comment -%}For now, keep it simple or implement specific mobile check if needed{%- endcomment -%}
     {%- assign lp_is_scroll = true -%}
   {%- endif -%}
+
+  {%- assign lp_visible_count = 0 -%}
+  {%- for item in linked_handles_raw -%}
+    {%- assign item_handle_for_count = item.handle -%}
+    {%- if item_handle_for_count == product.handle -%}
+      {%- if lp_hide_active -%}{%- continue -%}{%- endif -%}
+      {%- if lp_unavailable_style == 'hide' and product.available == false -%}{%- continue -%}{%- endif -%}
+      {%- assign lp_visible_count = lp_visible_count | plus: 1 -%}
+    {%- else -%}
+      {%- assign linked_prod_for_count = all_products[item_handle_for_count] -%}
+      {%- if linked_prod_for_count != blank and linked_prod_for_count != empty -%}
+        {%- if inventory_behavior == 'hide' and linked_prod_for_count.available == false -%}{%- continue -%}{%- endif -%}
+        {%- if lp_unavailable_style == 'hide' and linked_prod_for_count.available == false -%}{%- continue -%}{%- endif -%}
+        {%- assign lp_visible_count = lp_visible_count | plus: 1 -%}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
 
 
 
@@ -196,8 +230,8 @@
     --lp-swatch-size: {{ lp_swatch_size | replace: 'px', '' }}px;
     --lp-items-gap: {{ lp_items_gap }}px;
     --lp-swatch-padding: {{ lp_padding }}px;
-    --lp-block-padding-y: {{ app_settings.blockPaddingY | default: 8 }}px;
-    --lp-block-padding-x: {{ app_settings.blockPaddingX | default: 12 }}px;
+    --lp-block-padding-y: {{ lp_button_padding }}px;
+    --lp-block-padding-x: {{ lp_button_padding_x }}px;
     --lp-border-radius: {{ lp_border_radius }}{{ lp_radius_unit }};
     --lp-border-color: {{ lp_border_color }};
     --lp-selected-border-color: {{ lp_selected_border_color }};
@@ -226,9 +260,9 @@
     --lp-hover-effect: {{ lp_hover_effect }};
     --lp-selected-weight: {{ lp_selected_weight }};
     --lp-show-selected: {% if lp_show_selected_variant %}block{% else %}none{% endif %};
-    --lp-unavailable-style: {{ active_style_settings.unavailable.style | default: 'cross_mark' }};
-    --lp-block-bg: {{ app_settings.blockBgColor | default: '#ffffff' }};
-    --lp-selected-bg: {{ app_settings.selectedBgColor | default: '#f4f6f8' }};
+    --lp-unavailable-style: {{ lp_unavailable_style }};
+    --lp-block-bg: {{ lp_block_bg }};
+    --lp-selected-bg: {{ lp_selected_bg }};
     --lp-neutral-bg: #f5f5f5;
     --lp-neutral-border: rgba(0,0,0,0.05);
     {% if lp_shadow_show %}
@@ -241,7 +275,7 @@
     --lp-badge-bg: {{ lp_badge_bg }};
   "
   data-hover-effect="{{ lp_hover_effect }}"
-  data-unavailable-style="{{ active_style_settings.unavailable.style | default: 'cross_mark' }}"
+  data-unavailable-style="{{ lp_unavailable_style }}"
   >
     <div class="variant-picker">
       <fieldset class="variant-picker__option" style="text-align: {{ lp_layout_align }};">
@@ -281,6 +315,7 @@
                       {%- assign linked_prod = all_products[item_handle] -%}
                       {%- if linked_prod != blank and linked_prod != empty -%}
                         {%- if inventory_behavior == 'hide' and linked_prod.available == false %}{% continue %}{% endif -%}
+                        {%- if lp_unavailable_style == 'hide' and linked_prod.available == false %}{% continue %}{% endif -%}
                         {%- assign value = item.title | default: linked_prod.title -%}
                         <a href="{{ linked_prod.url }}" class="lp-dropdown__item {% if linked_prod.available == false %}is-sold-out{% endif %}">
                             {%- if active_selector_style == 'image_dropdown' -%}
@@ -302,7 +337,7 @@
                             {%- endif -%}
                             <span class="lp-dropdown__text">{{ value }}</span>
                             {%- if linked_prod.available == false -%}
-                                <span class="lp-dropdown__sold-out">(Sold out)</span>
+                                <span class="lp-dropdown__sold-out">({{ lp_sold_out_label }})</span>
                                 <span class="lp-unavailable-effect"></span>
                             {%- endif -%}
                         </a>
@@ -327,6 +362,7 @@
             {%- if lp_active_first and lp_hide_active == false -%}
                 {%- for item in linked_handles_raw -%}
                     {%- if item.handle == current_handle_str -%}
+                        {%- if lp_unavailable_style == 'hide' and product.available == false %}{% continue %}{% endif -%}
                         {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
                         {%- render 'linked-product-option', 
                             product_obj: product,
@@ -338,7 +374,9 @@
                             custom_color: item.color,
                             custom_color2: item.color2,
                             item_style: item.style,
-                            two_color_style: lp_two_color_style
+                            two_color_style: lp_two_color_style,
+                            sold_out_label: lp_sold_out_label,
+                            unavailable_label: lp_unavailable_label
                         -%}
                         {%- assign rendered_count = 1 -%}
                         {%- break -%}
@@ -347,9 +385,9 @@
             {%- endif -%}
 
             {%- comment -%}2. Main Loop for others{%- endcomment -%}
-            {%- for item in linked_handles_raw -%}
+              {%- for item in linked_handles_raw -%}
               {%- if rendered_count >= lp_max_swatches -%}
-                {%- assign remaining = linked_handles_raw.size | minus: rendered_count -%}
+                {%- assign remaining = lp_visible_count | minus: rendered_count -%}
                 {%- if remaining > 0 -%}
                     <span class="lp-more-count">+{{ remaining }}</span>
                 {%- endif -%}
@@ -360,6 +398,7 @@
               
               {%- if item_handle == current_handle_str -%}
                 {%- if lp_active_first or lp_hide_active %}{% continue %}{% endif -%}
+                {%- if lp_unavailable_style == 'hide' and product.available == false %}{% continue %}{% endif -%}
                 
                 {%- assign current_value = product.metafields.linked_products.option_value.value | default: product.title -%}
                 {%- render 'linked-product-option', 
@@ -372,13 +411,16 @@
                     custom_color: item.color,
                     custom_color2: item.color2,
                     item_style: item.style,
-                    two_color_style: lp_two_color_style
+                    two_color_style: lp_two_color_style,
+                    sold_out_label: lp_sold_out_label,
+                    unavailable_label: lp_unavailable_label
                 -%}
                 {%- assign rendered_count = rendered_count | plus: 1 -%}
               {%- else -%}
                 {%- assign linked_prod = all_products[item_handle] -%}
                 {%- if linked_prod != blank and linked_prod != empty -%}
                   {%- if inventory_behavior == 'hide' and linked_prod.available == false -%}{%- continue -%}{%- endif -%}
+                  {%- if lp_unavailable_style == 'hide' and linked_prod.available == false -%}{%- continue -%}{%- endif -%}
 
                   {%- assign value = item.title | default: linked_prod.title -%}
                   {%- render 'linked-product-option', 
@@ -391,7 +433,9 @@
                       custom_color: item.color,
                       custom_color2: item.color2,
                       item_style: item.style,
-                      two_color_style: lp_two_color_style
+                      two_color_style: lp_two_color_style,
+                      sold_out_label: lp_sold_out_label,
+                      unavailable_label: lp_unavailable_label
                   -%}
                   {%- assign rendered_count = rendered_count | plus: 1 -%}
                 {%- endif -%}

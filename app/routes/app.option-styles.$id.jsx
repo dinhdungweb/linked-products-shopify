@@ -41,6 +41,7 @@ import {
   IMAGES,
   COLORS
 } from "../utils/style-utils";
+import { enqueueStyleCustomizationsSync } from "../sync-jobs.server";
 
   // Removed redundant helpers, now using style-utils.jsx
 
@@ -77,7 +78,7 @@ export const loader = async ({ request, params }) => {
 export const action = async ({ request, params }) => {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { session, admin } = await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const shop = session.shop;
   const styleId = params.id;
   const formData = await request.formData();
@@ -89,52 +90,7 @@ export const action = async ({ request, params }) => {
         where: { shop, styleId },
       });
 
-      // SYNC TO METAFIELDS (Remove the deleted style from customizations)
-      try {
-        const shopDataResult = await admin.graphql(`{ shop { id } }`);
-        const shopJsonResult = await shopDataResult.json();
-        const shopIdValue = shopJsonResult.data.shop.id;
-
-        const mfQuery = await admin.graphql(`
-          query getMetafield {
-            shop {
-              metafield(namespace: "linked_products", key: "style_customizations") {
-                value
-              }
-            }
-          }
-        `);
-        
-        const mfResult = await mfQuery.json();
-        let currentStyles = {};
-        try {
-          currentStyles = JSON.parse(mfResult.data.shop.metafield?.value || "{}");
-        } catch (e) {}
-        
-        if (currentStyles[styleId]) {
-          delete currentStyles[styleId];
-
-          await admin.graphql(`
-            mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
-              metafieldsSet(metafields: $metafields) {
-                userErrors { field message }
-              }
-            }
-          `, {
-            variables: {
-              metafields: [{
-                namespace: "linked_products",
-                key: "style_customizations",
-                type: "json",
-                ownerId: shopIdValue,
-                value: JSON.stringify(currentStyles)
-              }]
-            }
-          });
-        }
-      } catch (syncError) {
-        console.error("Sync on delete error:", syncError);
-      }
+      await enqueueStyleCustomizationsSync(prisma, shop);
 
       return redirect("/app/option-styles");
     }
@@ -147,51 +103,7 @@ export const action = async ({ request, params }) => {
       create: { shop, styleId, settings },
     });
 
-    // Sync to metafields (Map of styleId -> settings)
-    const shopData = await admin.graphql(`{ shop { id } }`);
-    const shopJson = await shopData.json();
-    const shopId = shopJson.data.shop.id;
-
-    const metafieldQuery = await admin.graphql(`
-      query getMetafield {
-        shop {
-          metafield(namespace: "linked_products", key: "style_customizations") {
-            value
-          }
-        }
-      }
-    `);
-    
-    const metafieldResult = await metafieldQuery.json();
-    let allStyles = {};
-    try {
-      allStyles = JSON.parse(metafieldResult.data.shop.metafield?.value || "{}");
-    } catch (e) {}
-    
-    allStyles[styleId] = settings;
-
-    const mutationResponse = await admin.graphql(`
-      mutation setMetafields($metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafields) {
-          userErrors { field message }
-        }
-      }
-    `, {
-      variables: {
-        metafields: [{
-          namespace: "linked_products",
-          key: "style_customizations",
-          type: "json",
-          ownerId: shopId,
-          value: JSON.stringify(allStyles)
-        }]
-      }
-    });
-
-    const mutationResult = await mutationResponse.json();
-    if (mutationResult.data?.metafieldsSet?.userErrors?.length > 0) {
-        return json({ success: false, error: mutationResult.data.metafieldsSet.userErrors[0].message });
-    }
+    await enqueueStyleCustomizationsSync(prisma, shop);
 
     return json({ success: true, message: "Settings saved successfully", settings: updated.settings });
   } catch (error) {

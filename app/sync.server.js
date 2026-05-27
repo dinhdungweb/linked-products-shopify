@@ -1,4 +1,128 @@
 import { getGroupsWithinLimit } from "./billing.server";
+import { normalizeProductCardStyle } from "./utils/style-mapping";
+
+const SHOP_ACTIVE_HANDLES_KEY = "active_handles";
+
+function metafieldText(value, fallback) {
+    const stringValue = value == null ? "" : String(value).trim();
+    return stringValue || fallback;
+}
+
+async function getShopOwnerId(admin) {
+    const response = await admin.graphql(`
+        query LinkedProductsShopOwner {
+            shop {
+                id
+            }
+        }
+    `);
+    const result = await response.json();
+    return result.data?.shop?.id;
+}
+
+export async function syncShopActiveHandles(admin, prisma, shop) {
+    const allowedIds = await getGroupsWithinLimit(shop);
+    const where = {
+        shop,
+        status: "active",
+    };
+
+    if (allowedIds !== null) {
+        where.id = { in: allowedIds };
+    }
+
+    const groups = await prisma.productGroup.findMany({
+        where,
+        include: { products: true },
+    });
+
+    const handles = [
+        ...new Set(
+            groups.flatMap((group) => group.products.map((product) => product.productHandle).filter(Boolean)),
+        ),
+    ];
+
+    const shopOwnerId = await getShopOwnerId(admin);
+    if (!shopOwnerId) {
+        throw new Error("Shop owner ID not found");
+    }
+
+    const response = await admin.graphql(`
+        mutation SyncLinkedProductsActiveHandles($metafields: [MetafieldsSetInput!]!) {
+            metafieldsSet(metafields: $metafields) {
+                userErrors { field message }
+            }
+        }
+    `, {
+        variables: {
+            metafields: [{
+                ownerId: shopOwnerId,
+                namespace: "linked_products",
+                key: SHOP_ACTIVE_HANDLES_KEY,
+                value: JSON.stringify(handles),
+                type: "json",
+            }],
+        },
+    });
+
+    const result = await response.json();
+    const userErrors = result.data?.metafieldsSet?.userErrors || [];
+    if (userErrors.length > 0) {
+        const error = userErrors[0];
+        const field = Array.isArray(error.field) ? error.field.join(".") : error.field;
+        throw new Error(`${field ? `${field}: ` : ""}${error.message}`);
+    }
+
+    return { success: true, handles };
+}
+
+export async function deleteLinkedProductMetafields(admin, productIds) {
+    const ids = [...new Set((productIds || []).filter(Boolean))];
+    if (ids.length === 0) return { success: true, deleted: 0 };
+
+    let deleted = 0;
+
+    for (const productId of ids) {
+        const metafieldQuery = await admin.graphql(`
+            query GetProductMetafields($productId: ID!) {
+                product(id: $productId) {
+                    metafields(first: 50, namespace: "linked_products") {
+                        nodes { key }
+                    }
+                }
+            }
+        `, { variables: { productId } });
+
+        const metafieldResult = await metafieldQuery.json();
+        const metafieldNodes = metafieldResult.data?.product?.metafields?.nodes || [];
+        if (metafieldNodes.length === 0) continue;
+
+        const metafieldsToDelete = metafieldNodes.map((metafield) => ({
+            namespace: "linked_products",
+            key: metafield.key,
+            ownerId: productId,
+        }));
+
+        const response = await admin.graphql(`
+            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
+                metafieldsDelete(metafields: $metafields) {
+                    deletedMetafields { ownerId }
+                    userErrors { field message }
+                }
+            }
+        `, { variables: { metafields: metafieldsToDelete } });
+
+        const result = await response.json();
+        const errors = result.data?.metafieldsDelete?.userErrors || [];
+        if (errors.length > 0) {
+            throw new Error(errors.map((error) => error.message).join(", "));
+        }
+
+        deleted += metafieldsToDelete.length;
+    }
+
+    return { success: true, deleted };
+}
 
 export async function syncGroupMetafields(admin, prisma, gId) {
     const group = await prisma.productGroup.findUnique({
@@ -38,21 +162,13 @@ export async function syncGroupMetafields(admin, prisma, gId) {
         // If the group is draft, we send empty/null or just don't send?
         // Let's add a "group_status" metafield that the liquid can check.
         metafields.push({ ...base, key: "linked_list", value: JSON.stringify(metafieldValue), type: "json" });
-        metafields.push({ ...base, key: "option_value", value: product.optionValue || "", type: "single_line_text_field" });
-        metafields.push({ ...base, key: "inventory_behavior", value: group.inventoryBehavior || "show", type: "single_line_text_field" });
-        metafields.push({ ...base, key: "option_name", value: group.optionName || "Color", type: "single_line_text_field" });
-        metafields.push({ ...base, key: "selector_style", value: group.selectorStyle || "button", type: "single_line_text_field" });
-        // Determine card style ID
-        let cStyle = group.cardSelectorStyle || "image_swatch_card";
-        if (cStyle === "swatch") {
-            cStyle = "image_swatch_card";
-        } else if (cStyle === "pill") {
-            cStyle = "button_card";
-        } else if (cStyle === "same") {
-            cStyle = (group.selectorStyle || "button") + "_card";
-            cStyle = cStyle.replace("swatch_card", "image_swatch_card");
-            if (cStyle.includes("button") || cStyle.includes("block")) cStyle = "button_card";
-        }
+        metafields.push({ ...base, key: "option_value", value: metafieldText(product.optionValue, product.productHandle || "Option"), type: "single_line_text_field" });
+        metafields.push({ ...base, key: "inventory_behavior", value: metafieldText(group.inventoryBehavior, "show"), type: "single_line_text_field" });
+        metafields.push({ ...base, key: "option_name", value: metafieldText(group.optionName, "Color"), type: "single_line_text_field" });
+        metafields.push({ ...base, key: "selector_style", value: metafieldText(group.selectorStyle, "button"), type: "single_line_text_field" });
+        metafields.push({ ...base, key: "style", value: metafieldText(product.style, "one"), type: "single_line_text_field" });
+        metafields.push({ ...base, key: "color2", value: metafieldText(product.customColor2, "none"), type: "single_line_text_field" });
+        const cStyle = normalizeProductCardStyle(group.cardSelectorStyle, group.selectorStyle);
         metafields.push({ ...base, key: "card_selector_style", value: cStyle, type: "single_line_text_field" });
         metafields.push({ ...base, key: "status", value: isPlanDisabled ? "plan_disabled" : (group.status || "active"), type: "single_line_text_field" });
     }
@@ -71,11 +187,14 @@ export async function syncGroupMetafields(admin, prisma, gId) {
         `, { variables: { metafields: batch } });
         const result = await metafieldMutation.json();
         if (result.data?.metafieldsSet?.userErrors?.length > 0) {
-            console.error(`[Sync Error] ${result.data.metafieldsSet.userErrors[0].message}`);
-            throw new Error(result.data.metafieldsSet.userErrors[0].message);
+            const error = result.data.metafieldsSet.userErrors[0];
+            const field = Array.isArray(error.field) ? error.field.join(".") : error.field;
+            console.error(`[Sync Error] ${field ? `${field}: ` : ""}${error.message}`);
+            throw new Error(`${field ? `${field}: ` : ""}${error.message}`);
         }
     }
 
     await prisma.productGroup.update({ where: { id: gId }, data: { syncStatus: "synced" } });
+    await syncShopActiveHandles(admin, prisma, group.shop);
     return { success: true };
 }

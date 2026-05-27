@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Page,
   Card,
@@ -17,9 +17,9 @@ import {
   ActionList,
 } from "@shopify/polaris";
 import { LinkIcon, QuestionCircleIcon, PlusIcon, MenuHorizontalIcon, StarIcon, DuplicateIcon, DeleteIcon, InfoIcon } from "@shopify/polaris-icons";
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { json } from "@remix-run/node";
-import { useLoaderData, useSubmit as useRemixSubmit } from "@remix-run/react";
+import { useActionData, useLoaderData, useSubmit as useRemixSubmit } from "@remix-run/react";
 import {
   BASE_SETTINGS,
   DEFAULT_SETTINGS_BY_STYLE,
@@ -27,6 +27,7 @@ import {
 } from "../utils/style-utils";
 import prisma from "../db.server";
 import { authenticate } from "../shopify.server";
+import { enqueueShopSettingsSync } from "../sync-jobs.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -55,7 +56,7 @@ export const loader = async ({ request }) => {
 
   // Self-heal default styles if they belong to wrong context
   const validPageStyles = ["image_swatch", "slide_swatch", "polaroid_swatch", "color_swatch", "square_color_swatch", "pill_swatch", "button", "pill_button", "dropdown", "image_dropdown"];
-  const validCardStyles = ["button_on_card", "color_swatch_card", "image_swatch_card", "dropdown_on_card"];
+  const validCardStyles = ["button_card", "color_swatch_card", "image_swatch_card", "dropdown_card"];
 
   let needsUpdate = false;
   const updateData = {};
@@ -99,14 +100,26 @@ export const action = async ({ request }) => {
     const styleId = formData.get("styleId");
     const isCard = formData.get("isCard") === "true";
 
-    await prisma.appSetting.update({
+    await prisma.appSetting.upsert({
       where: { shop },
-      data: isCard
+      update: isCard
         ? { defaultProductCardStyle: styleId }
-        : { defaultProductPageStyle: styleId }
+        : { defaultProductPageStyle: styleId },
+      create: {
+        shop,
+        ...(isCard
+          ? { defaultProductCardStyle: styleId }
+          : { defaultProductPageStyle: styleId }),
+      },
     });
 
-    return json({ success: true });
+    await enqueueShopSettingsSync(prisma, shop);
+
+    return json({
+      success: true,
+      message: "Default style updated",
+      syncWarning: null,
+    });
   }
 
   return json({ error: "Invalid action" }, { status: 400 });
@@ -114,10 +127,25 @@ export const action = async ({ request }) => {
 
 export default function OptionStylesPage() {
   const { styleSettings, usedStyles, appSettings } = useLoaderData();
+  const actionData = useActionData();
   const submit = useRemixSubmit();
+  const shopify = useAppBridge();
   const [selectedTab, setSelectedTab] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [activeMenu, setActiveMenu] = useState(null);
+
+  useEffect(() => {
+    if (actionData?.syncWarning) {
+      shopify.toast.show("Default updated, but storefront sync failed. Try saving again.", { isError: true });
+      return;
+    }
+
+    if (actionData?.success) {
+      shopify.toast.show(actionData.message || "Default style updated");
+    } else if (actionData?.error) {
+      shopify.toast.show(actionData.error, { isError: true });
+    }
+  }, [actionData, shopify]);
 
   const toggleMenu = (styleId) => setActiveMenu(activeMenu === styleId ? null : styleId);
 
