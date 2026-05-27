@@ -53,6 +53,11 @@
   align-items: center;
 }
 
+.variant-picker__option-info .h-stack {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .gap-2 {
   gap: var(--lp-items-gap);
 }
@@ -63,10 +68,17 @@
   font-size: var(--lp-label-size) !important;
 }
 
+.variant-picker__option-info .text-subdued {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .selected-value {
   display: var(--lp-show-selected, block);
   font-weight: var(--lp-selected-weight, 600);
   font-size: var(--lp-label-size) !important;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .variant-picker__option-values {

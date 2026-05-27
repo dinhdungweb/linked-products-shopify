@@ -341,13 +341,17 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
            }}>
                 <span style={{ 
                     color: '#6d7175',
-                    fontWeight: settings.label?.fontWeight || 'normal'
+                    fontWeight: settings.label?.fontWeight || 'normal',
+                    flex: '0 0 auto',
+                    whiteSpace: 'nowrap'
                 }}>
                     {activeOptionName}:
                 </span>
                 {settings.label?.showSelectedVariant && (
                     <span style={{ 
-                        fontWeight: settings.label?.selectedVariantFontWeight || 'semibold' 
+                        fontWeight: settings.label?.selectedVariantFontWeight || 'semibold',
+                        minWidth: 0,
+                        overflowWrap: 'anywhere'
                     }}>
                         {activeProduct?.name || 'Liquid'}
                     </span>
