@@ -277,8 +277,8 @@
   data-hover-effect="{{ lp_hover_effect }}"
   data-unavailable-style="{{ lp_unavailable_style }}"
   >
-    <div class="variant-picker">
-      <fieldset class="variant-picker__option" style="text-align: {{ lp_layout_align }};">
+    <div class="variant-picker {% if active_selector_style contains 'dropdown' %}variant-picker--dropdown{% endif %}">
+      <fieldset class="variant-picker__option {% if active_selector_style contains 'dropdown' %}variant-picker__option--dropdown{% endif %}" style="text-align: {{ lp_layout_align }};">
         {%- if lp_show_label and active_option_name != blank -%}
           <div class="variant-picker__option-info" style="margin-bottom: {{ lp_label_gap }}px; justify-content: {{ lp_justify_content }};">
             <div class="h-stack" style="gap: 4px; flex-direction: {% if lp_label_layout == 'stack' %}column{% else %}row{% endif %}; align-items: {% if lp_layout_align == 'center' %}center{% elsif lp_layout_align == 'right' %}flex-end{% else %}flex-start{% endif %};">
@@ -295,7 +295,7 @@
         {%- if active_selector_style contains 'dropdown' -%}
           <div class="variant-picker__dropdown-container" data-style="{{ active_selector_style }}">
               <div class="lp-dropdown">
-                  <div class="lp-dropdown__selected" onclick="this.nextElementSibling.classList.toggle('show')">
+                  <div class="lp-dropdown__selected" role="button" tabindex="0" aria-expanded="false">
                       {%- if active_selector_style == 'image_dropdown' -%}
                           <img src="{{ product.featured_image | image_url: width: 80 }}" 
                                alt="" 
@@ -347,11 +347,68 @@
               </div>
           </div>
           <script>
-              document.addEventListener('click', function(e) {
-                  if (!e.target.closest('.lp-dropdown')) {
-                      document.querySelectorAll('.lp-dropdown__options.show').forEach(el => el.classList.remove('show'));
+              (function() {
+                  if (window.lpDropdownsInitialized) return;
+                  window.lpDropdownsInitialized = true;
+
+                  function closeDropdowns(exceptDropdown) {
+                      document.querySelectorAll('.lp-dropdown__options.show').forEach(function(options) {
+                          var dropdown = options.closest('.lp-dropdown');
+                          if (dropdown === exceptDropdown) return;
+
+                          options.classList.remove('show');
+                          if (dropdown) {
+                              dropdown.classList.remove('is-open');
+                              var trigger = dropdown.querySelector('.lp-dropdown__selected');
+                              if (trigger) trigger.setAttribute('aria-expanded', 'false');
+                          }
+                      });
                   }
-              });
+
+                  function toggleDropdown(trigger) {
+                      var dropdown = trigger.closest('.lp-dropdown');
+                      if (!dropdown) return;
+
+                      var options = dropdown.querySelector('.lp-dropdown__options');
+                      if (!options) return;
+
+                      var willOpen = !options.classList.contains('show');
+                      closeDropdowns(dropdown);
+                      options.classList.toggle('show', willOpen);
+                      dropdown.classList.toggle('is-open', willOpen);
+                      trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+                  }
+
+                  document.addEventListener('click', function(e) {
+                      var trigger = e.target.closest('.lp-dropdown__selected');
+                      if (trigger) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleDropdown(trigger);
+                          return;
+                      }
+
+                      if (!e.target.closest('.lp-dropdown')) {
+                          closeDropdowns();
+                      }
+                  });
+
+                  document.addEventListener('keydown', function(e) {
+                      var trigger = e.target.closest('.lp-dropdown__selected');
+                      if (!trigger) {
+                          if (e.key === 'Escape') closeDropdowns();
+                          return;
+                      }
+
+                      if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          toggleDropdown(trigger);
+                      } else if (e.key === 'Escape') {
+                          closeDropdowns();
+                          trigger.focus();
+                      }
+                  });
+              })();
           </script>
         {%- else -%}
           <div class="variant-picker__option-values {% unless lp_is_scroll %}wrap{% endunless %} {% if lp_is_scroll %}is-scroll is-slide{% endif %} {% if lp_layout_type == 'scroll_mobile' or lp_layout_type == 'slide_mobile' %}is-scroll-mobile{% endif %}" style="gap: var(--lp-items-gap); justify-content: var(--lp-justify); min-width: 0; width: 100%;">

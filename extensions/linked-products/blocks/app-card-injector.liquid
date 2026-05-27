@@ -64,6 +64,7 @@
 
         const COMMON_CARD_SELECTORS = '.card-wrapper, .card, .product-card, .grid-view-item, .product-item, .product-grid-item, .product-block, .product-card-wrapper';
         const PRICE_SELECTORS = '.price, .product-item__price, .card__price, .product-card__price, .price--on-sale, [class*="price"], [class*="Price"]';
+        const EXCLUDED_CARD_SELECTORS = '.product__info-wrapper, .product__info-container, .product-single__meta';
         const swatchFetchCache = new Map();
 
         function getHandleFromUrl(urlStr) {
@@ -92,6 +93,10 @@
         }
 
         function findProductCard(link) {
+            if (link.closest(EXCLUDED_CARD_SELECTORS)) {
+                return null;
+            }
+
             let card = link.closest(COMMON_CARD_SELECTORS);
             
             // Fallback for custom themes
@@ -104,6 +109,10 @@
                     }
                     parent = parent.parentElement;
                 }
+            }
+
+            if (card && /^h[1-6]$/i.test(card.tagName)) {
+                return null;
             }
 
             return card;
@@ -123,6 +132,25 @@
             storage.appendChild(source);
         }
 
+        function stopCardInteraction(event) {
+            event.stopPropagation();
+        }
+
+        function wireInjectedControls(container) {
+            ['click', 'mousedown', 'mouseup', 'touchstart'].forEach((eventName) => {
+                container.addEventListener(eventName, stopCardInteraction);
+            });
+
+            container.querySelectorAll('.lp-card-dropdown').forEach((dropdown) => {
+                dropdown.addEventListener('change', function(event) {
+                    event.stopPropagation();
+                    if (this.value) {
+                        window.location.href = this.value;
+                    }
+                });
+            });
+        }
+
         function injectSwatchesIntoCard(card, swatchesHtml) {
             if (!card || !swatchesHtml || card.dataset.lpSwatchesInjected === 'true' || card.querySelector('.linked-product-swatches')) {
                 return;
@@ -132,6 +160,7 @@
             container.className = 'lp-injected-container';
             container.style.width = '100%';
             container.innerHTML = swatchesHtml;
+            wireInjectedControls(container);
 
             const priceElement = card.querySelector(PRICE_SELECTORS);
             if (priceElement) {
@@ -259,6 +288,15 @@
             clear: both;
             max-width: 100%;
             overflow: visible;
+            position: relative;
+            z-index: 30;
+            pointer-events: auto;
+        }
+        .lp-injected-container .linked-product-swatches,
+        .lp-injected-container .lp-card-dropdown {
+            pointer-events: auto;
+            position: relative;
+            z-index: 31;
         }
         /* Fix for Dawn theme alignment */
         .card__content .lp-injected-container {
