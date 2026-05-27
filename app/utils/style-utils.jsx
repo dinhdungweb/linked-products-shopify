@@ -334,11 +334,20 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
     const isImageDropdown = styleId === 'image_dropdown';
     const borderRadius = `${settings.border.radius}px`;
     const dropdownOptions = visibleProducts.filter(p => !p.isActive);
+    const dropdownMenuSpace = isOpen && dropdownOptions.length > 0
+      ? Math.min(dropdownOptions.length * 50 + 10, 310)
+      : 0;
     
     return (
-      <div style={{ width: '100%' }}>
+      <div style={{ width: '100%', position: 'relative', overflow: 'visible', zIndex: isOpen ? 1000 : 1 }}>
         {renderLabel()}
-        <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+        <div style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '400px',
+          overflow: 'visible',
+          paddingBottom: dropdownMenuSpace ? `${dropdownMenuSpace}px` : 0
+        }}>
             <div 
             onClick={() => setIsOpen(!isOpen)}
             style={{ 

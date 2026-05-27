@@ -719,13 +719,26 @@
   min-height: 48px;
   transition: all 0.2s ease;
   cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .lp-dropdown__selected:hover {
   border-color: var(--lp-hover-border-color, #000);
 }
 
-/* Removed duplicate .lp-dropdown__img */
+.linked-products-picker .lp-dropdown__img {
+  display: block;
+  width: var(--lp-swatch-size, 32px) !important;
+  height: var(--lp-swatch-size, 32px) !important;
+  min-width: var(--lp-swatch-size, 32px);
+  max-width: var(--lp-swatch-size, 32px) !important;
+  max-height: var(--lp-swatch-size, 32px) !important;
+  flex: 0 0 var(--lp-swatch-size, 32px);
+  border-radius: 4px;
+  object-fit: cover;
+  object-position: var(--lp-image-position, center);
+}
 
 .lp-dropdown__text {
   flex: 1;
@@ -740,6 +753,11 @@
 .lp-dropdown__icon {
   flex-shrink: 0;
   transition: transform 0.2s ease;
+  transform-origin: center;
+}
+
+.lp-dropdown.is-open .lp-dropdown__icon {
+  transform: rotate(180deg);
 }
 
 .lp-dropdown__options {
@@ -776,6 +794,7 @@
   text-decoration: none;
   color: #1a1a1a;
   transition: background 0.2s ease;
+  box-sizing: border-box;
 }
 
 .lp-dropdown__item:hover {
