@@ -1,5 +1,5 @@
-import { getGroupsWithinLimit } from "./billing.server";
-import { normalizeProductCardStyle } from "./utils/style-mapping";
+import { getGroupsWithinLimit } from "./billing.server.js";
+import { normalizeProductCardStyle } from "./utils/style-mapping.js";
 
 const SHOP_ACTIVE_HANDLES_KEY = "active_handles";
 

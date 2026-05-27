@@ -1,5 +1,5 @@
-import prisma from "./db.server";
-import { PLANS } from "./billing.config";
+import prisma from "./db.server.js";
+import { PLANS } from "./billing.config.js";
 
 export function isBillingTestMode() {
     const rawValue = process.env.SHOPIFY_BILLING_TEST ?? process.env.BILLING_TEST;

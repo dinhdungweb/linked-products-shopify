@@ -1,4 +1,4 @@
-import { syncGroupMetafields } from "../sync.server";
+import { syncGroupMetafields } from "../sync.server.js";
 
 /**
  * Thư viện xử lý Automation logic tập trung

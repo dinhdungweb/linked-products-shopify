@@ -1,15 +1,15 @@
-import prisma from "./db.server";
-import { unauthenticated } from "./shopify.server";
-import { canAddLinks } from "./billing.server";
-import { processAutomationsForProduct } from "./models/automation.server";
+import prisma from "./db.server.js";
+import { unauthenticated } from "./shopify.server.js";
+import { canAddLinks } from "./billing.server.js";
+import { processAutomationsForProduct } from "./models/automation.server.js";
 import {
   deleteLinkedProductMetafields,
   syncGroupMetafields,
   syncShopActiveHandles,
-} from "./sync.server";
-import { syncShopSettingsMetafields } from "./settings-sync.server";
-import { syncStyleCustomizationsMetafield } from "./style-sync.server";
-import { SYNC_JOB_TYPES } from "./sync-jobs.server";
+} from "./sync.server.js";
+import { syncShopSettingsMetafields } from "./settings-sync.server.js";
+import { syncStyleCustomizationsMetafield } from "./style-sync.server.js";
+import { SYNC_JOB_TYPES } from "./sync-jobs.server.js";
 
 const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
 const POLL_INTERVAL_MS = Number(process.env.SYNC_WORKER_POLL_MS || 2000);
@@ -196,10 +196,20 @@ export async function runSyncWorker() {
 
   console.log("[SyncWorker] Started");
 
+  let loopErrorDelayMs = POLL_INTERVAL_MS;
+
   while (!stopping) {
-    const processed = await processNextSyncJob();
-    if (!processed) {
-      await wait(POLL_INTERVAL_MS);
+    try {
+      const processed = await processNextSyncJob();
+      loopErrorDelayMs = POLL_INTERVAL_MS;
+
+      if (!processed) {
+        await wait(POLL_INTERVAL_MS);
+      }
+    } catch (error) {
+      console.error("[SyncWorker] Worker loop error:", getErrorMessage(error));
+      await wait(loopErrorDelayMs);
+      loopErrorDelayMs = Math.min(MAX_BACKOFF_MS, loopErrorDelayMs * 2);
     }
   }
 

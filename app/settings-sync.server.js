@@ -1,4 +1,4 @@
-import { normalizeProductCardStyle } from "./utils/style-mapping";
+import { normalizeProductCardStyle } from "./utils/style-mapping.js";
 
 function buildStorefrontAppSettings(settings) {
   const defaultProductCardStyle = normalizeProductCardStyle(settings.defaultProductCardStyle);

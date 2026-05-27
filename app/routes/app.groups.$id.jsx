@@ -646,8 +646,11 @@ export async function action({ request, params }) {
 
     if (actionType === "removeProduct") {
         const productId = formData.get("productId");
+        if (!productId) {
+            return json({ error: "Product not found" }, { status: 400 });
+        }
         
-        await prisma.productGroupItem.delete({ where: { groupId_productId: { groupId, productId } } });
+        await prisma.productGroupItem.deleteMany({ where: { groupId, productId } });
         await enqueueMetafieldCleanup(prisma, session.shop, [productId], { reason: "product_removed" });
         await enqueueGroupSync(prisma, session.shop, groupId);
         return json({ success: true, message: "Product removed!" });
