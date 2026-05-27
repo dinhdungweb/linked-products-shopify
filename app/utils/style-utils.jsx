@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { InlineStack, Text, Icon, Badge } from "@shopify/polaris";
 import { ChevronDownIcon } from "@shopify/polaris-icons";
 
@@ -233,6 +234,8 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
  export const PreviewRenderer = ({ styleId, settings, products, appSettings, isCard = false, hideLabel = false, label }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [hoveredIndex, setHoveredIndex] = React.useState(null);
+  const dropdownTriggerRef = React.useRef(null);
+  const [dropdownMenuRect, setDropdownMenuRect] = React.useState(null);
 
   const sourceProducts = products || PREVIEW_PRODUCTS;
   const explicitActiveIndex = sourceProducts.findIndex(p => p.isActive || p.selected);
@@ -258,6 +261,30 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
   const isDropdown = styleId.includes('dropdown');
   const isColor = styleId.includes('color');
   const isPillSwatch = styleId === 'pill_swatch';
+
+  React.useEffect(() => {
+    if (!isOpen || !isDropdown || typeof window === 'undefined') return undefined;
+
+    const updateDropdownPosition = () => {
+      const rect = dropdownTriggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      setDropdownMenuRect({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+
+    updateDropdownPosition();
+    window.addEventListener('resize', updateDropdownPosition);
+    window.addEventListener('scroll', updateDropdownPosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updateDropdownPosition);
+      window.removeEventListener('scroll', updateDropdownPosition, true);
+    };
+  }, [isOpen, isDropdown]);
   
   // Separation of limits: maxSwatches for Product Page, limitDesktop for Card
   const displayLimit = isCard 
@@ -334,9 +361,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
     const isImageDropdown = styleId === 'image_dropdown';
     const borderRadius = `${settings.border.radius}px`;
     const dropdownOptions = visibleProducts.filter(p => !p.isActive);
-    const dropdownMenuSpace = isOpen && dropdownOptions.length > 0
-      ? Math.min(dropdownOptions.length * 50 + 10, 310)
-      : 0;
+    const shouldRenderDropdownMenu = isOpen && dropdownMenuRect && typeof document !== 'undefined';
     
     return (
       <div style={{ width: '100%', position: 'relative', overflow: 'visible', zIndex: isOpen ? 1000 : 1 }}>
@@ -345,10 +370,10 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
           position: 'relative',
           width: '100%',
           maxWidth: '400px',
-          overflow: 'visible',
-          paddingBottom: dropdownMenuSpace ? `${dropdownMenuSpace}px` : 0
+          overflow: 'visible'
         }}>
             <div 
+            ref={dropdownTriggerRef}
             onClick={() => setIsOpen(!isOpen)}
             style={{ 
                 width: '100%', 
@@ -400,18 +425,17 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
             </div>
             </div>
 
-            {isOpen && (
+            {shouldRenderDropdownMenu && createPortal(
             <div style={{ 
-                position: 'absolute', 
-                top: '100%', 
-                left: '0',
-                width: '100%', 
-                marginTop: '8px',
+                position: 'fixed',
+                top: `${dropdownMenuRect.top}px`,
+                left: `${dropdownMenuRect.left}px`,
+                width: `${dropdownMenuRect.width}px`,
                 border: '1px solid #dbdfe2',
                 borderRadius: '8px',
                 backgroundColor: '#fff',
                 boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-                zIndex: 100,
+                zIndex: 9999,
                 maxHeight: '300px',
                 overflowY: 'auto',
                 opacity: isOpen ? 1 : 0,
@@ -463,6 +487,7 @@ export const renderUnavailableEffect = (isUnavailable, style = "cross_mark") => 
                 </div>
                 ))}
             </div>
+            , document.body
             )}
         </div>
       </div>
