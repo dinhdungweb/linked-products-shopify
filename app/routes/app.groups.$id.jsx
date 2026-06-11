@@ -1295,127 +1295,129 @@ export default function GroupDetail() {
                 </Modal.Section>
             </Modal>
             
-            <Layout>
-                <Layout.Section>
-                    <BlockStack gap="400">
-                        <Card>
-                            <BlockStack gap="400">
-                                <TextField id="groupName" label="Product group name (optional)" value={localGroupName} onChange={setLocalGroupName} helpText="For internal use only" autoComplete="off" maxLength={255} suffix={<Text tone="subdued">{localGroupName.length}/255</Text>} />
-                                <TextField id="optionName" label="Option name" value={localOptionName} onChange={setLocalOptionName} autoComplete="off" maxLength={255} suffix={<Text tone="subdued">{localOptionName.length}/255</Text>} />
-                            </BlockStack>
-                        </Card>
+            <Box paddingBlockEnd="2400">
+                <Layout>
+                    <Layout.Section>
+                        <BlockStack gap="400">
+                            <Card>
+                                <BlockStack gap="400">
+                                    <TextField id="groupName" label="Product group name (optional)" value={localGroupName} onChange={setLocalGroupName} helpText="For internal use only" autoComplete="off" maxLength={255} suffix={<Text tone="subdued">{localGroupName.length}/255</Text>} />
+                                    <TextField id="optionName" label="Option name" value={localOptionName} onChange={setLocalOptionName} autoComplete="off" maxLength={255} suffix={<Text tone="subdued">{localOptionName.length}/255</Text>} />
+                                </BlockStack>
+                            </Card>
 
-                        <Card padding="0">
-                            <Box padding="400"><InlineStack align="space-between" blockAlign="center"><Text variant="headingMd">Products</Text><InlineStack gap="200"><Button icon={MagicIcon} onClick={handleAutoFill} variant="tertiary" disabled={localProducts.length === 0} size="slim">Auto-fill</Button><Button icon={PlusCircleIcon} onClick={handleOpenResourcePicker} size="slim">Add products</Button><Button icon={OrderIcon} variant="tertiary" size="slim" /></InlineStack></InlineStack></Box>
-                            <Divider />
-                            {localProducts.length === 0 ? <Box padding="1000"><div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}><BlockStack gap="200" align="center" inlineAlign="center"><Text variant="bodyMd" tone="subdued" alignment="center">No products added yet.</Text><Button onClick={handleOpenResourcePicker} size="slim">Add products</Button></BlockStack></div></Box> : (
-                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
-                                    <SortableContext items={localProducts.map(p => p.productId)} strategy={verticalListSortingStrategy}>
-                                        <BlockStack>{localProducts.map((p, idx) => <SortableItem key={p.productId} product={p} idx={idx} isLast={idx === localProducts.length - 1} shop={shop} handleRemoveProduct={handleRemoveProduct} handleUpdateField={handleUpdateField} getBorderRadius={getBorderRadius} localSelectorStyle={localSelectorStyle} />)}</BlockStack>
-                                    </SortableContext>
-                                </DndContext>
-                            )}
-                        </Card>
-                    </BlockStack>
-                </Layout.Section>
-
-                <Layout.Section variant="oneThird">
-                    <BlockStack gap="400">
-                        <Card><BlockStack gap="200"><InlineStack align="space-between" blockAlign="center"><Text variant="headingSm">Group status</Text><Badge tone={localStatus === "active" ? "success" : "info"}>{localStatus === "active" ? "Active" : "Draft"}</Badge></InlineStack><Select label="Group Status" labelHidden options={[{ label: 'Active', value: 'active' }, { label: 'Draft', value: 'draft' }]} value={localStatus} onChange={setLocalStatus} /></BlockStack></Card>
-                        <Card><BlockStack gap="300"><Text variant="headingSm">Appearance</Text><Select label="Inventory behavior" options={[{ label: 'Show out of stock', value: 'show' }, { label: 'Hide out of stock', value: 'hide' }]} value={localInventoryBehavior} onChange={setLocalInventoryBehavior} /></BlockStack></Card>
-                        <Card>
-                            <BlockStack gap="200">
-                                <Text variant="headingSm">Preview on product page</Text>
-                                <InlineStack gap="200" blockAlign="center"><Text variant="bodySm" tone="subdued">Style: {STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Text><div style={{ color: '#8c9196' }}>•</div><Button variant="plain" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button></InlineStack>
+                            <Card padding="0">
+                                <Box padding="400"><InlineStack align="space-between" blockAlign="center"><Text variant="headingMd">Products</Text><InlineStack gap="200"><Button icon={MagicIcon} onClick={handleAutoFill} variant="tertiary" disabled={localProducts.length === 0} size="slim">Auto-fill</Button><Button icon={PlusCircleIcon} onClick={handleOpenResourcePicker} size="slim">Add products</Button><Button icon={OrderIcon} variant="tertiary" size="slim" /></InlineStack></InlineStack></Box>
                                 <Divider />
-                                <PreviewRenderer 
-                                    styleId={localSelectorStyle} 
-                                    settings={styleSettings[localSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localSelectorStyle] || BASE_SETTINGS} 
-                                    products={localProducts} 
-                                    appSettings={appSettings} 
-                                    label={localOptionName}
-                                />
-                            </BlockStack>
-                        </Card>
-                        <Card>
-                            <BlockStack gap="200">
-                                <InlineStack align="space-between" blockAlign="center">
-                                    <Text variant="headingSm">Preview on product card</Text>
-                                    <div style={{ transform: 'scale(1.2)' }}>
-                                        <Checkbox 
-                                            label="" 
-                                            labelHidden 
-                                            checked={localCardSelectorStyle !== "hidden"} 
-                                            onChange={(v) => setLocalCardSelectorStyle(v ? "image_swatch_card" : "hidden")} 
-                                        />
-                                    </div>
-                                </InlineStack>
-                                
-                                {localCardSelectorStyle === "hidden" ? (
-                                    <Box padding="400" background="bg-surface-secondary" borderRadius="200" borderWidth="025" borderColor="border" borderStyle="dashed">
-                                        <BlockStack gap="200" align="center">
-                                            <div style={{ color: '#8c9196', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                                <Icon source={ViewIcon} tone="subdued" />
-                                                <Text variant="bodySm" tone="subdued">This option is hidden in product card</Text>
-                                            </div>
-                                        </BlockStack>
-                                    </Box>
-                                ) : (
-                                    <>
-                                        <InlineStack gap="200" blockAlign="center">
-                                            <Text variant="bodySm" tone="subdued">Style: {localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Text>
-                                            <div style={{ color: '#8c9196' }}>•</div>
-                                            <Button variant="plain" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button>
-                                        </InlineStack>
-                                        <Divider />
-                                        <div style={{ maxWidth: '240px', margin: '0 auto', width: '100%' }}>
-                                            {previewOnProductCard ? (
-                                                <Box padding="400" background="bg-surface-secondary" borderRadius="200" borderWidth="025" borderColor="border">
-                                                    <BlockStack gap="200">
-                                                        <div style={{ aspectRatio: '1/1', backgroundColor: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
-                                                            <img src={localProducts[0]?.image || PREVIEW_IMAGES[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                        </div>
-                                                        <Text variant="bodySm" fontWeight="medium">Product Name Example</Text>
-                                                        <Text variant="bodyXs" tone="subdued">$49.00 USD</Text>
-                                                        <div style={{ marginTop: '8px' }}>
-                                                            <PreviewRenderer 
-                                                                styleId={effectiveCardPreviewStyle}
-                                                                settings={styleSettings[effectiveCardPreviewStyle] || DEFAULT_SETTINGS_BY_STYLE[effectiveCardPreviewStyle] || BASE_SETTINGS}
-                                                                products={localProducts} 
-                                                                appSettings={appSettings}
-                                                                isCard={true}
-                                                                hideLabel={true}
-                                                            />
-                                                        </div>
-                                                    </BlockStack>
-                                                </Box>
-                                            ) : (
-                                                <PreviewRenderer 
-                                                    styleId={effectiveCardPreviewStyle}
-                                                    settings={styleSettings[effectiveCardPreviewStyle] || DEFAULT_SETTINGS_BY_STYLE[effectiveCardPreviewStyle] || BASE_SETTINGS}
-                                                    products={localProducts} 
-                                                    appSettings={appSettings}
-                                                    isCard={true}
-                                                    hideLabel={true}
-                                                />
-                                            )}
-                                        </div>
-                                    </>
+                                {localProducts.length === 0 ? <Box padding="1000"><div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}><BlockStack gap="200" align="center" inlineAlign="center"><Text variant="bodyMd" tone="subdued" alignment="center">No products added yet.</Text><Button onClick={handleOpenResourcePicker} size="slim">Add products</Button></BlockStack></div></Box> : (
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
+                                        <SortableContext items={localProducts.map(p => p.productId)} strategy={verticalListSortingStrategy}>
+                                            <BlockStack>{localProducts.map((p, idx) => <SortableItem key={p.productId} product={p} idx={idx} isLast={idx === localProducts.length - 1} shop={shop} handleRemoveProduct={handleRemoveProduct} handleUpdateField={handleUpdateField} getBorderRadius={getBorderRadius} localSelectorStyle={localSelectorStyle} />)}</BlockStack>
+                                        </SortableContext>
+                                    </DndContext>
                                 )}
-                                <Box paddingBlockStart="400">
-                                    <InlineStack align="space-between">
-                                        <Text variant="bodySm" tone="subdued">Preview on:</Text>
-                                        <InlineStack gap="200">
-                                            <Button size="micro" pressed={!previewOnProductCard} onClick={() => setPreviewOnProductCard(false)}>Product Page</Button>
-                                            <Button size="micro" pressed={previewOnProductCard} onClick={() => setPreviewOnProductCard(true)}>Collection</Button>
-                                        </InlineStack>
+                            </Card>
+                        </BlockStack>
+                    </Layout.Section>
+
+                    <Layout.Section variant="oneThird">
+                        <BlockStack gap="400">
+                            <Card><BlockStack gap="200"><InlineStack align="space-between" blockAlign="center"><Text variant="headingSm">Group status</Text><Badge tone={localStatus === "active" ? "success" : "info"}>{localStatus === "active" ? "Active" : "Draft"}</Badge></InlineStack><Select label="Group Status" labelHidden options={[{ label: 'Active', value: 'active' }, { label: 'Draft', value: 'draft' }]} value={localStatus} onChange={setLocalStatus} /></BlockStack></Card>
+                            <Card><BlockStack gap="300"><Text variant="headingSm">Appearance</Text><Select label="Inventory behavior" options={[{ label: 'Show out of stock', value: 'show' }, { label: 'Hide out of stock', value: 'hide' }]} value={localInventoryBehavior} onChange={setLocalInventoryBehavior} /></BlockStack></Card>
+                            <Card>
+                                <BlockStack gap="200">
+                                    <Text variant="headingSm">Preview on product page</Text>
+                                    <InlineStack gap="200" blockAlign="center"><Text variant="bodySm" tone="subdued">Style: {STYLE_OPTIONS.find(s => s.id === localSelectorStyle)?.label || localSelectorStyle}</Text><div style={{ color: '#8c9196' }}>•</div><Button variant="plain" onClick={() => { setSelectingFor("productPage"); setShowStyleModal(true); }}>Change</Button></InlineStack>
+                                    <Divider />
+                                    <PreviewRenderer 
+                                        styleId={localSelectorStyle} 
+                                        settings={styleSettings[localSelectorStyle] || DEFAULT_SETTINGS_BY_STYLE[localSelectorStyle] || BASE_SETTINGS} 
+                                        products={localProducts} 
+                                        appSettings={appSettings} 
+                                        label={localOptionName}
+                                    />
+                                </BlockStack>
+                            </Card>
+                            <Card>
+                                <BlockStack gap="200">
+                                    <InlineStack align="space-between" blockAlign="center">
+                                        <Text variant="headingSm">Preview on product card</Text>
+                                        <div style={{ transform: 'scale(1.2)' }}>
+                                            <Checkbox 
+                                                label="" 
+                                                labelHidden 
+                                                checked={localCardSelectorStyle !== "hidden"} 
+                                                onChange={(v) => setLocalCardSelectorStyle(v ? "image_swatch_card" : "hidden")} 
+                                            />
+                                        </div>
                                     </InlineStack>
-                                </Box>
-                            </BlockStack>
-                        </Card>
-                    </BlockStack>
-                </Layout.Section>
-            </Layout>
+                                    
+                                    {localCardSelectorStyle === "hidden" ? (
+                                        <Box padding="400" background="bg-surface-secondary" borderRadius="200" borderWidth="025" borderColor="border" borderStyle="dashed">
+                                            <BlockStack gap="200" align="center">
+                                                <div style={{ color: '#8c9196', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                                    <Icon source={ViewIcon} tone="subdued" />
+                                                    <Text variant="bodySm" tone="subdued">This option is hidden in product card</Text>
+                                                </div>
+                                            </BlockStack>
+                                        </Box>
+                                    ) : (
+                                        <>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Text variant="bodySm" tone="subdued">Style: {localCardSelectorStyle === "same" ? "Same as product page" : (STYLE_OPTIONS.find(s => s.id === localCardSelectorStyle)?.label || localCardSelectorStyle)}</Text>
+                                                <div style={{ color: '#8c9196' }}>•</div>
+                                                <Button variant="plain" onClick={() => { setSelectingFor("productCard"); setShowStyleModal(true); }}>Change</Button>
+                                            </InlineStack>
+                                            <Divider />
+                                            <div style={{ maxWidth: '240px', margin: '0 auto', width: '100%' }}>
+                                                {previewOnProductCard ? (
+                                                    <Box padding="400" background="bg-surface-secondary" borderRadius="200" borderWidth="025" borderColor="border">
+                                                        <BlockStack gap="200">
+                                                            <div style={{ aspectRatio: '1/1', backgroundColor: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
+                                                                <img src={localProducts[0]?.image || PREVIEW_IMAGES[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            </div>
+                                                            <Text variant="bodySm" fontWeight="medium">Product Name Example</Text>
+                                                            <Text variant="bodyXs" tone="subdued">$49.00 USD</Text>
+                                                            <div style={{ marginTop: '8px' }}>
+                                                                <PreviewRenderer 
+                                                                    styleId={effectiveCardPreviewStyle}
+                                                                    settings={styleSettings[effectiveCardPreviewStyle] || DEFAULT_SETTINGS_BY_STYLE[effectiveCardPreviewStyle] || BASE_SETTINGS}
+                                                                    products={localProducts} 
+                                                                    appSettings={appSettings}
+                                                                    isCard={true}
+                                                                    hideLabel={true}
+                                                                />
+                                                            </div>
+                                                        </BlockStack>
+                                                    </Box>
+                                                ) : (
+                                                    <PreviewRenderer 
+                                                        styleId={effectiveCardPreviewStyle}
+                                                        settings={styleSettings[effectiveCardPreviewStyle] || DEFAULT_SETTINGS_BY_STYLE[effectiveCardPreviewStyle] || BASE_SETTINGS}
+                                                        products={localProducts} 
+                                                        appSettings={appSettings}
+                                                        isCard={true}
+                                                        hideLabel={true}
+                                                    />
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
+                                    <Box paddingBlockStart="400">
+                                        <InlineStack align="space-between">
+                                            <Text variant="bodySm" tone="subdued">Preview on:</Text>
+                                            <InlineStack gap="200">
+                                                <Button size="micro" pressed={!previewOnProductCard} onClick={() => setPreviewOnProductCard(false)}>Product Page</Button>
+                                                <Button size="micro" pressed={previewOnProductCard} onClick={() => setPreviewOnProductCard(true)}>Collection</Button>
+                                            </InlineStack>
+                                        </InlineStack>
+                                    </Box>
+                                </BlockStack>
+                            </Card>
+                        </BlockStack>
+                    </Layout.Section>
+                </Layout>
+            </Box>
 
             <Modal
                 open={showConflictModal}
