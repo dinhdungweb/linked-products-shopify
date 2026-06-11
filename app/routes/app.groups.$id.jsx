@@ -953,6 +953,26 @@ export default function GroupDetail() {
         if (actionData?.success && actionData?.message) shopify.toast.show(actionData.message, { duration: 3000 });
     }, [actionData, shopify]);
 
+    useEffect(() => {
+        if (typeof document !== "undefined") {
+            const style = document.createElement("style");
+            style.id = "crisp-override-style";
+            style.innerHTML = `
+                .crisp-client, #crisp-chatbox {
+                    transform: translateY(-75px) !important;
+                    transition: transform 0.3s ease !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        return () => {
+            if (typeof document !== "undefined") {
+                const el = document.getElementById("crisp-override-style");
+                if (el) el.remove();
+            }
+        };
+    }, []);
+
     const isNewGroup = !group.id;
     const isLoading = navigation.state !== "idle";
 
@@ -1227,12 +1247,6 @@ export default function GroupDetail() {
 
     return (
         <Page fullWidth>
-            <style>{`
-                .crisp-client, #crisp-chatbox {
-                    transform: translateY(-75px) !important;
-                    transition: transform 0.3s ease !important;
-                }
-            `}</style>
             <Modal open={showStyleModal} onClose={() => setShowStyleModal(false)} title={selectingFor === "productPage" ? "Select Product Page Style" : "Select Product Card Style"} size="large">
                 <Modal.Section>
                     <Box paddingBlockEnd="400">
