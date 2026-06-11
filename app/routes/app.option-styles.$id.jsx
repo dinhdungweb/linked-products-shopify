@@ -173,6 +173,22 @@ export default function StyleCustomizerPage() {
         fullWidth 
         backAction={{ content: 'Option styles', url: '/app/option-styles' }}
         title={`Customize ${STYLE_NAMES[styleId] || styleId}`}
+        primaryAction={{
+            content: "Save",
+            onAction: handleSave,
+            loading: isLoading
+        }}
+        secondaryActions={[
+            {
+                content: "Discard",
+                onAction: () => setSettings(initialSettings),
+            },
+            {
+                content: "Delete",
+                destructive: true,
+                onAction: handleDelete,
+            }
+        ]}
     >
       <TitleBar title={`Customize ${STYLE_NAMES[styleId] || styleId}`} />
       
@@ -579,20 +595,7 @@ export default function StyleCustomizerPage() {
             </Box>
           </Card>
           
-          {/* Footer Actions */}
-          <Box paddingBlockStart="400">
-            <BlockStack gap="200">
-                <Card>
-                    <InlineStack align="space-between">
-                        <Button tone="critical" onClick={handleDelete} variant="secondary">Delete</Button>
-                        <InlineStack gap="200">
-                            <Button onClick={() => setSettings(initialSettings)}>Discard</Button>
-                            <Button variant="primary" onClick={handleSave} loading={isLoading}>Save</Button>
-                        </InlineStack>
-                    </InlineStack>
-                </Card>
-            </BlockStack>
-          </Box>
+          {/* Footer Actions are now in Page actions at the top */}
         </div>
 
         <div style={{ flex: 1, position: 'sticky', top: '20px', overflow: 'visible' }}>
