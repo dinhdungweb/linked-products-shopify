@@ -953,26 +953,6 @@ export default function GroupDetail() {
         if (actionData?.success && actionData?.message) shopify.toast.show(actionData.message, { duration: 3000 });
     }, [actionData, shopify]);
 
-    useEffect(() => {
-        if (typeof document !== "undefined") {
-            const style = document.createElement("style");
-            style.id = "crisp-override-style";
-            style.innerHTML = `
-                .crisp-client, #crisp-chatbox {
-                    transform: translateY(-75px) !important;
-                    transition: transform 0.3s ease !important;
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        return () => {
-            if (typeof document !== "undefined") {
-                const el = document.getElementById("crisp-override-style");
-                if (el) el.remove();
-            }
-        };
-    }, []);
-
     const isNewGroup = !group.id;
     const isLoading = navigation.state !== "idle";
 
@@ -1246,7 +1226,25 @@ export default function GroupDetail() {
     };
 
     return (
-        <Page fullWidth>
+        <Page
+            fullWidth
+            title={group.id ? "Edit product group" : "New product group"}
+            subtitle="Combine multiple products into a single option"
+            backAction={{ content: "Product groups", url: "/app/groups" }}
+            primaryAction={{
+                content: "Save",
+                onAction: handleSync,
+                loading: isLoading && navigation.formData?.get("action") === "saveAll",
+            }}
+            secondaryActions={group.id ? [
+                {
+                    content: "Delete",
+                    destructive: true,
+                    onAction: handleDeleteGroup,
+                    loading: isLoading && navigation.formData?.get("action") === "deleteGroup",
+                }
+            ] : []}
+        >
             <Modal open={showStyleModal} onClose={() => setShowStyleModal(false)} title={selectingFor === "productPage" ? "Select Product Page Style" : "Select Product Card Style"} size="large">
                 <Modal.Section>
                     <Box paddingBlockEnd="400">
@@ -1297,16 +1295,6 @@ export default function GroupDetail() {
                 </Modal.Section>
             </Modal>
             
-            <Box paddingBlockEnd="400">
-                <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                    <Button icon={ChevronLeftIcon} variant="tertiary" url="/app/groups" />
-                    <BlockStack gap="100">
-                        <Text variant="headingLg">{group.id ? "Edit product group" : "New product group"}</Text>
-                        <Text variant="bodyMd" tone="subdued">Combine multiple products into a single option</Text>
-                    </BlockStack>
-                </InlineStack>
-            </Box>
-
             <Layout>
                 <Layout.Section>
                     <BlockStack gap="400">
@@ -1428,29 +1416,6 @@ export default function GroupDetail() {
                     </BlockStack>
                 </Layout.Section>
             </Layout>
-
-            <Box padding="400" background="bg-surface" borderColor="border" borderWidth="025" borderRadius="300" position="sticky" insetBlockEnd="0" zIndex="10" marginBlockStart="800">
-                <InlineStack align={group.id ? "space-between" : "end"} blockAlign="center">
-                    {group.id && (
-                        <Button 
-                            variant="primary" 
-                            tone="critical" 
-                            onClick={handleDeleteGroup} 
-                            loading={isLoading && navigation.formData?.get("action") === "deleteGroup"}
-                        >
-                            Delete
-                        </Button>
-                    )}
-                    <Button 
-                        variant="primary" 
-                        size="large" 
-                        onClick={handleSync} 
-                        loading={isLoading && navigation.formData?.get("action") === "saveAll"}
-                    >
-                        Save
-                    </Button>
-                </InlineStack>
-            </Box>
 
             <Modal
                 open={showConflictModal}
