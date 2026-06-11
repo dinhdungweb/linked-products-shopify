@@ -1227,6 +1227,12 @@ export default function GroupDetail() {
 
     return (
         <Page fullWidth>
+            <style>{`
+                .crisp-client, #crisp-chatbox {
+                    transform: translateY(-75px) !important;
+                    transition: transform 0.3s ease !important;
+                }
+            `}</style>
             <Modal open={showStyleModal} onClose={() => setShowStyleModal(false)} title={selectingFor === "productPage" ? "Select Product Page Style" : "Select Product Card Style"} size="large">
                 <Modal.Section>
                     <Box paddingBlockEnd="400">
