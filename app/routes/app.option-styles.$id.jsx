@@ -192,7 +192,8 @@ export default function StyleCustomizerPage() {
     >
       <TitleBar title={`Customize ${STYLE_NAMES[styleId] || styleId}`} />
       
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+      <Box paddingBlockEnd="2400">
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
         {/* Sidebar Accordion */}
         <div style={{ width: '400px', flexShrink: 0 }}>
           <Card padding="0">
@@ -625,7 +626,8 @@ export default function StyleCustomizerPage() {
                 </BlockStack>
           </div>
         </div>
-      </div>
+        </div>
+      </Box>
     </Page>
   );
 }
