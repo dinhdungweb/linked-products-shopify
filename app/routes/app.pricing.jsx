@@ -189,6 +189,11 @@ function PlanCard({ planKey, plan, usageInfo, isSubmitting, onSubscribe }) {
                     <Text as="p" variant="bodySm" tone="subdued">
                         {plan.price === 0 ? "Forever free" : "Billed every 30 days"}
                     </Text>
+                    {plan.price > 0 && (
+                        <Text as="p" variant="bodySm" tone="success">
+                            Includes 3-day free trial
+                        </Text>
+                    )}
                 </BlockStack>
 
                 <Text as="p" variant="bodyMd" tone="subdued">
@@ -244,15 +249,25 @@ export const loader = async ({ request }) => {
     let usageInfo = await getUsageInfo(shop);
 
     try {
-        const billingCheck = await billing.check({
-            isTest: isBillingTestMode(),
-            plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
-        });
+        const response = await admin.graphql(`
+            query {
+                currentAppInstallation {
+                    activeSubscriptions {
+                        id
+                        name
+                        status
+                        test
+                    }
+                }
+            }
+        `);
+        const result = await response.json();
+        const activeSubscriptions = result.data?.currentAppInstallation?.activeSubscriptions || [];
+        const activeSub = activeSubscriptions.find(sub => sub.status === "ACTIVE");
 
         const currentKnownPlan = usageInfo.plan || "free";
 
-        if (billingCheck.hasActivePayment) {
-            const activeSub = billingCheck.appSubscriptions[0];
+        if (activeSub) {
             let planKey = "free";
 
             const subName = activeSub.name;
@@ -313,8 +328,8 @@ export const action = async ({ request }) => {
             console.log(`[Pricing] Requesting billing. ReturnUrl: ${returnUrl}`);
 
             const response = await admin.graphql(`
-                mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
-                    appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $returnUrl, test: $test) {
+                mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean, $trialDays: Int, $replacementBehavior: AppSubscriptionReplacementBehavior) {
+                    appSubscriptionCreate(name: $name, lineItems: $lineItems, returnUrl: $returnUrl, test: $test, trialDays: $trialDays, replacementBehavior: $replacementBehavior) {
                         userErrors {
                             field
                             message
@@ -327,6 +342,8 @@ export const action = async ({ request }) => {
                     name: planKey,
                     test: isBillingTestMode(),
                     returnUrl: returnUrl,
+                    trialDays: 3,
+                    replacementBehavior: "APPLY_IMMEDIATELY",
                     lineItems: [{
                         plan: {
                             appRecurringPricingDetails: {

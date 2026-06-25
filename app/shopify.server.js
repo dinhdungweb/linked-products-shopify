@@ -27,7 +27,7 @@ const shopify = shopifyApp({
           interval: BillingInterval.Every30Days,
         },
       ],
-      trialDays: 7,
+      trialDays: 3,
       replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
     "advanced-plan": {
@@ -38,7 +38,7 @@ const shopify = shopifyApp({
           interval: BillingInterval.Every30Days,
         },
       ],
-      trialDays: 7,
+      trialDays: 3,
       replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
     "premium-plan": {
@@ -49,7 +49,7 @@ const shopify = shopifyApp({
           interval: BillingInterval.Every30Days,
         },
       ],
-      trialDays: 7,
+      trialDays: 3,
       replacementBehavior: BillingReplacementBehavior.ApplyImmediately,
     },
   },

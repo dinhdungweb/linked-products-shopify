@@ -41,15 +41,25 @@ export async function loader({ request }) {
   let usageInfo = await getUsageInfo(shop);
 
   try {
-    const billingCheck = await billing.check({
-      isTest: isBillingTestMode(),
-      plans: [PLANS.basic.key, PLANS.advanced.key, PLANS.premium.key],
-    });
+    const response = await admin.graphql(`
+      query {
+        currentAppInstallation {
+          activeSubscriptions {
+            id
+            name
+            status
+            test
+          }
+        }
+      }
+    `);
+    const result = await response.json();
+    const activeSubscriptions = result.data?.currentAppInstallation?.activeSubscriptions || [];
+    const activeSub = activeSubscriptions.find(sub => sub.status === "ACTIVE");
 
     const currentKnownPlan = usageInfo?.plan || 'free';
 
-    if (billingCheck.hasActivePayment) {
-      const activeSub = billingCheck.appSubscriptions[0];
+    if (activeSub) {
       let planKey = "free";
       if (activeSub.name.includes("Premium")) planKey = "premium";
       else if (activeSub.name.includes("Advanced")) planKey = "advanced";
