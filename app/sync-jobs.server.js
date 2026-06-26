@@ -6,6 +6,7 @@ export const SYNC_JOB_TYPES = {
   STYLE_CUSTOMIZATIONS_SYNC: "style_customizations_sync",
   ACTIVE_HANDLES_SYNC: "active_handles_sync",
   METAFIELD_CLEANUP: "metafield_cleanup",
+  STOREFRONT_METAFIELD_RESET: "storefront_metafield_reset",
   AUTOMATION_PRODUCT: "automation_product",
 };
 
@@ -112,6 +113,21 @@ export async function enqueueMetafieldCleanup(prisma, shop, productIds, {
     targetId: hashValue(ids.join("|")),
     payload: { productIds: ids, syncActiveHandles, onlyIfUngrouped, reason },
     dedupeKey: [shop, SYNC_JOB_TYPES.METAFIELD_CLEANUP, hashValue(ids.join("|"))].join(":"),
+  });
+}
+
+export async function enqueueStorefrontMetafieldReset(prisma, shop, {
+  reason = "reinstall",
+  runAt = new Date(Date.now() + 30 * 1000),
+} = {}) {
+  return enqueueSyncJob(prisma, {
+    shop,
+    type: SYNC_JOB_TYPES.STOREFRONT_METAFIELD_RESET,
+    targetId: shop,
+    payload: { reason },
+    dedupeKey: [shop, SYNC_JOB_TYPES.STOREFRONT_METAFIELD_RESET].join(":"),
+    runAt,
+    maxAttempts: 5,
   });
 }
 

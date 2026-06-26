@@ -4,6 +4,7 @@ import { canAddLinks } from "./billing.server.js";
 import { processAutomationsForProduct } from "./models/automation.server.js";
 import {
   deleteLinkedProductMetafields,
+  resetLinkedProductsStorefrontMetafields,
   syncGroupMetafields,
   syncShopActiveHandles,
 } from "./sync.server.js";
@@ -155,6 +156,9 @@ async function runJob(job) {
       break;
     case SYNC_JOB_TYPES.METAFIELD_CLEANUP:
       await runCleanupJob(admin, job);
+      break;
+    case SYNC_JOB_TYPES.STOREFRONT_METAFIELD_RESET:
+      await resetLinkedProductsStorefrontMetafields(admin);
       break;
     case SYNC_JOB_TYPES.AUTOMATION_PRODUCT:
       await processAutomationsForProduct(

@@ -8,6 +8,7 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server.js";
 import { PLANS } from "./billing.config.js";
+import { enqueueStorefrontMetafieldReset } from "./sync-jobs.server.js";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -70,12 +71,28 @@ const shopify = shopifyApp({
   hooks: {
     afterAuth: async ({ session, admin }) => {
       await createMetafieldDefinitions(admin);
+      await enqueueReinstallCleanup(session.shop);
     },
   },
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
     : {}),
 });
+
+async function enqueueReinstallCleanup(shop) {
+  try {
+    const existingShop = await prisma.shop.findUnique({
+      where: { shop },
+      select: { id: true },
+    });
+
+    if (!existingShop) {
+      await enqueueStorefrontMetafieldReset(prisma, shop);
+    }
+  } catch (error) {
+    console.warn(`[Auth] Could not enqueue reinstall metafield reset for ${shop}:`, error.message);
+  }
+}
 
 // Function to create metafield definitions
 async function createMetafieldDefinitions(admin) {

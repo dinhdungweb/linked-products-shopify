@@ -2,6 +2,8 @@ import { getGroupsWithinLimit } from "./billing.server.js";
 import { normalizeProductCardStyle } from "./utils/style-mapping.js";
 
 const SHOP_ACTIVE_HANDLES_KEY = "active_handles";
+const LINKED_PRODUCTS_NAMESPACE = "linked_products";
+const METAFIELD_DELETE_BATCH_SIZE = 25;
 
 function metafieldText(value, fallback) {
     const stringValue = value == null ? "" : String(value).trim();
@@ -18,6 +20,43 @@ async function getShopOwnerId(admin) {
     `);
     const result = await response.json();
     return result.data?.shop?.id;
+}
+
+function chunkArray(items, size) {
+    const chunks = [];
+
+    for (let index = 0; index < items.length; index += size) {
+        chunks.push(items.slice(index, index + size));
+    }
+
+    return chunks;
+}
+
+async function deleteMetafieldIdentifiers(admin, metafields) {
+    if (metafields.length === 0) return 0;
+
+    let deleted = 0;
+
+    for (const batch of chunkArray(metafields, METAFIELD_DELETE_BATCH_SIZE)) {
+        const response = await admin.graphql(`
+            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
+                metafieldsDelete(metafields: $metafields) {
+                    deletedMetafields { ownerId key namespace }
+                    userErrors { field message }
+                }
+            }
+        `, { variables: { metafields: batch } });
+
+        const result = await response.json();
+        const errors = result.data?.metafieldsDelete?.userErrors || [];
+        if (errors.length > 0) {
+            throw new Error(errors.map((error) => error.message).join(", "));
+        }
+
+        deleted += result.data?.metafieldsDelete?.deletedMetafields?.length || batch.length;
+    }
+
+    return deleted;
 }
 
 export async function syncShopActiveHandles(admin, prisma, shop) {
@@ -98,30 +137,83 @@ export async function deleteLinkedProductMetafields(admin, productIds) {
         if (metafieldNodes.length === 0) continue;
 
         const metafieldsToDelete = metafieldNodes.map((metafield) => ({
-            namespace: "linked_products",
+            namespace: LINKED_PRODUCTS_NAMESPACE,
             key: metafield.key,
             ownerId: productId,
         }));
 
-        const response = await admin.graphql(`
-            mutation MetafieldsDelete($metafields: [MetafieldIdentifierInput!]!) {
-                metafieldsDelete(metafields: $metafields) {
-                    deletedMetafields { ownerId }
-                    userErrors { field message }
-                }
-            }
-        `, { variables: { metafields: metafieldsToDelete } });
-
-        const result = await response.json();
-        const errors = result.data?.metafieldsDelete?.userErrors || [];
-        if (errors.length > 0) {
-            throw new Error(errors.map((error) => error.message).join(", "));
-        }
-
-        deleted += metafieldsToDelete.length;
+        deleted += await deleteMetafieldIdentifiers(admin, metafieldsToDelete);
     }
 
     return { success: true, deleted };
+}
+
+export async function resetLinkedProductsStorefrontMetafields(admin) {
+    let deleted = 0;
+    let productCount = 0;
+
+    const shopOwnerId = await getShopOwnerId(admin);
+    if (shopOwnerId) {
+        const shopMetafieldsResponse = await admin.graphql(`
+            query LinkedProductsShopMetafields {
+                shop {
+                    metafields(first: 50, namespace: "linked_products") {
+                        nodes { key }
+                    }
+                }
+            }
+        `);
+
+        const shopMetafieldsResult = await shopMetafieldsResponse.json();
+        const shopMetafields = shopMetafieldsResult.data?.shop?.metafields?.nodes || [];
+        deleted += await deleteMetafieldIdentifiers(admin, shopMetafields.map((metafield) => ({
+            ownerId: shopOwnerId,
+            namespace: LINKED_PRODUCTS_NAMESPACE,
+            key: metafield.key,
+        })));
+    }
+
+    let cursor = null;
+    let hasNextPage = true;
+
+    while (hasNextPage) {
+        const response = await admin.graphql(`
+            query LinkedProductsProductMetafields($cursor: String) {
+                products(first: 50, after: $cursor) {
+                    nodes {
+                        id
+                        metafields(first: 50, namespace: "linked_products") {
+                            nodes { key }
+                        }
+                    }
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                }
+            }
+        `, { variables: { cursor } });
+
+        const result = await response.json();
+        const products = result.data?.products?.nodes || [];
+
+        for (const product of products) {
+            const metafields = product.metafields?.nodes || [];
+            if (metafields.length === 0) continue;
+
+            productCount += 1;
+            deleted += await deleteMetafieldIdentifiers(admin, metafields.map((metafield) => ({
+                ownerId: product.id,
+                namespace: LINKED_PRODUCTS_NAMESPACE,
+                key: metafield.key,
+            })));
+        }
+
+        hasNextPage = Boolean(result.data?.products?.pageInfo?.hasNextPage);
+        cursor = result.data?.products?.pageInfo?.endCursor || null;
+    }
+
+    return { success: true, deleted, productCount };
 }
 
 export async function syncGroupMetafields(admin, prisma, gId) {
