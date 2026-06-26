@@ -40,6 +40,20 @@ export function getPlanKeyFromSubscriptionName(subscriptionName) {
     return getPlanKeyFromSubscription({ name: subscriptionName });
 }
 
+function getSubscriptionPayloadData(payload) {
+    const subscription = payload?.app_subscription || payload?.subscription || payload || {};
+    const rawId = subscription.admin_graphql_api_id || subscription.id || subscription.app_subscription_id || null;
+    const id = rawId && !String(rawId).includes("gid://")
+        ? `gid://shopify/AppSubscription/${rawId}`
+        : rawId;
+
+    return {
+        id: id ? String(id) : null,
+        name: subscription.name || subscription.plan_name || "",
+        status: String(subscription.status || "").toUpperCase(),
+    };
+}
+
 /**
  * Get or create shop record
  */
@@ -203,6 +217,55 @@ export async function syncShopSubscription(admin, shopDomain) {
     return { plan: planKey, chargeId: activeSubscription.id, subscription: activeSubscription };
 }
 
+export async function syncShopSubscriptionFromWebhook(shopDomain, payload) {
+    const subscription = getSubscriptionPayloadData(payload);
+
+    if (!subscription.status) {
+        console.warn(`[Billing Webhook] Missing subscription status for ${shopDomain}`);
+        return { changed: false, plan: null };
+    }
+
+    if (subscription.status === "ACTIVE") {
+        const planKey = getPlanKeyFromSubscription(subscription);
+
+        if (!planKey) {
+            console.warn(
+                `[Billing Webhook] Could not map active subscription "${subscription.name}" for ${shopDomain}`,
+            );
+            return { changed: false, plan: null };
+        }
+
+        await prisma.shop.upsert({
+            where: { shop: shopDomain },
+            update: { plan: planKey, chargeId: subscription.id },
+            create: { shop: shopDomain, plan: planKey, chargeId: subscription.id },
+        });
+
+        return { changed: true, plan: planKey };
+    }
+
+    const inactiveStatuses = new Set(["CANCELLED", "DECLINED", "EXPIRED", "FROZEN"]);
+    if (!inactiveStatuses.has(subscription.status)) {
+        return { changed: false, plan: null };
+    }
+
+    const shop = await prisma.shop.findUnique({ where: { shop: shopDomain } });
+    if (!shop) {
+        return { changed: false, plan: null };
+    }
+
+    if (!subscription.id || !shop.chargeId || shop.chargeId === subscription.id) {
+        await prisma.shop.update({
+            where: { shop: shopDomain },
+            data: { plan: "free", chargeId: null },
+        });
+
+        return { changed: true, plan: "free" };
+    }
+
+    return { changed: false, plan: shop.plan };
+}
+
 /**
  * Create subscription using Shopify Billing API
  */
@@ -326,7 +389,7 @@ export async function cancelSubscription(admin, shopDomain) {
     const shop = await getOrCreateShop(shopDomain);
     if (shop.chargeId) {
         try {
-            await admin.graphql(`
+            const response = await admin.graphql(`
         mutation AppSubscriptionCancel($id: ID!) {
           appSubscriptionCancel(id: $id) {
             appSubscription { id status }
@@ -336,8 +399,16 @@ export async function cancelSubscription(admin, shopDomain) {
       `, {
                 variables: { id: shop.chargeId },
             });
+
+            const result = await response.json();
+            const userErrors = result.data?.appSubscriptionCancel?.userErrors || [];
+
+            if (userErrors.length > 0) {
+                throw new Error(userErrors.map((error) => error.message).join(", "));
+            }
         } catch (error) {
             console.error("Error cancelling subscription:", error);
+            throw error;
         }
     }
 
