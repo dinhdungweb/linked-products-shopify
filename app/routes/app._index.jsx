@@ -34,7 +34,6 @@ import {
 } from "@shopify/polaris-icons";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { ImportCsvModalContent } from "../components/ImportCsvModalContent";
-import { PLANS } from "../billing.config";
 import { enqueueGroupSync, enqueueMetafieldCleanup } from "../sync-jobs.server";
 import { openCrispChat } from "../utils/crisp-chat";
 import {
@@ -48,7 +47,7 @@ import {
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { getUsageInfo, confirmSubscription, isBillingTestMode } = await import("../billing.server");
+  const { getUsageInfo, syncShopSubscription } = await import("../billing.server");
 
   const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
@@ -56,40 +55,8 @@ export async function loader({ request }) {
   let usageInfo = await getUsageInfo(shop);
 
   try {
-    const response = await admin.graphql(`
-      query {
-        currentAppInstallation {
-          activeSubscriptions {
-            id
-            name
-            status
-            test
-          }
-        }
-      }
-    `);
-    const result = await response.json();
-    const activeSubscriptions = result.data?.currentAppInstallation?.activeSubscriptions || [];
-    const activeSub = activeSubscriptions.find(sub => sub.status === "ACTIVE");
-
-    const currentKnownPlan = usageInfo?.plan || 'free';
-
-    if (activeSub) {
-      let planKey = "free";
-      const subName = activeSub.name;
-
-      if (subName.includes("Premium") || subName === PLANS.premium.key) planKey = "premium";
-      else if (subName.includes("Advanced") || subName === PLANS.advanced.key) planKey = "advanced";
-      else if (subName.includes("Basic") || subName === PLANS.basic.key) planKey = "basic";
-
-      if (planKey !== currentKnownPlan) {
-        await confirmSubscription(admin, shop, planKey, activeSub);
-        usageInfo = await getUsageInfo(shop);
-      }
-    } else if (currentKnownPlan !== 'free') {
-      await confirmSubscription(admin, shop, 'free', null);
-      usageInfo = await getUsageInfo(shop);
-    }
+    await syncShopSubscription(admin, shop);
+    usageInfo = await getUsageInfo(shop);
   } catch (error) {
     console.warn("[Dashboard Loader] Billing sync skipped:", error.message);
   }

@@ -11,6 +11,35 @@ export function isBillingTestMode() {
     return !["0", "false", "no", "off"].includes(String(rawValue).trim().toLowerCase());
 }
 
+function normalizePlanName(value) {
+    return String(value || "").trim().toLowerCase();
+}
+
+function getPlanKeyFromSubscription(subscription) {
+    const normalizedName = normalizePlanName(subscription?.name);
+
+    for (const [planKey, plan] of Object.entries(PLANS)) {
+        if (planKey === "free") continue;
+
+        const possibleNames = [
+            planKey,
+            plan.key,
+            plan.name,
+            `Linked Products - ${plan.name}`,
+        ].map(normalizePlanName);
+
+        if (possibleNames.includes(normalizedName)) {
+            return planKey;
+        }
+    }
+
+    return null;
+}
+
+export function getPlanKeyFromSubscriptionName(subscriptionName) {
+    return getPlanKeyFromSubscription({ name: subscriptionName });
+}
+
 /**
  * Get or create shop record
  */
@@ -118,6 +147,62 @@ export async function getUsageInfo(shopDomain) {
     };
 }
 
+export async function syncShopSubscription(admin, shopDomain) {
+    const response = await admin.graphql(`
+    query {
+      currentAppInstallation {
+        activeSubscriptions {
+          id
+          name
+          status
+          test
+        }
+      }
+    }
+  `);
+
+    const result = await response.json();
+
+    if (result.errors?.length) {
+        throw new Error(result.errors.map((error) => error.message).join(", "));
+    }
+
+    const subscriptions = result.data?.currentAppInstallation?.activeSubscriptions || [];
+    const activeSubscription = subscriptions.find((subscription) => subscription.status === "ACTIVE");
+
+    if (!activeSubscription) {
+        await prisma.shop.upsert({
+            where: { shop: shopDomain },
+            update: { plan: "free", chargeId: null },
+            create: { shop: shopDomain, plan: "free" },
+        });
+
+        return { plan: "free", chargeId: null, subscription: null };
+    }
+
+    const planKey = getPlanKeyFromSubscription(activeSubscription);
+
+    if (!planKey) {
+        console.warn(
+            `[Billing] Could not map active subscription "${activeSubscription.name}" for ${shopDomain}. Keeping local plan unchanged.`,
+        );
+
+        return {
+            plan: null,
+            chargeId: activeSubscription.id,
+            subscription: activeSubscription,
+        };
+    }
+
+    await prisma.shop.upsert({
+        where: { shop: shopDomain },
+        update: { plan: planKey, chargeId: activeSubscription.id },
+        create: { shop: shopDomain, plan: planKey, chargeId: activeSubscription.id },
+    });
+
+    return { plan: planKey, chargeId: activeSubscription.id, subscription: activeSubscription };
+}
+
 /**
  * Create subscription using Shopify Billing API
  */
@@ -188,11 +273,22 @@ export async function createSubscription(admin, planKey, shopDomain) {
  */
 export async function confirmSubscription(admin, shopDomain, planKey, subscriptionDataOrId) {
     if (subscriptionDataOrId && typeof subscriptionDataOrId === 'object') {
-        const updatedShop = await prisma.shop.upsert({
+        const resolvedPlanKey = getPlanKeyFromSubscription(subscriptionDataOrId) || planKey;
+        await prisma.shop.upsert({
             where: { shop: shopDomain },
-            update: { plan: planKey, chargeId: subscriptionDataOrId.id },
-            create: { shop: shopDomain, plan: planKey, chargeId: subscriptionDataOrId.id },
+            update: { plan: resolvedPlanKey, chargeId: subscriptionDataOrId.id },
+            create: { shop: shopDomain, plan: resolvedPlanKey, chargeId: subscriptionDataOrId.id },
         });
+        return true;
+    }
+
+    if (planKey === "free") {
+        await prisma.shop.upsert({
+            where: { shop: shopDomain },
+            update: { plan: "free", chargeId: null },
+            create: { shop: shopDomain, plan: "free" },
+        });
+
         return true;
     }
 
@@ -212,10 +308,11 @@ export async function confirmSubscription(admin, shopDomain, planKey, subscripti
     ) || subscriptions.find(sub => sub.status === "ACTIVE");
 
     if (activeSubscription) {
+        const resolvedPlanKey = getPlanKeyFromSubscription(activeSubscription) || planKey;
         await prisma.shop.upsert({
             where: { shop: shopDomain },
-            update: { plan: planKey, chargeId: activeSubscription.id },
-            create: { shop: shopDomain, plan: planKey, chargeId: activeSubscription.id },
+            update: { plan: resolvedPlanKey, chargeId: activeSubscription.id },
+            create: { shop: shopDomain, plan: resolvedPlanKey, chargeId: activeSubscription.id },
         });
         return true;
     }

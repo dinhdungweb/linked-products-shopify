@@ -26,53 +26,22 @@ import {
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { DeleteIcon, PlayIcon, PauseCircleIcon, EditIcon } from "@shopify/polaris-icons";
 import { runAutomationRule } from "../models/automation.server";
-import { PLANS } from "../billing.config";
 import { enqueueGroupSync } from "../sync-jobs.server";
 
 // Loader
 export async function loader({ request }) {
   const { authenticate } = await import("../shopify.server");
   const { default: prisma } = await import("../db.server");
-  const { getUsageInfo, confirmSubscription, isBillingTestMode } = await import("../billing.server");
+  const { getUsageInfo, syncShopSubscription } = await import("../billing.server");
 
-  const { admin, session, billing } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
 
   let usageInfo = await getUsageInfo(shop);
 
   try {
-    const response = await admin.graphql(`
-      query {
-        currentAppInstallation {
-          activeSubscriptions {
-            id
-            name
-            status
-            test
-          }
-        }
-      }
-    `);
-    const result = await response.json();
-    const activeSubscriptions = result.data?.currentAppInstallation?.activeSubscriptions || [];
-    const activeSub = activeSubscriptions.find(sub => sub.status === "ACTIVE");
-
-    const currentKnownPlan = usageInfo?.plan || 'free';
-
-    if (activeSub) {
-      let planKey = "free";
-      if (activeSub.name.includes("Premium")) planKey = "premium";
-      else if (activeSub.name.includes("Advanced")) planKey = "advanced";
-      else if (activeSub.name.includes("Basic")) planKey = "basic";
-
-      if (planKey !== currentKnownPlan) {
-        await confirmSubscription(admin, shop, planKey, activeSub);
-        usageInfo = await getUsageInfo(shop);
-      }
-    } else if (currentKnownPlan !== 'free') {
-      await confirmSubscription(admin, shop, 'free', null);
-      usageInfo = await getUsageInfo(shop);
-    }
+    await syncShopSubscription(admin, shop);
+    usageInfo = await getUsageInfo(shop);
   } catch (error) {
     console.warn("[Automations Loader] Billing sync skipped:", error.message);
   }

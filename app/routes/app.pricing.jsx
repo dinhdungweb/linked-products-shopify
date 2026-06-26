@@ -238,51 +238,19 @@ function PlanCard({ planKey, plan, usageInfo, isSubmitting, onSubscribe }) {
 
 export const loader = async ({ request }) => {
     const { authenticate } = await import("../shopify.server");
-    const { getUsageInfo, confirmSubscription, isBillingTestMode } = await import("../billing.server");
+    const { getUsageInfo, syncShopSubscription } = await import("../billing.server");
 
     const url = new URL(request.url);
     const host = url.searchParams.get("host");
 
-    const { admin, session, billing } = await authenticate.admin(request);
+    const { admin, session } = await authenticate.admin(request);
     const shop = session.shop;
 
     let usageInfo = await getUsageInfo(shop);
 
     try {
-        const response = await admin.graphql(`
-            query {
-                currentAppInstallation {
-                    activeSubscriptions {
-                        id
-                        name
-                        status
-                        test
-                    }
-                }
-            }
-        `);
-        const result = await response.json();
-        const activeSubscriptions = result.data?.currentAppInstallation?.activeSubscriptions || [];
-        const activeSub = activeSubscriptions.find(sub => sub.status === "ACTIVE");
-
-        const currentKnownPlan = usageInfo.plan || "free";
-
-        if (activeSub) {
-            let planKey = "free";
-
-            const subName = activeSub.name;
-            if (subName.includes("Premium") || subName === PLANS.premium.key) planKey = "premium";
-            else if (subName.includes("Advanced") || subName === PLANS.advanced.key) planKey = "advanced";
-            else if (subName.includes("Basic") || subName === PLANS.basic.key) planKey = "basic";
-
-            if (planKey !== currentKnownPlan) {
-                await confirmSubscription(admin, shop, planKey, activeSub);
-                usageInfo = await getUsageInfo(shop);
-            }
-        } else if (currentKnownPlan !== "free") {
-            await confirmSubscription(admin, shop, "free", null);
-            usageInfo = await getUsageInfo(shop);
-        }
+        await syncShopSubscription(admin, shop);
+        usageInfo = await getUsageInfo(shop);
     } catch (billingError) {
         console.warn("[Pricing Loader] Billing sync skipped:", billingError.message);
     }
