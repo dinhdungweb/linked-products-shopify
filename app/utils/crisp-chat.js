@@ -9,15 +9,28 @@ function canUseDOM() {
   return typeof window !== "undefined" && typeof document !== "undefined";
 }
 
-function setCrispGlobals() {
+function setCrispGlobals(arg) {
   window.$crisp = window.$crisp || [];
   window.CRISP_WEBSITE_ID = CRISP_WEBSITE_ID;
+
+  const shop = typeof arg === "string" ? arg : (arg && typeof arg === "object" && typeof arg.shop === "string" ? arg.shop : undefined);
+  const targetShop = shop || window.__crispShop;
+  if (targetShop && window.__crispShop !== targetShop) {
+    window.$crisp.push(["set", "session:data", [[["shop", targetShop]]]]);
+    window.__crispShop = targetShop;
+  }
 }
 
-export function loadCrispChat() {
+export function prepareCrispChat(arg) {
+  if (!canUseDOM()) return null;
+  setCrispGlobals(arg);
+  return window.$crisp;
+}
+
+export function loadCrispChat(arg = {}) {
   if (!canUseDOM()) return Promise.resolve(false);
 
-  setCrispGlobals();
+  setCrispGlobals(arg);
 
   if (document.querySelector(CRISP_SCRIPT_SELECTOR)) {
     return Promise.resolve(true);
@@ -42,14 +55,16 @@ export function loadCrispChat() {
   return crispLoadPromise;
 }
 
-export function scheduleCrispChatLoad() {
+export function scheduleCrispChatLoad(arg = {}) {
   if (!canUseDOM()) return () => {};
+
+  setCrispGlobals(arg);
 
   let timeoutId;
   let idleCallbackId;
 
   const loadWhenReady = () => {
-    loadCrispChat().catch(() => {});
+    loadCrispChat(arg).catch(() => {});
   };
 
   if ("requestIdleCallback" in window) {
@@ -71,10 +86,10 @@ export function scheduleCrispChatLoad() {
   };
 }
 
-export function openCrispChat() {
+export function openCrispChat(arg = {}) {
   if (!canUseDOM()) return;
 
-  setCrispGlobals();
+  setCrispGlobals(arg);
   window.$crisp.push(["do", "chat:open"]);
-  loadCrispChat().catch(() => {});
+  loadCrispChat(arg).catch(() => {});
 }
