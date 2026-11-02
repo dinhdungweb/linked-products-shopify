@@ -63,6 +63,7 @@
         console.log('Linked Products: Injector active.');
 
         const COMMON_CARD_SELECTORS = '.card-wrapper, .card, .product-card, .grid-view-item, .product-item, .product-grid-item, .product-block, .product-card-wrapper';
+        const PRICE_GROUP_SELECTORS = 'product-price, [ref="priceContainer"], [data-product-price], [data-price-container], .price-list, .price-wrapper, .price-container';
         const PRICE_SELECTORS = '.price, .product-item__price, .card__price, .product-card__price, .price--on-sale, [class*="price"], [class*="Price"]';
         const EXCLUDED_CARD_SELECTORS = '.product__info-wrapper, .product__info-container, .product-single__meta';
         const swatchFetchCache = new Map();
@@ -151,6 +152,30 @@
             });
         }
 
+        function isPricePart(element) {
+            return element.matches('s, del, ins, [itemprop="price"]') ||
+                /(^|[\s_-])(price|compare|regular|sale)(?=$|[\s_-])/i.test(element.className || '');
+        }
+
+        function findPriceAnchor(card) {
+            // Theme price components can contain both sale and compare-at prices.
+            // Insert after the component, never after an individual amount inside it.
+            const priceGroup = card.querySelector(PRICE_GROUP_SELECTORS);
+            if (priceGroup) {
+                return priceGroup.closest('product-price') || priceGroup;
+            }
+
+            const firstPrice = card.querySelector(PRICE_SELECTORS);
+            if (!firstPrice) return null;
+
+            // Older/custom themes may render sale and compare-at prices as siblings.
+            let anchor = firstPrice;
+            while (anchor.nextElementSibling && isPricePart(anchor.nextElementSibling)) {
+                anchor = anchor.nextElementSibling;
+            }
+            return anchor;
+        }
+
         function injectSwatchesIntoCard(card, swatchesHtml) {
             if (!card || !swatchesHtml || card.dataset.lpSwatchesInjected === 'true' || card.querySelector('.linked-product-swatches')) {
                 return;
@@ -162,9 +187,9 @@
             container.innerHTML = swatchesHtml;
             wireInjectedControls(container);
 
-            const priceElement = card.querySelector(PRICE_SELECTORS);
-            if (priceElement) {
-                priceElement.parentNode.insertBefore(container, priceElement.nextSibling);
+            const priceAnchor = findPriceAnchor(card);
+            if (priceAnchor) {
+                priceAnchor.parentNode.insertBefore(container, priceAnchor.nextSibling);
             } else {
                 card.appendChild(container);
             }
